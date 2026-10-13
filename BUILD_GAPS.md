@@ -16,6 +16,19 @@ The existing CLI/server/map/export core is the original free MVP. The updated st
 
 The product now focuses on beginner-to-intermediate builders, including people using coding agents without full-stack or architecture experience. Plain-English finding guidance and manually copied focused task briefs are implemented in the shared client. They suggest one bounded review, with goal/first-step context in the free walkthrough, without removing free features or manufacturing proof. An explicit local `--init` interview now collects the goal and finished-product description without hand-editing JSON. Both explanation views end with that attributed destination, without claiming completion. A separate explicit local `--walkthrough` interview now appends a reviewed goal, ordered mapped pieces, expected results, explanations and support assignments without hand-writing JSON or granting proof. CLI installation/startup, piece grouping, existing-walkthrough editing and evidence authoring remain usability gaps for this audience; broader browser onboarding and editors should be scoped before adding a platform.
 
+## Free-tier completion comes first
+
+The user prioritized completing the free builder flow before expanding paid Guide. The active MVP keeps the complete map, goals/current walkthroughs and basic briefs. The tested JavaScript Guide code preview is parked separately on `guide/source-code-preview-20261013` at `3277533`; it is not included in this branch or PR #1.
+
+| Free builder step | Current position | Next completion criterion |
+| --- | --- | --- |
+| Describe and open a project | `--init`, local mapping and README startup commands exist. | Keep setup instructions clear and verify them through normal use; do not claim browser onboarding. |
+| Organize existing files and planned pieces | Grouping and planned-piece descriptions require manifest JSON. | Add one guided local authoring flow preserving exact file scope, existing plans/source/evidence and missing-file visibility. This is the next source task. |
+| Follow a goal and prepare one task | Free map goals, walkthrough authoring, first unfinished point and basic briefs exist. | Preserve this complete path while adding piece authoring; avoid new billing or orchestration infrastructure. |
+| Review evidence and interface behavior | Receipt inspection and backend/DOM-double checks exist; browser proof is pending. | Improve only concrete comprehension gaps and record a permitted real-browser observation when available. |
+
+Create HTML preview artifacts only on explicit user request. Existing export functionality stays available.
+
 ## Next release-confidence checks
 
 | Priority | Remaining check | Done when |

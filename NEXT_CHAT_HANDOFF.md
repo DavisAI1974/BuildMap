@@ -10,6 +10,14 @@ Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
+## Latest user priorities
+
+Finish the free tier's usable builder flow before expanding paid Guide work. Do not create or update HTML preview artifacts unless the user explicitly asks; this does not remove the product's existing export command. Continue source changes and appropriate checks without generating a preview each pass.
+
+A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which retains its 83-test implementation. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
+
+The next free-tier usability increment is grouping existing mapped files and describing a planned piece without hand-writing JSON. Preserve existing project fields, exact file scope, source/evidence distinctions and current walkthrough authoring. Follow that with a clear review of recorded evidence and the permitted real-browser check. The free tier should let a beginner describe a project, map it, organize its pieces, follow a goal, find an unfinished point and prepare a bounded task; the wider paid roadmap can wait.
+
 ## Active request and boundaries
 
 Continue the usable BuildMap MVP with outcome walkthroughs on top of the existing map. The user accepted this direction to help owners understand behavior and reduce agent drift/bloat: connect agreed goals to pieces, expected results, real recorded example values, and the first unfinished/unobserved handoff. This is authorized product work; no further design confirmation is required for the implemented scope. Continue the BuildMap v0.1 review/improvement pass. Use the repository and tests as the source of truth. Make focused, high-leverage improvements, preserve the evidence-state contract, and keep README/evidence honest. The user also asked for the remaining build gaps; the maintained list is `BUILD_GAPS.md`.

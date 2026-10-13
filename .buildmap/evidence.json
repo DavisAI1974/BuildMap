@@ -2,28 +2,28 @@
   "components": {
     "intent": {
       "status": "verified",
-      "command": "npm test",
-      "note": "Intent extraction and unknown-intent fallback passed in npm test on Node v24.19.0.",
-      "recordedAt": "2026-10-13T11:13:28.010Z",
+      "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
+      "note": "Intent extraction and unknown-intent fallback passed in the full suite on Node v20.20.2 and v24.19.0.",
+      "recordedAt": "2026-10-13T11:26:38.591Z",
       "sourceHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c"
       }
     },
     "scanner": {
       "status": "verified",
-      "command": "npm test",
-      "note": "Source/evidence semantics, declared-versus-observed drift, receipt target/file scope, imports/assets, and Git inventory checks passed in npm test on Node v24.19.0.",
-      "recordedAt": "2026-10-13T11:13:28.010Z",
+      "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
+      "note": "Source/evidence semantics, full overlapping ownership/proof scope and ambiguity resolution, declared-versus-observed drift, receipt target/file scope, literal imports and asset URL suffixes, and Git inventory checks passed on Node v20.20.2 and v24.19.0.",
+      "recordedAt": "2026-10-13T11:26:38.591Z",
       "sourceHashes": {
-        "src/scan.js": "a96f669ba1b72e0c5ef86d7da04b3d082ab82285285a9fe9bdfd3c63132cff46",
-        "src/imports.js": "3f63c072d5afa010ca9aa6fddae8b24aead3dffd0f5539495a172c551fe2e739"
+        "src/scan.js": "72efe0bcc70dba68a1df196f52bf746efd50ab4de5e8e6ecbe6b3b9ff21cb411",
+        "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076"
       }
     },
     "server": {
       "status": "verified",
-      "command": "npm test",
-      "note": "CLI/API/export and branch/tag selection, exact revision provenance, failed-ref cleanup, and local-path refusal passed in npm test on Node v24.19.0. A real GitHub branch/JSON smoke mapped BuildMap at 705ff1f3a523297e7c96474252bebb3ffc6e0a3f and cleaned up.",
-      "recordedAt": "2026-10-13T11:13:28.010Z",
+      "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
+      "note": "CLI/API/export and branch/tag selection, revision provenance, failed-ref cleanup, and local-path refusal passed on Node v20.20.2 and v24.19.0. A separate Node 20 dogfood smoke passed CLI JSON/server/API/assets and clean SIGTERM exit. The historical GitHub branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f and cleaned up.",
+      "recordedAt": "2026-10-13T11:26:38.591Z",
       "sourceHashes": {
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
@@ -32,14 +32,14 @@
     },
     "verification": {
       "status": "verified",
-      "command": "npm test",
-      "note": "All 44 tests passed on Node v24.19.0. Client/inspector tests use a DOM double; real browser layout/integration and Node 20 execution remain unverified.",
-      "recordedAt": "2026-10-13T11:13:28.010Z",
+      "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
+      "note": "All 48 tests passed on Node v20.20.2 and v24.19.0. Client/inspector/filter keyboard tests use a DOM double; real browser layout/accessibility/integration remains unverified. Node 20 dogfood CLI/server smoke passed.",
+      "recordedAt": "2026-10-13T11:26:38.591Z",
       "sourceHashes": {
-        "tests/scan.test.js": "b89b13671b0ac03e54c415c501f143ab7083e40000b72d96d1a002ed85b60dc0",
+        "tests/scan.test.js": "fd4ca085095d05ad217b2777ca223531ca6400deb26934dff6ed7b21287599e3",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
         "tests/server.test.js": "d738c9b1eb67e3510b5869b373d5520d9f1002b7940a71ff488dcac90e5055c8",
-        "tests/ui.test.js": "2a5daca6d5720a2bbfe9e06141367b4dbe444a273b586c50cc1270fd64120db8",
+        "tests/ui.test.js": "b4d7db1000870e57672ad782a8533b17cf2ff1630a3aa631083b47e6a2633ee2",
         "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7"
       }

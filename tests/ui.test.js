@@ -117,3 +117,17 @@ test('GitHub provenance shows ref/revision and makes clone snapshot behavior exp
   assert.match(ui.get('projectSource').textContent, /feature\/map/);
   assert.match(ui.get('projectSource').textContent, /aaaaaaaaaaaa/);
 });
+
+test('search removes filtered cards from keyboard navigation and gap selection reveals its piece', async () => {
+  const input = model('search', [piece('a'), piece('b', { conflictingFiles: ['b.js'] })]);
+  input.gaps = [{ nodeId: 'b', kind: 'overlapping-file', priority: 'blocker', message: 'Ownership conflict.' }];
+  const ui = await client(input);
+  ui.get('search').listeners.input({ target: { value: 'a.js' } });
+  const card = id => ui.get('nodeLayer').children.find(e => e.dataset.id === id);
+  assert.equal(card('b').tabIndex, -1); assert.equal(card('b').attributes['aria-hidden'], 'true');
+  ui.get('gaps').children[0].click();
+  assert.equal(card('b').classes.has('filtered'), false);
+  assert.equal(card('b').tabIndex, 0); assert.equal(card('b').attributes['aria-hidden'], 'false');
+  assert.match(ui.get('detail').innerHTML, /b.js · ownership conflict/);
+  card('a').click(); assert.equal(card('b').tabIndex, -1);
+});

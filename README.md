@@ -20,7 +20,7 @@ npm test
 node src/cli.js .
 ```
 
-Open **http://127.0.0.1:4173**. Click a piece or a gap to inspect its files, purpose, contribution, connections, evidence assessment, and source hashes. Search includes names, paths, states, and gap descriptions. **Fit map** scales the full map into the viewport; **Actual size** restores readable cards and scrolling.
+Open **http://127.0.0.1:4173**. Click a piece or a gap to inspect its files, purpose, contribution, connections, evidence assessment, and source hashes. Search includes names, paths, states, and gap descriptions. Filtered cards leave keyboard navigation; selecting a gap keeps its piece visible while the search remains active. **Fit map** scales the full map into the viewport; **Actual size** restores readable cards and scrolling.
 
 Point it at another project, choose a port, or get a one-shot snapshot:
 
@@ -43,7 +43,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 48 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -162,7 +162,7 @@ A minimal `.buildmap/project.json`:
 }
 ```
 
-Files are exact project-relative paths, not glob patterns. `file` is accepted for a single path; leading `./` and duplicate paths are normalized. Explicitly declared assets/configuration also count as implementation. A file belongs to one component: overlapping assignments and duplicate/reserved ids produce diagnostics. `__mission__` and the `file:` prefix are reserved. Component descriptions must be strings, and `dependsOn` must be an array of piece ids. Omitting `dependsOn` leaves dependency intent unspecified. An explicit empty array declares that the piece should have no cross-piece dependencies.
+Files are exact project-relative paths, not glob patterns. `file` is accepted for a single path; leading `./` and duplicate paths are normalized. Explicitly declared assets/configuration also count as implementation. A file belongs to one component. Overlapping declarations remain visible in every affected piece, including their full file/hash scope; they produce blocker findings and prevent component receipts from advancing those pieces until ownership is resolved. Connections involving an ambiguous file are excluded from cross-piece wiring, and its file receipt becomes an inspectable project finding. Duplicate/reserved ids also produce diagnostics. `__mission__` and the `file:` prefix are reserved. Component descriptions must be strings, and `dependsOn` must be an array of piece ids. Omitting `dependsOn` leaves dependency intent unspecified. An explicit empty array declares that the piece should have no cross-piece dependencies.
 
 Mini-visuals include `flow`, `scanner`, `graph`, `proof`, `lens`, `goal`, `gate`, and `queue`; unknown kinds use a simple arrow. They are illustrative mechanisms chosen by the manifest or inferred from filenames, not execution traces or behavior extracted from a program. The inspector labels that distinction.
 
@@ -197,9 +197,9 @@ Relationship discovery is heuristic:
 
 | Source | Relationships discovered |
 | --- | --- |
-| JavaScript/TypeScript | Local static imports, literal `require`/dynamic imports, re-exports, extensionless and index modules, `.js` references to `.ts`/`.tsx` sources. Comments and ordinary string examples are skipped. |
+| JavaScript/TypeScript | Local static imports, literal-argument `require`/dynamic imports (computed paths are skipped), re-exports, extensionless and index modules, `.js` references to `.ts`/`.tsx` sources. Comments and ordinary string examples are skipped. |
 | Python | Repository-root modules, packages, sibling/parent relative imports, named submodules. |
-| HTML | Local script/link references; leading `/` is interpreted relative to the project root. |
+| HTML | Local script/link references; leading `/` is interpreted relative to the project root; query strings/fragments are ignored for file lookup. |
 | CSS | Quoted `@import` references. |
 | Other inventoried languages | Files only; no relationship parser yet. |
 
@@ -217,7 +217,7 @@ No database, bundler, framework, or third-party runtime dependencies are require
 | `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
 | `node src/cli.js PATH --html OUTPUT` | Self-contained interactive HTML snapshot to a new file, then exit. |
 
-Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. Nodes expose `dependencyIntent` and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
+Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. Nodes expose `dependencyIntent`, `conflictingFiles`, and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
 
 ## Architecture and validation
 

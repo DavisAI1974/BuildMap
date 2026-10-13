@@ -12,7 +12,8 @@ function jsSpecs(source) {
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
     if (tokens[i - 1] === '.') continue;
-    if ((token === 'require' || token === 'import') && tokens[i + 1] === '(' && quoted(tokens[i + 2])) {
+    if ((token === 'require' || token === 'import') && tokens[i + 1] === '(' && quoted(tokens[i + 2]) &&
+      [')', ','].includes(tokens[i + 3])) {
       specs.add(tokens[i + 2].slice(1, -1));
     } else if (token === 'import' && quoted(tokens[i + 1])) {
       specs.add(tokens[i + 1].slice(1, -1));
@@ -73,7 +74,8 @@ export function resolveImport(fromFile, spec, fileSet, ext) {
   const asset = ['.html', '.htm', '.css'].includes(ext);
   if (!asset && !spec.startsWith('.')) return null;
   if (/^(?:[a-z]+:|\/\/|#)/i.test(spec)) return null;
-  const base = path.posix.normalize(spec.startsWith('/') ? spec.slice(1) : path.posix.join(path.posix.dirname(fromFile), spec.split(/[?#]/)[0]));
+  const local = spec.split(/[?#]/)[0];
+  const base = path.posix.normalize(local.startsWith('/') ? local.slice(1) : path.posix.join(path.posix.dirname(fromFile), local));
   const candidates = [base];
   if (!asset) {
     // TypeScript commonly imports its emitted .js filename.

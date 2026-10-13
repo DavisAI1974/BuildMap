@@ -63,3 +63,13 @@ GitHub URL mode now accepts `--ref BRANCH_OR_TAG`. It validates ref syntax befor
 Validation: **44 tests pass on Node v24.19.0**. Branch and tag selection, exact revision identity, missing-ref cleanup, local-path refusal, provenance-only state behavior, and UI metadata are covered. A real public branch/JSON smoke mapped the five-component BuildMap PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f` and removed its temporary clone. Syntax and whitespace checks pass.
 
 The remaining work is recorded in [BUILD_GAPS.md](BUILD_GAPS.md). Browser verification and a run on the advertised minimum Node 20 runtime remain release-confidence checks. Broader parsers, receipt provenance/freshness, scale/navigation, and deeper intent/mechanism modeling remain product improvements. These categories have separate completion criteria.
+
+## Continuation from a2330cc
+
+The ownership audit found that a later overlapping component silently lost its shared implementation file. A receipt could then verify only the reduced set. Declarations and hashes now retain the full scope on both pieces; an ownership blocker rejects their component claims until the overlap is resolved. Ambiguous files cannot be arbitrarily assigned to cross-piece source edges or a file receipt. File claims remain inspectable as project findings. Unique-file wiring still works, and reversing component order does not choose an owner.
+
+Two discovery corrections remove misleading source states: a computed JS import/require argument no longer resolves its initial string as a complete path, and root-relative HTML/CSS assets resolve with query/fragment suffixes. Discovery remains heuristic and does not claim that references execute.
+
+Filtered cards now leave the tab sequence and accessibility tree. Selecting a gap reveals its piece while retaining the search, and the inspector marks ownership-conflicted files. These behaviors were checked through the existing DOM double; real browser layout/accessibility/integration remains unverified under the documented restrictions.
+
+Validation: **48/48 tests pass on Node v20.20.2 and v24.19.0**. The four new regression tests cover full overlapping proof scope, ambiguous wiring/file receipts and resolution, computed import arguments, asset URL suffixes, and filtered-card navigation/selection. A separate Node 20 dogfood smoke exercised CLI JSON output, CLI server startup, map/gaps/health APIs, all three assets, and clean SIGTERM exit. Source syntax and whitespace checks pass. The minimum-runtime release check is complete for Node 20.20.2; browser checks remain pending. Relevant source-bound receipts were refreshed after the tests; the visualizer still has no upper-state receipt. PR #1 remains open, with no deployment/live claim.

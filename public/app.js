@@ -177,6 +177,7 @@ function layout(nodes, edges) {
 function selectPiece(id) {
   selectedId = id;
   document.querySelectorAll('.node').forEach(n => n.classList.toggle('selected', n.dataset.id === id));
+  applyFilter();
   renderDetail(id);
 }
 function signalText(gap) {
@@ -255,7 +256,7 @@ function evidenceText(node) {
 
 function fileList(node) {
   if (!node.files?.length) return '<p>No files — this is the mission/outcome node.</p>';
-  return `<ul class="file-list">${node.files.map(f => `<li class="${node.presentFiles.includes(f) ? '' : 'missing'}">${escapeHtml(f)}${node.presentFiles.includes(f) ? '' : ' · missing'}</li>`).join('')}</ul>`;
+  return `<ul class="file-list">${node.files.map(f => `<li class="${node.presentFiles.includes(f) ? '' : 'missing'}">${escapeHtml(f)}${node.presentFiles.includes(f) ? '' : ' · missing'}${node.conflictingFiles?.includes(f) ? ' · ownership conflict' : ''}</li>`).join('')}</ul>`;
 }
 
 function applyFilter() {
@@ -263,7 +264,10 @@ function applyFilter() {
   document.querySelectorAll('.node').forEach(el => {
     const n = model?.nodes.find(x => x.id === el.dataset.id);
     const hay = n ? `${n.name} ${n.purpose} ${n.files.join(' ')} ${n.group} ${n.status} ${(model.gaps || []).filter(g => g.nodeId === n.id).map(g => g.message).join(' ')}`.toLowerCase() : '';
-    el.classList.toggle('filtered', Boolean(q && !hay.includes(q)));
+    const filtered = Boolean(q && n?.id !== selectedId && !hay.includes(q));
+    el.classList.toggle('filtered', filtered);
+    el.tabIndex = filtered ? -1 : 0;
+    el.setAttribute('aria-hidden', String(filtered));
   });
 }
 

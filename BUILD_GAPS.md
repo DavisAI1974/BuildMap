@@ -1,6 +1,6 @@
 # BuildMap v0.1 remaining build gaps
 
-Source checkpoint reviewed: PR #1 through `705ff1f`, followed by the branch/tag targeting pass documented in `REVIEW_NOTES.md`. Current checks: 44 tests pass on Node v24.19.0; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
+Source checkpoint reviewed: PR #1 at `a2330cc`, followed by the ownership/discovery/client corrections documented in `REVIEW_NOTES.md`. Current checks: 48 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
 
 ## What the current map actually reports
 
@@ -21,9 +21,8 @@ The HTTP path is implemented. The graph findings describe the scanner's visibili
 | Priority | Remaining check | Done when |
 | --- | --- | --- |
 | 1 | Real browser end-to-end, including narrow screens and a larger sample map. | Open the live server and exported snapshot, exercise selection, gaps, filtering, fit/scroll, keyboard use, live edits, and refresh failure/recovery; fix findings and record only the behavior actually observed. |
-| 2 | Minimum-runtime compatibility. | Run the existing suite and CLI/server smoke on Node 20. Current test evidence is from Node 24, even though source uses APIs intended to support Node 20+. |
 
-The available cloud browser cannot reach this workspace's loopback server, and its URL policy rejects local HTML-file navigation. No workaround around that security rejection has been used. These checks need a permitted browser/runtime environment.
+The available cloud browser cannot reach this workspace's loopback server, and its URL policy rejects local HTML-file navigation. No workaround around that security rejection has been used. Browser verification needs a permitted browser environment. The Node 20 runtime check is now complete: the full suite and dogfood CLI JSON/server/API/assets/SIGTERM smoke passed on v20.20.2.
 
 PR #1 remains open. Merging and public release are separate actions after review; this pass does not claim that the default branch already contains v0.1.
 
@@ -31,10 +30,10 @@ PR #1 remains open. Merging and public release are separate actions after review
 
 | Priority | Gap | Current boundary | Useful next implementation |
 | --- | --- | --- | --- |
-| 3 | Broader, more accurate wiring discovery. | Heuristic JS/TS/Python/HTML/CSS discovery; HTTP, aliases, Python `src` layouts, regular-expression/template corner cases, and other languages are incomplete. | Parser-backed adapters with source provenance; distinguish source references, runtime relationships, and planned wiring. |
-| 4 | Stronger proof freshness and provenance. | Manual claims; source hashes bind only a piece's own implementation. Dependencies, test inputs, environments, CI authenticity, and continuing deployment liveness are not covered. | Optional dependency/test-input binding plus independent CI/runtime receipts. Never run commands or infer upper states merely from their existence. |
-| 5 | Large-repository performance and navigation. | Full synchronous rescan/hash per API request; all cards/edges are rendered; layering is bounded and cycles are tolerated without deeper layout semantics. No scale benchmark is claimed. | Measure a realistic large sample, reduce repeated work while preserving change detection, and add capability/subsystem drill-down or filtering. |
-| 6 | Deeper intent and visual explanation. | First useful README prose or a declared mission; filename/comment/symbol heuristics and illustrative mini-visuals. No built-in interview or semantic contradiction analysis. | Preserve attribution/uncertainty while comparing documented goals with implementation and deriving inspectable mechanism descriptions. |
+| 2 | Broader, more accurate wiring discovery. | Heuristic JS/TS/Python/HTML/CSS discovery; HTTP, aliases, Python `src` layouts, regular-expression/template corner cases, and other languages are incomplete. | Parser-backed adapters with source provenance; distinguish source references, runtime relationships, and planned wiring. |
+| 3 | Stronger proof freshness and provenance. | Manual claims; source hashes bind only a piece's own implementation. Dependencies, test inputs, environments, CI authenticity, and continuing deployment liveness are not covered. | Optional dependency/test-input binding plus independent CI/runtime receipts. Never run commands or infer upper states merely from their existence. |
+| 4 | Large-repository performance and navigation. | Full synchronous rescan/hash per API request; all cards/edges are rendered; layering is bounded and cycles are tolerated without deeper layout semantics. No scale benchmark is claimed. | Measure a realistic large sample, reduce repeated work while preserving change detection, and add capability/subsystem drill-down or filtering. |
+| 5 | Deeper intent and visual explanation. | First useful README prose or a declared mission; filename/comment/symbol heuristics and illustrative mini-visuals. No built-in interview or semantic contradiction analysis. | Preserve attribution/uncertainty while comparing documented goals with implementation and deriving inspectable mechanism descriptions. |
 
 These are product improvements beyond the implemented v0.1 core, rather than a claim that six source modules are still missing. Each should be scoped from an actual use case before adding infrastructure.
 

@@ -6,9 +6,9 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Last functional checkpoint: `885109f19dac14a41d4b7a1ac5843c15a7c83b3b`.
+Continuation base: `a2330cc66d7e857d21b17e666278729f1d15c873`. The ownership/discovery/client corrections follow this commit; use the current branch head, not the continuation base.
 
-This handoff is committed after that functional checkpoint. **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** The user requested a new-chat checkpoint because the conversation was slowing down. Feature work stopped at this boundary.
+**Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
 ## Active request and boundaries
 
@@ -39,11 +39,14 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 - Git-aware inventory respects ignores while preserving tracked source, keeps subtree boundaries, disables fsmonitor hooks, and supports root aliases with containment.
 - Read-only `/api/map`, `/api/gaps`, `/api/health`; one-shot `--json` and safe self-contained HTML `--html OUTPUT` exports.
 - GitHub branch/tag targeting with `--ref`, exact clone revision metadata in `project.source`, explicit snapshot labeling, clone cleanup, and rejection of local ref selection. No evidence state is granted by provenance.
-- README, review notes, gap report, and dogfood receipts updated. Runtime remains dependency-free on Node 20+; tests currently ran on Node 24.
+- Overlapping declarations retain every implementation file/hash, reject component proof until ownership is resolved, and keep ambiguous file claims inspectable without choosing a wiring owner.
+- Computed JS import paths no longer create literal-prefix connections; HTML/CSS root asset URLs resolve query/fragment suffixes. Filtered cards leave keyboard navigation, gap selection reveals its piece, and the inspector marks ownership conflicts.
+- README, review notes, gap report, and dogfood receipts updated. Runtime remains dependency-free on Node 20+; tests ran on Node 20 and 24.
 
 ## Current validation and proof state
 
-- `npm test`: **44/44 passed on Node v24.19.0**.
+- **48/48 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - JS syntax and whitespace checks passed.
 - Local HTTP/API/assets and live source edits covered by tests.
 - Public default-clone smoke with `octocat/Hello-World` recovered README intent and cleaned up.
@@ -58,14 +61,15 @@ Do not call DOM-double tests browser verification. Receipts are manually recorde
 ### Release-confidence checks
 
 1. Real browser end-to-end: live server, exported snapshot, narrow screens, representative larger map, selection/gaps/search/fit/keyboard, source edits, and failure/recovery. Record only what is actually observed.
-2. Run the existing suite plus CLI/server smoke on the advertised minimum Node 20 runtime. Current execution evidence is Node 24.
+
+Completed release check: the full suite and CLI/server smoke passed on Node 20.20.2. No additional runtime check is currently pending.
 
 ### Broader product work
 
-3. Parser-backed/wider wiring discovery: HTTP, TypeScript aliases, Python src layouts, regex/template corner cases, other languages.
-4. Dependency/test-input freshness and independent CI/runtime/deployment receipt provenance.
-5. Large-repo performance and capability/subsystem navigation. Full scans/hashes and all-node rendering are current limitations.
-6. Deeper attributed intent recovery, contradiction review/interviews, and source-derived mechanism explanations.
+2. Parser-backed/wider wiring discovery: HTTP, TypeScript aliases, Python src layouts, regex/template corner cases, other languages.
+3. Dependency/test-input freshness and independent CI/runtime/deployment receipt provenance.
+4. Large-repo performance and capability/subsystem navigation. Full scans/hashes and all-node rendering are current limitations.
+5. Deeper attributed intent recovery, contradiction review/interviews, and source-derived mechanism explanations.
 
 Git arrival animation, continuous remote refresh, all five conceptual zoom levels, and automated deployment/publication are deferred extensions. See `BUILD_GAPS.md` for completion criteria.
 
@@ -114,6 +118,6 @@ The output must be a new file; put it outside the mapped repo.
 
 Shell clones/fetches work, but shell push failed because GitHub username credentials are unavailable. The connected GitHub API successfully published tested trees in focused commits and updated the branch with an expected-head lease and `force:false`. Published tree hashes were compared against the tested local tree. Do not repeatedly try unauthenticated shell push or force-overwrite newer work; use the connector when needed and verify the final PR head.
 
-The original checkout was `/workspace/scratch/ef2e17966c5d/BuildMap`; scratch may not persist into the next chat, so Git is authoritative. Equivalent local commits were preserved in `review/local-*` backup branches before aligning to API-created commits. There are no active subagents and no intentional smoke server left running. Temporary JSON/HTML review files are reproducible intermediates, not remaining deliverables.
+The current checkout is `/workspace/scratch/89392d8bfad0/BuildMap`; scratch may not persist into the next chat, so Git is authoritative. Equivalent local commits were preserved in `review/local-*` backup branches before aligning to API-created commits. There are no active subagents and no intentional smoke server left running. Temporary JSON/HTML review files are reproducible intermediates, not remaining deliverables.
 
 Refresh receipts only after relevant checks pass. Avoid framework churn and gratuitous tests/validators. Keep commentary brief and continue within the user's authorized scope.

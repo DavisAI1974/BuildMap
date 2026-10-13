@@ -43,7 +43,16 @@ export function scanProject(root, { source = null } = {}) {
     diagnostics.push({ code: 'unreadable-intent', message: `Could not read intent documents: ${err.code || err.message}.` });
     intent = { text: 'Project intent could not be read. Check the documents and permissions.', source: null, confidence: 'unknown' };
   }
-  const assignedFiles = new Map();
+  const assignedFiles = new Set();
+  const fileOwners = new Map();
+  for (const component of components) {
+    const componentFiles = normalizeFiles(component.files || component.file || []);
+    const id = component.id || slug(component.name || componentFiles[0] || 'component');
+    for (const file of componentFiles) {
+      if (!fileOwners.has(file)) fileOwners.set(file, []);
+      fileOwners.get(file).push(id);
+    }
+  }
   const nodes = [];
 
   function makeNode(fields, receipt) {
@@ -52,8 +61,12 @@ export function scanProject(root, { source = null } = {}) {
     const wired = importEdges.some(e => present.includes(e.from) || present.includes(e.to));
     const base = complete ? (wired ? 'connected' : 'coded') : 'planned';
     const sourceHashes = Object.fromEntries(present.map(f => [f, fileHashes.get(f)]));
-    const assessment = assessEvidence(receipt, complete, sourceHashes);
+    const conflictingFiles = fields.files.filter(f => (fileOwners.get(f)?.length || 0) > 1);
+    const assessment = receipt && conflictingFiles.length
+      ? { accepted: false, reason: 'Implementation ownership is ambiguous. Resolve overlapping component file assignments before claiming component behavior.' }
+      : assessEvidence(receipt, complete, sourceHashes);
     return { ...fields, presentFiles: present, missingFiles: fields.files.filter(f => !fileSet.has(f)),
+      conflictingFiles,
       implementation: complete ? 'complete' : present.length ? 'partial' : 'missing',
       baseStatus: base, status: resolveStatus({ base, evidence: assessment.accepted ? receipt.status : null }),
       evidence: receipt || null, evidenceAssessment: assessment, sourceHashes };
@@ -62,16 +75,14 @@ export function scanProject(root, { source = null } = {}) {
   for (const component of components) {
     const componentFiles = normalizeFiles(component.files || component.file || []);
     const id = component.id || slug(component.name || componentFiles[0] || 'component');
-    const owned = componentFiles.filter(f => {
-      if (assignedFiles.has(f)) {
-        diagnostics.push({ code: 'overlapping-file', nodeId: id, message: `${f} already belongs to ${assignedFiles.get(f)}; it is not assigned twice.` });
-        return false;
-      }
-      assignedFiles.set(f, id); return true;
-    });
+    for (const f of componentFiles) {
+      assignedFiles.add(f);
+      if (fileOwners.get(f).length > 1) diagnostics.push({ code: 'overlapping-file', nodeId: id, priority: 'blocker',
+        message: `${f} is declared by multiple components (${fileOwners.get(f).join(', ')}). Resolve ownership; the declaration is retained but cannot grant component proof or cross-piece wiring.` });
+    }
     if (component.status) diagnostics.push({ code: 'manifest-status', nodeId: id, message: `Manifest status ${component.status} is descriptive only; proof requires an evidence record.` });
     nodes.push(makeNode({ id, name: component.name || titleFromFile(componentFiles[0] || id), kind: 'component',
-      group: component.group || inferGroup(componentFiles[0]), files: owned,
+      group: component.group || inferGroup(componentFiles[0]), files: componentFiles,
       purpose: component.purpose || component.description || inferPurpose(componentFiles),
       contributes: component.contributes || component.goal || '', visual: normalizeVisual(component.visual, component),
       plannedDependencies: Array.isArray(component.dependsOn) ? [...new Set(component.dependsOn)] : [],
@@ -171,8 +182,13 @@ function evidenceCollections(raw, diagnostics) {
 
 function auditEvidenceTargets(evidence, nodes, diagnostics) {
   const componentById = new Map(nodes.filter(n => n.kind === 'component').map(n => [n.id, n]));
-  const ownerByFile = new Map(nodes.flatMap(n => n.files.map(f => [f, n])));
+  const ownerByFile = unambiguousOwners(nodes);
   for (const scope of ['components', 'files']) for (const [target, receipt] of Object.entries(evidence[scope] || {})) {
+    if (scope === 'files' && ownerByFile.has(target) && !ownerByFile.get(target)) {
+      diagnostics.push({ code: 'ambiguous-evidence-target', priority: 'blocker', evidence: receipt,
+        message: `Evidence files.${target} refers to overlapping component assignments; resolve ownership before attaching this file claim.` });
+      continue;
+    }
     const owner = scope === 'components' ? componentById.get(target) : ownerByFile.get(target);
     if (!owner) {
       diagnostics.push({ code: 'unmapped-evidence', priority: 'blocker', evidence: receipt,
@@ -287,13 +303,12 @@ function discoverImports(root, files, fileSet, diagnostics) {
 }
 
 function buildComponentEdges(nodes, importEdges) {
-  const owner = new Map();
-  for (const node of nodes) for (const f of node.files) owner.set(f, node.id);
+  const owner = unambiguousOwners(nodes);
   const edges = [];
   for (const e of importEdges) {
     // Consistent arrow direction: dependency -> dependent. The original file
     // relationship stays available as evidence, never as a runtime-flow claim.
-    const from = owner.get(e.to), to = owner.get(e.from);
+    const from = owner.get(e.to)?.id, to = owner.get(e.from)?.id;
     if (!from || !to || from === to) continue;
     let edge = edges.find(x => x.from === from && x.to === to && x.type === 'code');
     if (!edge) { edge = { from, to, type: 'code', observations: [] }; edges.push(edge); }
@@ -307,6 +322,14 @@ function buildComponentEdges(nodes, importEdges) {
     if (nodes.some(n => n.id === dep)) edges.push({ from: dep, to: node.id, type: 'planned', observed: edges.some(e => e.from === dep && e.to === node.id && e.type === 'code') });
   }
   return edges;
+}
+
+function unambiguousOwners(nodes) {
+  const owners = new Map();
+  for (const node of nodes) for (const file of node.files) {
+    owners.set(file, owners.has(file) ? null : node);
+  }
+  return owners;
 }
 
 function readJson(root, rel, diagnostics) {

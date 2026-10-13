@@ -244,3 +244,71 @@ test('clone provenance reports the selected revision without granting evidence s
   assert.equal(map.nodes.find(n => n.kind === 'file').status, 'coded');
   assert.equal(scanProject(root).project.source.kind, 'local');
 });
+
+test('overlapping declarations retain full proof scope and never choose an arbitrary wiring/evidence owner', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/shared.js', 'export const shared = 1;');
+  write(root, 'src/own.js', 'export const own = 1;');
+  write(root, 'src/use.js', "import './shared.js'; import './own.js';");
+  const components = [{ id: 'first', files: ['src/shared.js'] },
+    { id: 'second', files: ['src/shared.js', 'src/own.js'] }, { id: 'consumer', files: ['src/use.js'] }];
+  planned(root, components);
+  const initial = scanProject(root);
+  const receipts = Object.fromEntries(['first', 'second'].map(id => [id,
+    { status: 'verified', note: 'Recorded check.', sourceHashes: node(initial, id).sourceHashes }]));
+  const fileReceipt = { status: 'live', note: 'Recorded file use.' };
+  write(root, '.buildmap/evidence.json', { components: receipts, files: { 'src/shared.js': fileReceipt } });
+  for (const order of [components, [...components].reverse()]) {
+    planned(root, order); const map = scanProject(root);
+    for (const id of ['first', 'second']) {
+      assert.equal(node(map, id).implementation, 'complete');
+      assert.deepEqual(node(map, id).conflictingFiles, ['src/shared.js']);
+      assert.equal(node(map, id).evidenceAssessment.accepted, false);
+      assert.notEqual(node(map, id).status, 'verified');
+      assert.ok(map.gaps.some(g => g.kind === 'overlapping-file' && g.nodeId === id && g.priority === 'blocker'));
+    }
+    assert.deepEqual(node(map, 'second').files, ['src/shared.js', 'src/own.js']);
+    assert.deepEqual(Object.keys(node(map, 'second').sourceHashes), ['src/shared.js', 'src/own.js']);
+    const observations = map.edges.filter(e => e.type === 'code').flatMap(e => e.observations);
+    assert.deepEqual(observations, [{ importer: 'src/use.js', imported: 'src/own.js' }]);
+    assert.deepEqual(map.gaps.find(g => g.kind === 'ambiguous-evidence-target').evidence, fileReceipt);
+  }
+  // The old reduced-scope receipt is also blocked while the declaration overlaps.
+  receipts.second.sourceHashes = { 'src/own.js': node(initial, 'second').sourceHashes['src/own.js'] };
+  write(root, '.buildmap/evidence.json', { components: receipts });
+  assert.equal(node(scanProject(root), 'second').evidenceAssessment.accepted, false);
+  // Removing the overlap restores the full-scope claim and routes file evidence correctly.
+  planned(root, [components[0], components[2]]);
+  write(root, '.buildmap/evidence.json', { components: { first: receipts.first }, files: { 'src/shared.js': fileReceipt } });
+  const resolved = scanProject(root);
+  assert.equal(node(resolved, 'first').status, 'verified');
+  assert.equal(node(resolved, 'first').fileEvidence[0].assessment.accepted, true);
+  assert.ok(resolved.edges.some(e => e.type === 'code' && e.from === 'first' && e.to === 'consumer'));
+});
+
+test('computed JS import arguments cannot invent connections to a literal prefix', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/prefix.js', 'export const prefix = 1;');
+  write(root, 'src/direct.js', 'export const direct = 1;');
+  write(root, 'src/options.json', '{}');
+  write(root, 'src/main.js', `require('./prefix.js' + suffix); import('./prefix.js' + suffix);
+    require('./prefix.js'.replace('prefix', 'other'));
+    require('./direct.js'); import('./options.json', { with: { type: 'json' } });`);
+  planned(root, [{ id: 'options', files: ['src/options.json'] }]);
+  const map = scanProject(root);
+  assert.equal(node(map, 'file:src/prefix.js').status, 'coded');
+  const imported = map.edges.filter(e => e.type === 'code').flatMap(e => e.observations.map(o => o.imported));
+  assert.deepEqual(imported.sort(), ['src/direct.js', 'src/options.json']);
+});
+
+test('root-relative HTML/CSS assets resolve with query strings and fragments', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'public/index.html', '<script src="/public/app.js?v=2#module"></script><link href="/public/styles.css?v=2" rel="stylesheet">');
+  write(root, 'public/app.js', 'export const app = 1;');
+  write(root, 'public/styles.css', '@import url("/public/theme.css?v=2#theme");');
+  write(root, 'public/theme.css', 'body {}');
+  const map = scanProject(root);
+  for (const [importer, imported] of [['public/index.html', 'public/app.js'], ['public/index.html', 'public/styles.css'], ['public/styles.css', 'public/theme.css']]) {
+    assert.ok(map.edges.some(e => e.type === 'code' && e.observations.some(o => o.importer === importer && o.imported === imported)));
+  }
+});

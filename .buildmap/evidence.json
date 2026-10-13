@@ -17,12 +17,13 @@
     "scanner": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Source/evidence/ownership/freshness/drift/inventory checks and Acorn JS imports/regex/templates plus bounded HTTP path/method/provenance/ambiguity/mock/response checks passed on Node v20.20.2 and v24.19.0. HTTP matches are source syntax, not runtime proof. Named dependency/check/package/lockfile inputs are selected explicitly.",
-      "recordedAt": "2026-10-13T16:42:56.303Z",
+      "note": "Source/evidence/ownership/freshness/drift/inventory checks and Acorn JS imports/regex/templates plus bounded HTTP path/method/provenance/ambiguity/mock/response checks passed on Node v20.20.2 and v24.19.0. HTTP matches are source syntax, not runtime proof. Named dependency/check/package/lockfile inputs are selected explicitly. Outcome plan/example/source/support/selected-input freshness, whole-journey versus piece-state separation, scope review, partial/failed handoffs, safe sample rendering/export, outcome navigation/refresh, and API plan edits passed on both runtimes. The actual authored fixture example executed; browser checks remain pending.",
+      "recordedAt": "2026-10-13T20:24:32.956647+00:00",
       "sourceHashes": {
-        "src/scan.js": "92d75546409df555afd39d6b71b850fd0e2f460d98474c1a66c279b974cb9048",
+        "src/scan.js": "d34fa4cab68c9b238982375219e9c108521b29f9758312d700aa6b38f57f2b43",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
-        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2"
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+        "src/outcomes.js": "7b6cb8c11c6557cdc6ce3156893c4e0643688fde3482f34299b253298829bb05"
       },
       "inputHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
@@ -30,63 +31,217 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-        ".buildmap/project.json": "625061a5afde55a5f9f3d151250a05779d44a5858570504228cb4f4624a25b7f",
-        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
+        ".buildmap/project.json": "dc6a88321b9eeca9bb4fcb93a94fe065dd69b9404e6d07db64a77d1526be8a9c",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
+        "tests/outcomes.test.js": "9fe214f8a38fed9830e0b7181f2cc7c390746d68735f07b629dfd074ede5617f"
       }
     },
     "server": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "CLI/API/export/ref/cleanup checks passed on Node v20.20.2 and v24.19.0. Named dependency/parser/asset/check/package/lockfile inputs are explicitly bound. Earlier Node 20 CLI/server smoke passed; historical public branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f. File inventory preview and real scan-to-client file creation/grouping/deletion checks passed in the DOM harness on both runtimes; browser layout remains pending. Search/result expansion, third-file lookup, Enter/Escape, scaled gap/result navigation, focus preservation/removal, and offline behavior passed in the DOM harness on both runtimes. Actual browser scrolling/layout/accessibility remains unobserved.",
-      "recordedAt": "2026-10-13T19:58:36.733929+00:00",
+      "note": "CLI/API/export/ref/cleanup checks passed on Node v20.20.2 and v24.19.0. Named dependency/parser/asset/check/package/lockfile inputs are explicitly bound. Earlier Node 20 CLI/server smoke passed; historical public branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f. File inventory preview and real scan-to-client file creation/grouping/deletion checks passed in the DOM harness on both runtimes; browser layout remains pending. Search/result expansion, third-file lookup, Enter/Escape, scaled gap/result navigation, focus preservation/removal, and offline behavior passed in the DOM harness on both runtimes. Actual browser scrolling/layout/accessibility remains unobserved. Outcome plan/example/source/support/selected-input freshness, whole-journey versus piece-state separation, scope review, partial/failed handoffs, safe sample rendering/export, outcome navigation/refresh, and API plan edits passed on both runtimes. The actual authored fixture example executed; browser checks remain pending.",
+      "recordedAt": "2026-10-13T20:24:32.956647+00:00",
       "sourceHashes": {
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a"
       },
       "inputHashes": {
-        "src/scan.js": "92d75546409df555afd39d6b71b850fd0e2f460d98474c1a66c279b974cb9048",
+        "src/scan.js": "d34fa4cab68c9b238982375219e9c108521b29f9758312d700aa6b38f57f2b43",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
-        "public/index.html": "bd6c4402322875abd0952174c92b4dbafdfd14caf4118ad9780af078762d3498",
-        "public/app.js": "38e8ad72eab479d027a35f9511dac3140fd020454b98b51aebe2bf36e4e3fabc",
-        "public/styles.css": "7185dc8f337f38d0b62109efe7bccecee4c1742a8bd60f7a2480e18d2a9a5771",
-        "tests/server.test.js": "ce0bc27eba427c23bb16d1b54bc048c39cd946ba16d748e6b9e5b181e1a9f749",
+        "public/index.html": "ecd7c9411e165b8a1a8ca61848fa4675cbed909e68e788a3147c9e2f18b3874a",
+        "public/app.js": "b2338f07527b634feaba0cf721212c9057de975f205b6b5c09610ba25a4b6b58",
+        "public/styles.css": "4bc4b1f2850789eb8fa272cc85e89ebbc45f7b7515f4b3affa95d05b8c87bd9c",
+        "tests/server.test.js": "23c4b153967ed5cf149aaebcb948cfc6e35cf6d10c38428a71a4205aac01b540",
         "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
-        "tests/ui.test.js": "d0540d6fa3977ccb92c328209274868f554c51b097de224026e9f73b0a447130",
+        "tests/ui.test.js": "b48246a6d4ecce49dc7664100f51fb23d0121f79b1ccf3c3c7b4efb1aa3074b6",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-        ".buildmap/project.json": "625061a5afde55a5f9f3d151250a05779d44a5858570504228cb4f4624a25b7f",
+        ".buildmap/project.json": "dc6a88321b9eeca9bb4fcb93a94fe065dd69b9404e6d07db64a77d1526be8a9c",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2"
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+        "src/outcomes.js": "7b6cb8c11c6557cdc6ce3156893c4e0643688fde3482f34299b253298829bb05"
       }
     },
     "verification": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "All 63 tests passed on Node v20.20.2 and v24.19.0 after a clean locked install. Named implementation/parser/asset/package/lockfile inputs are explicitly bound. Client/inspector tests use a DOM double; real browser layout/accessibility/integration remains unverified. Matching HTTP paths cannot grant runtime proof or prove deployed origin. File inventory preview and real scan-to-client file creation/grouping/deletion checks passed in the DOM harness on both runtimes; browser layout remains pending. Search/result expansion, third-file lookup, Enter/Escape, scaled gap/result navigation, focus preservation/removal, and offline behavior passed in the DOM harness on both runtimes. Actual browser scrolling/layout/accessibility remains unobserved.",
-      "recordedAt": "2026-10-13T19:58:36.733929+00:00",
+      "note": "All 71 tests passed on Node v20.20.2 and v24.19.0 after a clean locked install. Named implementation/parser/asset/package/lockfile inputs are explicitly bound. Client/inspector tests use a DOM double; real browser layout/accessibility/integration remains unverified. Matching HTTP paths cannot grant runtime proof or prove deployed origin. File inventory preview and real scan-to-client file creation/grouping/deletion checks passed in the DOM harness on both runtimes; browser layout remains pending. Search/result expansion, third-file lookup, Enter/Escape, scaled gap/result navigation, focus preservation/removal, and offline behavior passed in the DOM harness on both runtimes. Actual browser scrolling/layout/accessibility remains unobserved. Outcome plan/example/source/support/selected-input freshness, whole-journey versus piece-state separation, scope review, partial/failed handoffs, safe sample rendering/export, outcome navigation/refresh, and API plan edits passed on both runtimes. The actual authored fixture example executed; browser checks remain pending.",
+      "recordedAt": "2026-10-13T20:24:32.956647+00:00",
       "sourceHashes": {
         "tests/scan.test.js": "3893de2b53ac005f9dd5cd101258df26b154ed0e9cec1779f9b3a73ce2520a60",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
-        "tests/server.test.js": "ce0bc27eba427c23bb16d1b54bc048c39cd946ba16d748e6b9e5b181e1a9f749",
-        "tests/ui.test.js": "d0540d6fa3977ccb92c328209274868f554c51b097de224026e9f73b0a447130",
+        "tests/server.test.js": "23c4b153967ed5cf149aaebcb948cfc6e35cf6d10c38428a71a4205aac01b540",
+        "tests/ui.test.js": "b48246a6d4ecce49dc7664100f51fb23d0121f79b1ccf3c3c7b4efb1aa3074b6",
         "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
-        "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7"
+        "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
+        "tests/outcomes.test.js": "9fe214f8a38fed9830e0b7181f2cc7c390746d68735f07b629dfd074ede5617f"
       },
       "inputHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
-        "src/scan.js": "92d75546409df555afd39d6b71b850fd0e2f460d98474c1a66c279b974cb9048",
+        "src/scan.js": "d34fa4cab68c9b238982375219e9c108521b29f9758312d700aa6b38f57f2b43",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
-        "public/index.html": "bd6c4402322875abd0952174c92b4dbafdfd14caf4118ad9780af078762d3498",
-        "public/app.js": "38e8ad72eab479d027a35f9511dac3140fd020454b98b51aebe2bf36e4e3fabc",
-        "public/styles.css": "7185dc8f337f38d0b62109efe7bccecee4c1742a8bd60f7a2480e18d2a9a5771",
+        "public/index.html": "ecd7c9411e165b8a1a8ca61848fa4675cbed909e68e788a3147c9e2f18b3874a",
+        "public/app.js": "b2338f07527b634feaba0cf721212c9057de975f205b6b5c09610ba25a4b6b58",
+        "public/styles.css": "4bc4b1f2850789eb8fa272cc85e89ebbc45f7b7515f4b3affa95d05b8c87bd9c",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-        ".buildmap/project.json": "625061a5afde55a5f9f3d151250a05779d44a5858570504228cb4f4624a25b7f",
+        ".buildmap/project.json": "dc6a88321b9eeca9bb4fcb93a94fe065dd69b9404e6d07db64a77d1526be8a9c",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2"
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+        "src/outcomes.js": "7b6cb8c11c6557cdc6ce3156893c4e0643688fde3482f34299b253298829bb05"
+      }
+    }
+  },
+  "outcomes": {
+    "inspect-build": {
+      "status": "computing",
+      "recordedAt": "2026-10-13T20:25:46.355Z",
+      "command": "Read-only intent/scan/HTTP smoke on Node v24.19.0",
+      "note": "Recorded selected input/output fields from readIntent, scanProject and a real local GET /api/map. These are read-only backend observations, not an instrumented runtime trace or full payload capture. The browser step was not observed, so this partial example cannot prove the whole outcome.",
+      "definitionHash": "423d277dcd7528977b3cfcd71513d34da3a93a9eb96e92fcbf805302a7e1a28b",
+      "sourceHashes": {
+        "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
+        "src/scan.js": "d34fa4cab68c9b238982375219e9c108521b29f9758312d700aa6b38f57f2b43",
+        "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+        "src/outcomes.js": "7b6cb8c11c6557cdc6ce3156893c4e0643688fde3482f34299b253298829bb05",
+        "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
+        "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
+        "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
+        "public/index.html": "ecd7c9411e165b8a1a8ca61848fa4675cbed909e68e788a3147c9e2f18b3874a",
+        "public/app.js": "b2338f07527b634feaba0cf721212c9057de975f205b6b5c09610ba25a4b6b58",
+        "public/styles.css": "4bc4b1f2850789eb8fa272cc85e89ebbc45f7b7515f4b3affa95d05b8c87bd9c",
+        "tests/scan.test.js": "3893de2b53ac005f9dd5cd101258df26b154ed0e9cec1779f9b3a73ce2520a60",
+        "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
+        "tests/server.test.js": "23c4b153967ed5cf149aaebcb948cfc6e35cf6d10c38428a71a4205aac01b540",
+        "tests/ui.test.js": "b48246a6d4ecce49dc7664100f51fb23d0121f79b1ccf3c3c7b4efb1aa3074b6",
+        "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
+        "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
+        "tests/outcomes.test.js": "9fe214f8a38fed9830e0b7181f2cc7c390746d68735f07b629dfd074ede5617f"
+      },
+      "example": {
+        "name": "Inspect BuildMap: backend fields captured, browser step pending",
+        "input": {
+          "mission": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome."
+        },
+        "output": null,
+        "steps": [
+          {
+            "stepId": "intent",
+            "result": "observed",
+            "input": {
+              "mission": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome."
+            },
+            "output": {
+              "text": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome.",
+              "source": ".buildmap/project.json",
+              "confidence": "declared"
+            },
+            "note": "Selected manifest input field; actual readIntent result."
+          },
+          {
+            "stepId": "scan",
+            "result": "observed",
+            "handoff": "Confirmed that the scanner snapshot contains the same recovered intent.",
+            "input": {
+              "root": "/workspace/scratch/a6ddd169062c/BuildMap"
+            },
+            "output": {
+              "intent": {
+                "text": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome.",
+                "source": ".buildmap/project.json",
+                "confidence": "declared"
+              },
+              "pieces": [
+                {
+                  "id": "intent",
+                  "status": "verified"
+                },
+                {
+                  "id": "scanner",
+                  "status": "verified"
+                },
+                {
+                  "id": "server",
+                  "status": "verified"
+                },
+                {
+                  "id": "visualizer",
+                  "status": "connected"
+                },
+                {
+                  "id": "verification",
+                  "status": "verified"
+                }
+              ],
+              "gaps": [
+                {
+                  "kind": "unproved",
+                  "nodeId": "visualizer"
+                },
+                {
+                  "kind": "unproved-outcome",
+                  "nodeId": null,
+                  "outcomeId": "inspect-build"
+                }
+              ]
+            },
+            "note": "Selected snapshot fields, not the complete scanner return value."
+          },
+          {
+            "stepId": "serve",
+            "result": "observed",
+            "handoff": "Requested the map API and checked that its fingerprint and selected fields match the scanner snapshot.",
+            "input": {
+              "method": "GET",
+              "url": "http://127.0.0.1:42519/api/map"
+            },
+            "output": {
+              "intent": {
+                "text": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome.",
+                "source": ".buildmap/project.json",
+                "confidence": "declared"
+              },
+              "pieces": [
+                {
+                  "id": "intent",
+                  "status": "verified"
+                },
+                {
+                  "id": "scanner",
+                  "status": "verified"
+                },
+                {
+                  "id": "server",
+                  "status": "verified"
+                },
+                {
+                  "id": "visualizer",
+                  "status": "connected"
+                },
+                {
+                  "id": "verification",
+                  "status": "verified"
+                }
+              ],
+              "gaps": [
+                {
+                  "kind": "unproved",
+                  "nodeId": "visualizer"
+                },
+                {
+                  "kind": "unproved-outcome",
+                  "nodeId": null,
+                  "outcomeId": "inspect-build"
+                }
+              ]
+            },
+            "note": "Actual HTTP 200 response; selected JSON fields only. The temporary server was closed after observation."
+          }
+        ]
       }
     }
   }

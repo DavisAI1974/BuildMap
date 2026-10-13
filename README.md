@@ -1,6 +1,6 @@
 # BuildMap
 
-**A living map of software being built: what each piece does, what exists, what is connected, what has evidence, and what is missing next.**
+**A living map of software being built: what each piece does, which intended outcome it serves, what has evidence, and where a walkthrough is unfinished.**
 
 BuildMap watches a repository by rescanning it every time its browser client polls. Planned pieces appear before their implementation exists. Source references add observed connections. Recorded observations and checks can advance a piece beyond source existence. A gap list keeps missing implementation, unobserved wiring, and unsupported claims in view.
 
@@ -44,7 +44,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 63 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 71 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -54,7 +54,7 @@ node src/cli.js ../some-project --html ../buildmap.html
 
 Open the single HTML file in a browser to inspect the captured map, select gaps, search pieces, and fit the map without running a server or fetching external assets. The same client renders both live maps and exports. The header shows **snapshot** and the capture time; exports do not poll, watch source changes, or grant new evidence states.
 
-Exports contain map metadata, file paths, the mapped root, and recorded evidence notes, rather than full repository source. The output must be a new file in an existing directory; existing files are never overwritten. Put it outside the mapped project to keep generated HTML from becoming another discovered piece. `--html` and `--json` are separate one-shot modes.
+Exports contain map metadata, file paths, the mapped root, recorded evidence notes, and any recorded walkthrough input/output values, rather than full repository source. The output must be a new file in an existing directory; existing files are never overwritten. Put it outside the mapped project to keep generated HTML from becoming another discovered piece. `--html` and `--json` are separate one-shot modes.
 
 ## Start from what exists
 
@@ -76,6 +76,71 @@ Supported source files that are not assigned in `.buildmap/project.json` appear 
 Cards preview two paths and show how many more are in the inspector. All mapped files appear in their piece's full file list. This is a supported-source inventory plus explicit declarations, not an automatic list of every repository file. Other assets/configuration can be declared explicitly; see the discovery limits below. File presence does not establish that a piece works.
 
 The live app and HTML snapshots use the same product interface. A snapshot freezes the map data; it does not watch ongoing edits.
+
+## Walk through an intended outcome
+
+Choose an **Outcome walkthrough** in the sidebar to highlight its participating and supporting pieces. The inspector shows the goal, ordered steps, expected results, recorded inputs/outputs, handoff notes, and the first missing, failed, or unobserved point. Inspect a step's piece and return to the walkthrough. The same interface works in live mode and exports; local edits update the selected outcome.
+
+Define outcomes alongside `components` in `.buildmap/project.json`:
+
+```json
+{
+  "outcomes": [{
+    "id": "confirm-order",
+    "name": "Confirm a customer order",
+    "goal": "Calculate the total and show the customer a confirmation.",
+    "supports": ["order-checks"],
+    "steps": [
+      { "id": "price", "nodeId": "pricing", "label": "Calculate total", "expected": "Quantity multiplied by unit price." },
+      { "id": "confirm", "nodeId": "confirmation", "label": "Show confirmation", "expected": "A confirmation containing the total." }
+    ]
+  }]
+}
+```
+
+Each outcome needs a unique nonempty id, a goal, and at least one ordered step. Steps need unique ids, an exact mapped `nodeId`, a label, and a descriptive `expected` result. Optional `name` defaults to the id; optional `supports` lists pieces such as tests or infrastructure that support the outcome without pretending they are runtime stages. A piece can serve several outcomes or appear in several steps. Missing targets remain visible.
+
+These are declared goals and behavior plans, not automatically inferred or authenticated owner approvals. Source arrows remain dependency arrows; walkthrough ordering does not add connections or prove runtime flow. Once at least one valid outcome exists, pieces with no assignment produce an informational scope-review finding. This helps spot drift; support work can be useful even before it is assigned, and BuildMap never removes it or declares it unnecessary.
+
+### Record a walkthrough example
+
+After observing the behavior, add its receipt under `outcomes` in `.buildmap/evidence.json`:
+
+```json
+{
+  "outcomes": {
+    "confirm-order": {
+      "status": "verified",
+      "note": "Observed this example and checked its final confirmation.",
+      "definitionHash": "<current definition SHA-256 from the outcome inspector/API>",
+      "sourceHashes": {
+        "src/pricing.js": "<actual SHA-256>",
+        "src/confirmation.js": "<actual SHA-256>",
+        "tests/orders.test.js": "<actual SHA-256>"
+      },
+      "example": {
+        "name": "Two items at three each",
+        "input": { "quantity": 2, "unitPrice": 3 },
+        "output": { "message": "Order total: 6" },
+        "steps": [
+          { "stepId": "price", "result": "observed", "input": { "quantity": 2, "unitPrice": 3 }, "output": { "total": 6 } },
+          { "stepId": "confirm", "result": "observed", "handoff": "Supplied the calculated total to confirmation.", "input": { "total": 6 }, "output": { "message": "Order total: 6" } }
+        ]
+      }
+    }
+  }
+}
+```
+
+The paths above must exactly match the participating/supporting implementation in your map; placeholders are illustrative and reject the claim. Copy the outcome's current `definitionHash` and complete `sourceHashes` only after the observation/check succeeds. Definition hashes bind the goal, step order, targets, expected results, and support assignments. Source hashes bind every participating/supporting implementation file. Optional `inputHashes` binds selected dependencies/fixtures/configuration with the same rules described below.
+
+An outcome stays `unproved` until its own receipt is accepted. Accepted outcome receipts may be `computing` or `verified`; `live` is not supported for outcome receipts. A receipt needs a descriptive note/command/proof and a named example with overall input/output. Each planned step needs one ordered record with `result: "observed"`, input and output; every step after the first also needs a nonempty handoff description. The overall input/output must equal the first step's input and last step's output. Values can be any JSON value, including zero, false, or null. Optional step notes describe context; `result: "failed"` records a failure without proving the outcome. Partial examples remain inspectable and show where observations stop.
+
+BuildMap does not execute target code, compare actual values with natural-language expectations, authenticate observations, or automatically instrument runtime handoffs. Handoff descriptions are explicit recorded claims, not transport proof inferred from imports. The named example covers that example; it does not prove all inputs or general correctness. Complete transitive inputs, environments, and continuing liveness remain outside these receipts. Changes to the plan, participating/supporting source, or selected inputs reject the earlier example; recorded values stay visible with their assessment.
+
+Outcome proof never promotes a piece, proves the mission, or changes the piece evidence index. The API exposes `outcomes`, their source/definition hashes and assessments, each step's state/record, and `firstGap`; nodes expose declared `outcomeIds`. Outcome findings carry `outcomeId` so agents can inspect the goal and the specific unresolved point before expanding work.
+
+BuildMap declares its own "Understand the current build" outcome. A partial read-only backend example records selected intent/scanner/HTTP input and output fields; it is labeled as selected fields, not a full payload capture or instrumented trace. Its browser step remains unobserved under the documented browser restrictions, so the outcome remains unproved even when individual backend pieces have current test receipts.
 
 ## Evidence states
 
@@ -255,17 +320,17 @@ No database, bundler, or framework is required. Acorn is the sole runtime depend
 
 | Interface | Output |
 | --- | --- |
-| `GET /api/map` | Project, states, nodes, edges with provenance, gaps, diagnostics, scan scope, hashes, fingerprint, timestamp. |
+| `GET /api/map` | Project, states, nodes, edges with provenance, outcome walkthroughs, gaps, diagnostics, scan scope, hashes, fingerprint, timestamp. |
 | `GET /api/gaps` | Project summary, prioritized gaps, diagnostics, fingerprint, timestamp. |
 | `GET /api/health` | Server availability and mapped root; not a scan/proof check. |
 | `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
 | `node src/cli.js PATH --html OUTPUT` | Self-contained interactive HTML snapshot to a new file, then exit. |
 
-Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. The `scan` summary separates `importCount` from `httpReferenceCount` and names the JavaScript parser and HTTP adapter. Nodes expose `dependencyIntent`, `conflictingFiles`, and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
+Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. The `scan` summary separates `importCount` from `httpReferenceCount` and names the JavaScript parser and HTTP adapter. Outcome gaps also carry `outcomeId`. `outcomes` includes declared steps/supports, example records, `hasEvidence`, `status`, `firstGap`, source/definition hashes and assessments; nodes expose their declared `outcomeIds`. Nodes expose `dependencyIntent`, `conflictingFiles`, and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
 
 ## Architecture and validation
 
-Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discovery (`src/imports.js` and parser adapter `src/javascript.js`) feed the snapshot/evidence/gap model (`src/scan.js`). The CLI selects a target; the local server exposes snapshots and serves `public/`. The live browser client polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails. `src/export.js` embeds the captured map and those same assets into one HTML file; snapshot mode performs no requests or polling.
+Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discovery (`src/imports.js` and parser adapter `src/javascript.js`) feed the snapshot/evidence/gap model (`src/scan.js`). Outcome assessment (`src/outcomes.js`) adds independent declared walkthroughs and scope findings. The CLI selects a target; the local server exposes snapshots and serves `public/`. The live browser client polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails. `src/export.js` embeds the captured map and those same assets into one HTML file; snapshot mode performs no requests or polling.
 
 ```bash
 npm test

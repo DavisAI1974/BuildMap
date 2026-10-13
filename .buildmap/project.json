@@ -24,9 +24,10 @@
       "files": [
         "src/scan.js",
         "src/imports.js",
-        "src/javascript.js"
+        "src/javascript.js",
+        "src/outcomes.js"
       ],
-      "purpose": "Inventory Git-tracked and non-ignored source, discover imports and bounded HTTP source path relationships, and distinguish current implementation from recorded evidence and gaps.",
+      "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior.",
       "contributes": "Turns source code into the living set of puzzle pieces.",
       "dependsOn": [
         "intent"
@@ -64,7 +65,7 @@
         "public/app.js",
         "public/styles.css"
       ],
-      "purpose": "Show observed and declared wiring separately, inspect evidence, and expose build gaps; mini-visuals are illustrations, not runtime traces.",
+      "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces.",
       "contributes": "Lets a human spot gaps, understand progress, and see why a file matters at a glance.",
       "dependsOn": [
         "server"
@@ -84,9 +85,10 @@
         "tests/server.test.js",
         "tests/ui.test.js",
         "tests/export.test.js",
-        "tests/inventory.test.js"
+        "tests/inventory.test.js",
+        "tests/outcomes.test.js"
       ],
-      "purpose": "Check source/evidence semantics, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
+      "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
       "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",
       "dependsOn": [
         "intent",
@@ -97,6 +99,42 @@
         "kind": "proof",
         "label": "Prove"
       }
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "inspect-build",
+      "name": "Understand the current build",
+      "goal": "Open a repository map, understand the purpose of its pieces, and inspect the gaps and evidence behind the build.",
+      "supports": [
+        "verification"
+      ],
+      "steps": [
+        {
+          "id": "intent",
+          "nodeId": "intent",
+          "label": "Recover the intended goal",
+          "expected": "A declared or attributed goal; unknown intent stays visible."
+        },
+        {
+          "id": "scan",
+          "nodeId": "scanner",
+          "label": "Map the current repository",
+          "expected": "A snapshot separating implementation, source connections, evidence, outcomes, and gaps."
+        },
+        {
+          "id": "serve",
+          "nodeId": "server",
+          "label": "Deliver the map",
+          "expected": "The current snapshot is available through the local HTTP API or a standalone export."
+        },
+        {
+          "id": "inspect",
+          "nodeId": "visualizer",
+          "label": "Inspect the build",
+          "expected": "A person can locate a piece or outcome and understand its files, purpose, evidence, examples, and next gap."
+        }
+      ]
     }
   ]
 }

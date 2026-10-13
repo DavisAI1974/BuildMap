@@ -6,13 +6,13 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base for this MVP navigation pass: `023ddb39e542346f6f599fca38bb73b89750e02c`; use the current branch head, not the continuation base.
+Continuation base for this outcome walkthrough pass: `cd8e3a4050efff0a4187ca2638f386cdc4c0a7da`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
 ## Active request and boundaries
 
-Continue the BuildMap v0.1 review/improvement pass. Use the repository and tests as the source of truth. Make focused, high-leverage improvements, preserve the evidence-state contract, and keep README/evidence honest. The user also asked for the remaining build gaps; the maintained list is `BUILD_GAPS.md`.
+Continue the usable BuildMap MVP with outcome walkthroughs on top of the existing map. The user accepted this direction to help owners understand behavior and reduce agent drift/bloat: connect agreed goals to pieces, expected results, real recorded example values, and the first unfinished/unobserved handoff. This is authorized product work; no further design confirmation is required for the implemented scope. Continue the BuildMap v0.1 review/improvement pass. Use the repository and tests as the source of truth. Make focused, high-leverage improvements, preserve the evidence-state contract, and keep README/evidence honest. The user also asked for the remaining build gaps; the maintained list is `BUILD_GAPS.md`.
 
 PR #1 stays open. The default branch does not contain the app yet. No merge, deployment, npm publication, or live claim was performed. Do not treat the remaining product roadmap as a requirement to build every future feature before v0.1 can be reviewed.
 
@@ -32,6 +32,20 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 The user wants a usable MVP and insists work carries into the final build. Improve the existing product source, rather than building a parallel prototype. Cards now preview two file paths, show present/missing counts and additional-file counts, and open the full inspector list. Discovered files remain independent pieces until explicitly grouped in the manifest. Tests exercise actual scan-to-client creation, grouping, deletion, and selection refresh. The live app and standalone exports share the same client. Search now lists clickable matches, searches every assigned file, shows counts/no-match feedback, and supports Enter/Escape. Result/gap selection scrolls to and focuses its card. Poll-driven redraws retain focus on surviving cards/results or return it to search when the target disappears.
 
 A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside the repository. It is a snapshot, not a hosted/deployed/live product. Browser limitations still apply. The wider roadmap is not required before using the core MVP.
+
+## Outcome walkthrough scope
+
+- `.buildmap/project.json` may declare `outcomes`: goal, optional name/supporting piece ids, and ordered steps with unique id, nodeId, label, expected result.
+- `src/outcomes.js` assesses plans, current source/definition bindings, partial/failed examples, and scope assignments. `scanProject` exposes `outcomes` and each piece's `outcomeIds`; gaps carry `outcomeId` where relevant.
+- `.buildmap/evidence.json.outcomes[id]` accepts computing/verified receipts with descriptive evidence, complete participating/supporting source hashes, the current definition hash, and a named example with overall input/output plus one record per step. Every later step requires an explicit handoff description. Source imports never prove those handoffs. Outcome live receipts are unsupported.
+- Individual piece receipts do not prove an outcome, and outcome receipts do not promote pieces or the mission. Outcomes are excluded from the piece evidence index. Plan/source/selected-input changes invalidate earlier examples; raw values remain inspectable.
+- Sidebar outcome selection highlights participating/supporting pieces, opens the ordered walkthrough, shows its first unresolved point and input/output samples, and links to piece inspection and back. Live edits and offline exports use this same client. Pieces without outcome assignments produce informational scope-review findings; useful support work is not labeled unnecessary.
+- BuildMap declares "Understand the current build." A real Node 24 readIntent/scan/local-HTTP observation records selected input/output fields for its first three steps. This is explicitly a partial backend example, not a full payload or instrumented trace. Its browser step remains unobserved, so its outcome stays unproved. No browser restriction was retried or bypassed.
+- Manual plan/example authoring is the current boundary. No automatic runtime instrumentation, receipt authentication, interpretation of natural-language expected results, branching paths, or graphical outcome editor was added.
+
+## Business idea to revisit
+
+The user suggested free mapping with paid walkthroughs as a possible tier, especially to help companies direct coding agents toward internal tools that fit their workflows (a real estate agency replacing some SaaS functionality was the example). This is a pricing/product hypothesis, not a decided pricing model or authorization to add billing, accounts, or a SaaS-builder platform to the MVP.
 
 ## What landed
 
@@ -53,16 +67,17 @@ A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside 
 
 ## Current validation and proof state
 
-- **63/63 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **71/71 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
-- Three added DOM-harness regressions cover safe searchable paths, result expansion/live edits/offline mode, scaled navigation to distant cards, and focus continuity. They do not establish real scrolling/layout/accessibility behavior.
+- The outcome pass adds six focused scanner/receipt/export checks and two DOM-harness interactions; the HTTP test now covers outcome plan edits through map/gaps APIs. An authored fixture example actually executes its two functions and records their I/O; accepted journey proof does not promote pieces.
+- Three earlier DOM-harness regressions cover safe searchable paths, result expansion/live edits/offline mode, scaled navigation to distant cards, and focus continuity. They do not establish real scrolling/layout/accessibility behavior.
 - JS syntax and whitespace checks passed.
 - Local HTTP/API/assets and live source edits covered by tests.
 - Public default-clone smoke with `octocat/Hello-World` recovered README intent and cleaned up.
 - Real branch/JSON smoke cloned BuildMap's PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported that exact revision, and cleaned up.
 - Offline fixture checks cover branch and tag selection, failed-ref cleanup, HTML export safety/overwrite refusal, and client live/offline logic through a DOM double.
-- Dogfood map: **four verified components from current source-bound recorded receipts with selected dependency/test-input bindings, one source-connected visualizer, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence, one HTTP source reference, and only the visualizer behavior-unproved finding**.
+- Dogfood map: **four verified components from current source-bound recorded receipts with selected dependency/test-input bindings, one source-connected visualizer, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence, one HTTP source reference, and the visualizer behavior-unproved plus the separate unproved outcome findings**.
 
 Do not call DOM-double tests browser verification. Receipts are manually recorded claims; source hashes bind each piece's implementation and optional input hashes bind only explicitly selected dependency/test/data/config files. Complete transitive input coverage, environment identity, and continuing deployment liveness are not established.
 
@@ -87,7 +102,7 @@ Git arrival animation, continuous remote refresh, all five conceptual zoom level
 
 The installed Playwright package has no local browser executable. The available cloud browser returned `ERR_CONNECTION_REFUSED` for the workspace server. Its URL security policy also rejected local HTML-file navigation and expressly prohibited workarounds around that rejection. No workaround was attempted. Use a permitted browser environment for the outstanding observation; do not retry the blocked action or claim success from the DOM harness. The visualizer has no computing/verified/live receipt.
 
-The only current graph finding is the visualizer behavior-unproved gap. Its declared server dependency now has an observed heuristic HTTP source path match with locations; this is not runtime/browser proof.
+The current release-confidence findings are the visualizer behavior-unproved gap and its unproved outcome/browser walkthrough step. Its declared server dependency now has an observed heuristic HTTP source path match with locations; this is not runtime/browser proof.
 
 ## Resume commands
 

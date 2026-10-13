@@ -13,6 +13,7 @@ let refreshing = false;
 let showAllResults = false;
 let mapPositions = new Map();
 let mapScale = 1;
+let selectedOutcomeId = null;
 
 const $ = id => document.getElementById(id);
 const snapshotElement = $('buildmapSnapshot');
@@ -33,6 +34,12 @@ $('moreResults').addEventListener('click', () => { showAllResults = !showAllResu
 $('fitButton').addEventListener('click', () => { fit = true; scaleMap(); viewport.scrollTo({ left: 0, top: 0 }); });
 $('sizeButton').addEventListener('click', () => { fit = false; scaleMap(); });
 $('moreGaps').addEventListener('click', () => { showAllGaps = !showAllGaps; renderGaps(); });
+$('clearOutcome').addEventListener('click', () => {
+  selectedOutcomeId = null; renderOutcomes(); applyFilter();
+  if (selectedId) renderDetail(selectedId);
+  else $('detail').innerHTML = '<h2>Choose a piece or outcome</h2><p>Inspect its purpose, evidence, and next gap.</p>';
+  $('search').focus({ preventScroll: true });
+});
 new ResizeObserver(() => { if (fit) scaleMap(); }).observe(viewport);
 
 await refresh();
@@ -55,21 +62,29 @@ async function refresh() {
     const focusedId = active?.dataset?.id;
     const focusInResults = active?.classList.contains('search-result');
     const focusOnCard = active?.classList.contains('node');
+    const focusedOutcome = active?.classList.contains('outcome-choice') ? active.dataset.outcomeId : null;
     currentFingerprint = next.fingerprint;
     model = next;
     renderHeader();
     renderLegend();
+    if (selectedOutcomeId && !model.outcomes?.some(o => o.id === selectedOutcomeId)) {
+      selectedOutcomeId = null;
+      if (!selectedId) $('detail').innerHTML = '<h2>Outcome removed</h2><p>The selected outcome is no longer in the current plan.</p>';
+    }
+    renderOutcomes();
     renderGaps();
     renderMap();
     if (selectedId) {
       if (model.nodes.some(n => n.id === selectedId)) renderDetail(selectedId);
       else { selectedId = null; $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
     }
+    if (!selectedId && selectedOutcomeId) renderOutcomeDetail(selectedOutcomeId);
     if (focusedId && (focusOnCard || focusInResults)) {
       const candidates = focusInResults ? [...$('searchResults').children] : [...document.querySelectorAll('.node')];
       const replacement = candidates.find(el => el.dataset.id === focusedId && el.tabIndex !== -1);
       (replacement || $('search')).focus({ preventScroll: true });
     }
+    if (focusedOutcome) ([...$('outcomes').children].find(el => el.dataset.outcomeId === focusedOutcome) || $('search')).focus({ preventScroll: true });
   } catch (err) {
     $('refreshStatus').textContent = model ? 'Refresh failed · showing last snapshot' : 'Could not load map · retrying';
     $('refreshStatus').classList.add('stale');
@@ -231,9 +246,9 @@ function renderGaps() {
     const el = document.createElement('button');
     el.className = `gap ${gap.priority}`;
     el.type = 'button';
-    const name = model.nodes.find(n => n.id === gap.nodeId)?.name || 'Project';
+    const name = (gap.outcomeId ? model.outcomes?.find(o => o.id === gap.outcomeId)?.name : model.nodes.find(n => n.id === gap.nodeId)?.name) || 'Project';
     el.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(gap.message)}</span>`;
-    el.addEventListener('click', () => selectPiece(gap.nodeId || '__mission__', true));
+    el.addEventListener('click', () => gap.outcomeId ? selectOutcome(gap.outcomeId) : selectPiece(gap.nodeId || '__mission__', true));
     $('gaps').appendChild(el);
   }
   $('moreGaps').hidden = gaps.length <= 12;
@@ -266,6 +281,81 @@ function renderDetail(id) {
     <div class="detail-section"><h3>Gaps to review</h3>${(model.gaps || []).filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId)).map(g => `<p>${escapeHtml(g.message)}</p>${Object.hasOwn(g, 'evidence') ? `<details><summary>Recorded claim</summary><pre>${escapeHtml(JSON.stringify(g.evidence, null, 2))}</pre></details>` : ''}`).join('') || '<p>No detected gaps.</p>'}</div>
     <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>
   `;
+  const related = (model.outcomes || []).filter(o => o.nodeIds.includes(id));
+  if (model.outcomes?.length && node.kind !== 'mission') {
+    const scope = document.createElement('div'); scope.className = 'detail-section';
+    scope.innerHTML = `<h3>Outcome scope</h3><p>${related.length ? 'This piece participates in or supports:' : 'No outcome assigned. Review its purpose; support code may still be needed.'}</p>`;
+    for (const outcome of related) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = outcome.name;
+      button.addEventListener('click', () => selectOutcome(outcome.id)); scope.appendChild(button);
+    }
+    $('detail').appendChild(scope);
+  }
+  if (selectedOutcomeId) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'return-outcome'; button.textContent = 'Return to walkthrough';
+    button.addEventListener('click', () => selectOutcome(selectedOutcomeId)); $('detail').appendChild(button);
+  }
+}
+
+function renderOutcomes() {
+  const outcomes = model.outcomes || [];
+  $('outcomeHint').textContent = outcomes.length ? 'Choose an intended result to inspect its steps and recorded example.' : 'Declare an outcome in .buildmap/project.json to connect the build to a concrete goal.';
+  $('outcomes').innerHTML = '';
+  for (const outcome of outcomes) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'outcome-choice'; button.dataset.outcomeId = outcome.id;
+    button.setAttribute('aria-pressed', String(outcome.id === selectedOutcomeId));
+    button.innerHTML = `<strong>${escapeHtml(outcome.name)}</strong><span>${outcomeLabel(outcome.status)} · ${outcome.steps.length} steps</span>`;
+    button.addEventListener('click', () => selectOutcome(outcome.id)); $('outcomes').appendChild(button);
+  }
+  $('clearOutcome').hidden = !selectedOutcomeId;
+}
+function selectOutcome(id) {
+  if (!model.outcomes?.some(o => o.id === id)) return;
+  selectedOutcomeId = id; selectedId = null;
+  document.querySelectorAll('.node').forEach(n => { n.classList.remove('selected'); n.setAttribute('aria-pressed', 'false'); });
+  renderOutcomes(); applyFilter(); renderOutcomeDetail(id);
+  [...$('outcomes').children].find(el => el.dataset.outcomeId === id)?.focus({ preventScroll: true });
+}
+function renderOutcomeDetail(id) {
+  const outcome = model.outcomes.find(o => o.id === id);
+  const detail = $('detail');
+  detail.innerHTML = `<div class="eyebrow">OUTCOME WALKTHROUGH</div><h2>${escapeHtml(outcome.name)}</h2><p>${escapeHtml(outcome.goal)}</p>
+    <div class="detail-status">${outcomeLabel(outcome.status)}</div>
+    <p>Ordered steps are the declared behavior plan. Source arrows do not establish these handoffs. Examples are user-recorded observations; BuildMap does not execute or authenticate them.</p>
+    <div class="evidence-box">${escapeHtml(outcome.evidenceAssessment.reason)}</div>
+    <div class="detail-section"><h3>Next point to review</h3><p>${outcome.firstGap ? `${escapeHtml(outcome.firstGap.label)} · ${walkthroughLabel(outcome.firstGap.state)}` : outcome.evidenceAssessment.accepted ? 'All steps and handoffs have a current recorded example. This covers the named example, not every possible input.' : escapeHtml(outcome.evidenceAssessment.reason)}</p></div>`;
+  const steps = document.createElement('ol'); steps.className = 'walkthrough-steps';
+  for (const step of outcome.steps) {
+    const item = document.createElement('li');
+    const observation = step.observation;
+    item.innerHTML = `<h3>${escapeHtml(step.label)}</h3><p>${escapeHtml(step.pieceName)} · piece ${escapeHtml(step.pieceStatus || 'unmapped')}<br>${walkthroughLabel(step.state)}</p>
+      <p><strong>Expected:</strong> ${escapeHtml(step.expected)}</p>${observation ? `<p>Recorded sample${step.state === 'stale-example' || step.state === 'unaccepted-example' ? ' · not accepted for the current outcome' : ''}</p>
+      ${observation.handoff ? `<p><strong>Handoff from previous step:</strong> ${escapeHtml(observation.handoff)}</p>` : ''}
+      <h4>Input</h4><pre>${escapeHtml(JSON.stringify(observation.input, null, 2))}</pre><h4>Output</h4><pre>${escapeHtml(JSON.stringify(observation.output, null, 2))}</pre>${observation.note ? `<p>${escapeHtml(observation.note)}</p>` : ''}` : '<p>No observation recorded for this step.</p>'}`;
+    if (model.nodes.some(n => n.id === step.nodeId)) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Inspect piece';
+      button.addEventListener('click', () => selectPiece(step.nodeId, true)); item.appendChild(button);
+    }
+    steps.appendChild(item);
+  }
+  detail.appendChild(steps);
+  const evidence = document.createElement('div'); evidence.className = 'detail-section';
+  evidence.innerHTML = `<h3>Example evidence and bindings</h3>${outcome.hasEvidence || outcome.evidence !== null ? receiptText(outcome.evidence, outcome.evidenceAssessment) : '<p>No outcome-level receipt recorded.</p>'}
+    <details><summary>Current definition and participating source hashes</summary><p>Definition SHA-256: <code>${escapeHtml(outcome.definitionHash)}</code></p><pre>${escapeHtml(JSON.stringify(outcome.sourceHashes, null, 2))}</pre></details>
+    ${outcome.evidence?.example ? `<details><summary>Raw recorded example</summary><pre>${escapeHtml(JSON.stringify(outcome.evidence.example, null, 2))}</pre></details>` : ''}
+    ${outcome.supports.length ? `<p>Supporting pieces: ${outcome.supports.map(escapeHtml).join(', ')}. Their files are included in the example’s source binding.</p>` : ''}`;
+  detail.appendChild(evidence);
+}
+
+function outcomeLabel(state) {
+  return ({ computing: 'Observed example', verified: 'Verified example' })[state] || 'Outcome unproved';
+}
+function walkthroughLabel(state) {
+  return ({ observed: 'Observation recorded', failed: 'Recorded failure', unobserved: 'No observation recorded',
+    'missing-piece': 'Piece missing from map', 'missing-implementation': 'Implementation missing or ownership unresolved',
+    'stale-example': 'Example out of date', 'unaccepted-example': 'Example not accepted', 'invalid-example': 'Example record incomplete or invalid',
+    'unobserved-handoff': 'Handoff not recorded', 'missing-support': 'Supporting implementation missing',
+    'inconsistent-example': 'Overall input/output does not match step records' })[state] || 'Review the recorded example';
 }
 
 function connectionList(id) {
@@ -320,9 +410,13 @@ function fileList(node) {
 
 function applyFilter() {
   const q = filter;
+  const outcome = model?.outcomes?.find(o => o.id === selectedOutcomeId);
   document.querySelectorAll('.node').forEach(el => {
     const n = model?.nodes.find(x => x.id === el.dataset.id);
-    const filtered = Boolean(q && n?.id !== selectedId && !matchesSearch(n));
+    const participates = Boolean(outcome?.nodeIds.includes(n?.id));
+    const filtered = Boolean(q && n?.id !== selectedId && !participates && !matchesSearch(n));
+    el.classList.toggle('in-outcome', participates);
+    el.classList.toggle('outside-outcome', Boolean(outcome && !participates && n?.kind !== 'mission'));
     el.classList.toggle('filtered', filtered);
     el.tabIndex = filtered ? -1 : 0;
     el.setAttribute('aria-hidden', String(filtered));

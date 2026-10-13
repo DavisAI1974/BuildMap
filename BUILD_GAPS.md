@@ -1,18 +1,18 @@
 # BuildMap v0.1 remaining build gaps
 
-Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 63 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
+Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 71 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
 
 ## What the current map actually reports
 
 BuildMap's manifest has five implemented components: four have source-bound recorded test receipts with selected dependency/test-input bindings; the visualizer is source-connected. There are no missing implementation files, unexpected declared-plan dependencies, or unmapped evidence claims in the dogfood map.
 
-Its only current finding is the visualizer's `unproved` behavior: exercise the real UI and record the supported observation against its source.
+Its release-confidence findings are the visualizer's `unproved` behavior and the separate unproved "Understand the current build" outcome. Backend receipt states cannot close its browser walkthrough step. Exercise the real UI in a permitted environment before recording that observation.
 
 The parser-backed adapter now finds the literal `/api/map` fetch and its unique Node HTTP handler condition, with file/line provenance. That closes the previous no-observed-connection/unobserved-dependency findings within the supported source-matching scope. It does not establish runtime origin, transport, execution, or browser behavior, and grants no upper visualizer state.
 
 ## MVP scope
 
-The existing CLI/server/map/export core is the MVP. File previews and present/missing counts are implemented in the shared live/export client; the full list stays in the inspector. New supported source files appear independently until explicitly grouped in the manifest. Clickable search results, match counts, Enter/Escape shortcuts, and card navigation from results/gaps are implemented in that same client. Refresh preserves focus on surviving cards/results. Navigation checks use the DOM double; browser behavior remains unobserved. Further MVP work must carry into the product. The broader roadmap below can wait for concrete usage needs.
+The existing CLI/server/map/export core is the MVP. File previews and present/missing counts are implemented in the shared live/export client; the full list stays in the inspector. New supported source files appear independently until explicitly grouped in the manifest. Clickable search results, match counts, Enter/Escape shortcuts, and card navigation from results/gaps are implemented in that same client. Refresh preserves focus on surviving cards/results. Navigation checks use the DOM double; browser behavior remains unobserved. Outcome walkthroughs now add declared goals, ordered steps and expected results, supporting-piece assignments, source/definition-bound recorded examples, and the first unresolved point. The inspector exposes samples and links back to participating pieces; unassigned pieces become informational scope-review findings. These plans never manufacture source edges, piece proof, mission proof, or deployment claims. Further MVP work must carry into the product. The broader roadmap below can wait for concrete usage needs.
 
 ## Next release-confidence checks
 
@@ -34,6 +34,8 @@ PR #1 remains open. Merging and public release are separate actions after review
 | 5 | Deeper intent and visual explanation. | First useful README prose or a declared mission; filename/comment/symbol heuristics and illustrative mini-visuals. No built-in interview or semantic contradiction analysis. | Preserve attribution/uncertainty while comparing documented goals with implementation and deriving inspectable mechanism descriptions. |
 
 These are product improvements beyond the implemented v0.1 core, rather than a claim that six source modules are still missing. Each should be scoped from an actual use case before adding infrastructure.
+
+Outcome authoring and example capture currently use the manifest/evidence files. Automatic runtime instrumentation, authenticated capture, semantic checking of expected results, branching journeys, and an in-app editor are deferred until usage justifies them. The implemented ordered walkthrough is a retained product model and interface.
 
 ## Deferred extensions
 

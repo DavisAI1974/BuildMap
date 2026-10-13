@@ -133,3 +133,19 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .search-result span { color: var(--muted); font-size: 10px; }
 .search-result[aria-pressed="true"] { border-color: var(--accent); }
 #moreResults { margin-top: 8px; width: 100%; font-size: 11px; }
+.outcomes-panel { margin-top: 22px; }
+.outcomes-panel h2 { font-size: 13px; }
+#outcomeHint { color: var(--muted); font-size: 11px; line-height: 1.4; }
+#outcomes { display: grid; gap: 7px; }
+.outcome-choice { display: grid; gap: 5px; text-align: left; font-size: 11px; overflow-wrap: anywhere; }
+.outcome-choice span { color: var(--muted); }
+.outcome-choice[aria-pressed="true"] { border-color: var(--accent); }
+#clearOutcome, .return-outcome { margin-top: 10px; font-size: 11px; }
+.node.in-outcome { box-shadow: 0 0 0 2px var(--accent); }
+.node.outside-outcome { opacity: .35; }
+.node.outside-outcome.filtered { opacity: .12; }
+.walkthrough-steps { padding-left: 20px; }
+.walkthrough-steps li { border-top: 1px solid var(--line); padding: 12px 0; }
+.walkthrough-steps h3 { font-size: 13px; margin: 0; }
+.walkthrough-steps h4 { font-size: 11px; margin: 8px 0 4px; color: var(--muted); }
+.detail-section button { margin: 4px 4px 0 0; font-size: 11px; }

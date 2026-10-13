@@ -54,6 +54,18 @@ test('server maps live edits, serves gaps/assets, and keeps repository files pri
   const inputGaps = await read('/api/gaps');
   assert.ok(inputGaps.gaps.some(g => g.kind === 'unsupported-evidence' && g.message.includes('data.json')));
   assert.deepEqual(inputGaps.gaps, stale.gaps);
+  const plan = { outcomes: [{ id: 'main-output', goal: 'Produce useful main output.', steps: [
+    { id: 'main', nodeId: 'file:main.js', label: 'Run main', expected: 'Useful output.' }
+  ] }] };
+  fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan));
+  const outcomeMap = await read('/api/map');
+  assert.equal(outcomeMap.outcomes[0].status, 'unproved');
+  assert.ok((await read('/api/gaps')).gaps.some(g => g.outcomeId === 'main-output'));
+  plan.outcomes[0].steps[0].expected = 'A revised output contract.';
+  fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan));
+  const changedOutcome = await read('/api/map');
+  assert.notEqual(changedOutcome.outcomes[0].definitionHash, outcomeMap.outcomes[0].definitionHash);
+  assert.notEqual(changedOutcome.fingerprint, outcomeMap.fingerprint);
   for (const route of ['/', '/app.js', '/styles.css']) assert.equal((await fetch(base + route)).status, 200);
   for (const route of ['/secret.txt', '/src/scan.js', '/%2e%2e%2fpackage.json']) assert.equal((await fetch(base + route)).status, 404);
   assert.equal((await fetch(base + '/api/map', { method: 'POST' })).status, 405);

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readIntent } from './intent.js';
 import { sourceReferences, resolveImport } from './imports.js';
+import { buildOutcomes } from './outcomes.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -119,6 +120,9 @@ export function scanProject(root, { source = null } = {}) {
   }
   auditEvidenceTargets(evidence, nodes, diagnostics, readInputHash);
   const edges = buildComponentEdges(nodes, importEdges);
+  const outcomeMap = buildOutcomes(manifest.outcomes, rawEvidence.outcomes, nodes,
+    (receipt, complete, hashes) => assessEvidence(receipt, complete, hashes, readInputHash));
+  diagnostics.push(...outcomeMap.diagnostics);
   const counts = Object.fromEntries(STATES.map(s => [s, nodes.filter(n => n.status === s).length]));
   const progress = nodes.length ? Math.round(nodes.reduce((sum,n) => sum + WEIGHTS[n.status], 0) / nodes.length) : 0;
   const gaps = findGaps(nodes, edges, diagnostics, intent);
@@ -132,7 +136,7 @@ export function scanProject(root, { source = null } = {}) {
   for (const node of nodes) if (node.contributes) edges.push({ from: node.id, to: '__mission__', type: 'contributes' });
   const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
-    states: STATES, nodes, edges: uniqueEdges(edges), gaps, diagnostics,
+    states: STATES, nodes, edges: uniqueEdges(edges), outcomes: outcomeMap.outcomes, gaps, diagnostics,
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,
       dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], javascriptParser: 'acorn', httpAdapter: 'literal-fetch/node-http-path', heuristic: true },
     generatedAt: new Date().toISOString() };
@@ -211,7 +215,8 @@ function findGaps(nodes, edges, diagnostics, intent) {
       else if (!edges.some(e => e.type === 'code' && e.from === dep && e.to === n.id)) add('unobserved-dependency', n.id, `Declared dependency on ${dep} has no matching source connection. Confirm its wiring; discovery is heuristic.`);
     }
   }
-  for (const d of diagnostics) add(d.code, d.nodeId || null, d.message, d.priority || (d.code === 'invalid-config' ? 'blocker' : 'warning'), Object.hasOwn(d, 'evidence') ? { evidence: d.evidence } : {});
+  for (const d of diagnostics) add(d.code, d.nodeId || null, d.message, d.priority || (d.code === 'invalid-config' ? 'blocker' : 'warning'), {
+    ...(d.outcomeId ? { outcomeId: d.outcomeId } : {}), ...(Object.hasOwn(d, 'evidence') ? { evidence: d.evidence } : {}) });
   const order = { blocker: 0, warning: 1, info: 2 };
   return gaps.sort((a,b) => order[a.priority] - order[b.priority]);
 }

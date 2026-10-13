@@ -299,3 +299,63 @@ test('gap navigation reaches a distant card and refresh retains keyboard focus w
   assert.equal(ui.context.document.activeElement, ui.get('search'));
   assert.match(ui.get('searchStatus').textContent, /No matching pieces/);
 });
+
+test('scanned outcome walkthroughs show real sample data, navigate pieces, and stale when the goal changes', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-ui-outcome-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'main.js'), 'export const main = 1;');
+  fs.writeFileSync(path.join(root, 'extra.js'), 'export const extra = 1;');
+  const plan = { outcomes: [{ id: 'demo', name: '<img onerror=evil()>', goal: 'Display a value.', steps: [
+    { id: 'display', nodeId: 'file:main.js', label: 'Display', expected: 'An escaped value.' }
+  ] }] };
+  const save = () => fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan));
+  save(); const initial = scanProject(root); const outcome = initial.outcomes[0];
+  const proof = { status: 'computing', note: 'Recorded a sample.', sourceHashes: outcome.sourceHashes, definitionHash: outcome.definitionHash,
+    example: { name: 'Unsafe text displayed safely', input: 0, output: '<script>example</script>', steps: [
+      { stepId: 'display', result: 'observed', input: 0, output: '<script>example</script>' }
+    ] } };
+  fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), JSON.stringify({ outcomes: { demo: proof } }));
+  const ui = await client(scanProject(root));
+  assert.match(ui.get('outcomes').children[0].innerHTML, /&lt;img/);
+  ui.get('search').listeners.input({ target: { value: 'extra.js' } });
+  ui.get('outcomes').children[0].click();
+  assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+  assert.match(ui.get('detail').innerHTML, /Observed example/);
+  const steps = ui.get('detail').children[0];
+  assert.match(steps.children[0].innerHTML, /&lt;script&gt;example/);
+  assert.doesNotMatch(steps.children[0].innerHTML, /<script>/);
+  const card = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id);
+  assert.ok(card('file:main.js').classes.has('in-outcome'));
+  assert.equal(card('file:main.js').tabIndex, 0); // The active outcome remains visible through search.
+  assert.ok(card('file:extra.js').classes.has('outside-outcome'));
+  steps.children[0].children[0].click();
+  assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
+  ui.get('detail').children.at(-1).click();
+  assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+  plan.outcomes[0].goal = 'A changed goal.'; save(); ui.setModel(scanProject(root)); await ui.refresh();
+  assert.match(ui.get('detail').innerHTML, /A changed goal/);
+  assert.match(ui.get('detail').children[0].children[0].innerHTML, /Example out of date/);
+  assert.equal(ui.context.document.activeElement, ui.get('outcomes').children[0]);
+  plan.outcomes = []; save(); ui.setModel(scanProject(root)); await ui.refresh();
+  assert.match(ui.get('detail').innerHTML, /Outcome removed/);
+  assert.equal(ui.context.document.activeElement, ui.get('search'));
+});
+
+test('outcome gaps open the walkthrough and shared offline navigation makes no requests', async () => {
+  const input = model('outcome', [piece('a'), piece('b')]);
+  input.outcomes = [{ id: 'goal', name: 'Useful result', goal: 'Produce a useful result.', status: 'unproved', nodeIds: ['a'], supports: [],
+    steps: [{ id: 'first', nodeId: 'a', label: 'Do work', expected: 'Useful output.', pieceName: 'a', pieceStatus: 'coded', state: 'unobserved', observation: null }],
+    firstGap: { label: 'Do work', state: 'unobserved' }, evidence: null, evidenceAssessment: { accepted: false, reason: 'No recorded example.' }, sourceHashes: {}, definitionHash: 'a'.repeat(64) }];
+  input.gaps = [{ kind: 'unproved-outcome', outcomeId: 'goal', nodeId: null, priority: 'info', message: 'Record an example.' }];
+  for (const offline of [false, true]) {
+    const ui = await client(input, offline); ui.get('gaps').children[0].click();
+    assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+    assert.match(ui.get('detail').innerHTML, /Do work · No observation recorded/);
+    assert.equal(ui.get('clearOutcome').hidden, false);
+    ui.get('clearOutcome').click();
+    assert.equal(ui.get('clearOutcome').hidden, true);
+    assert.ok(ui.get('nodeLayer').children.filter(n => n.dataset.id).every(n => !n.classes.has('outside-outcome')));
+    if (offline) assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+  }
+});

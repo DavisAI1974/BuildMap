@@ -3,83 +3,90 @@
     "intent": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Intent extraction and unknown-intent fallback passed on Node v20.20.2 and v24.19.0; the named check/configuration inputs are explicitly bound.",
-      "recordedAt": "2026-10-13T16:21:09.634Z",
+      "note": "Intent extraction/fallback checks passed on Node v20.20.2 and v24.19.0. Selected check/package/lockfile inputs are explicitly bound.",
+      "recordedAt": "2026-10-13T16:42:56.303Z",
       "sourceHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c"
       },
       "inputHashes": {
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
-        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885"
+        "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
       }
     },
     "scanner": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Source/evidence/ownership/drift/scope/discovery/inventory and selected-input edit/deletion/malformed/path-containment checks passed on Node v20.20.2 and v24.19.0. The named dependency/check/configuration inputs are explicitly bound; the set is not automatically complete.",
-      "recordedAt": "2026-10-13T16:21:09.634Z",
+      "note": "Source/evidence/ownership/freshness/drift/inventory checks and Acorn JS imports/regex/templates plus bounded HTTP path/method/provenance/ambiguity/mock/response checks passed on Node v20.20.2 and v24.19.0. HTTP matches are source syntax, not runtime proof. Named dependency/check/package/lockfile inputs are selected explicitly.",
+      "recordedAt": "2026-10-13T16:42:56.303Z",
       "sourceHashes": {
-        "src/scan.js": "abe8a29866cf15590ae4ec329f608fd1b070f6a8684fef0106a08249832bc59d",
-        "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076"
+        "src/scan.js": "92d75546409df555afd39d6b71b850fd0e2f460d98474c1a66c279b974cb9048",
+        "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2"
       },
       "inputHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
-        "tests/scan.test.js": "558003d8a7fe50e4ca5c51a6f1890ee78d5b0db8ed5678d5cfaf3e6d313a01cc",
+        "tests/scan.test.js": "3893de2b53ac005f9dd5cd101258df26b154ed0e9cec1779f9b3a73ce2520a60",
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
-        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885",
-        ".buildmap/project.json": "02ff86482d7c66c9703b6586643a6dd716ba234daa35c001206c38c4a546c735"
+        "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+        ".buildmap/project.json": "625061a5afde55a5f9f3d151250a05779d44a5858570504228cb4f4624a25b7f",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
       }
     },
     "server": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "CLI/API/export/ref/cleanup checks passed on Node v20.20.2 and v24.19.0, including input-only edits reaching map/gaps APIs. Named dependency/asset/check/configuration inputs are explicitly bound. The earlier Node 20 CLI/server smoke passed; the historical public branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f.",
-      "recordedAt": "2026-10-13T16:21:09.634Z",
+      "note": "CLI/API/export/ref/cleanup checks passed on Node v20.20.2 and v24.19.0. Named dependency/parser/asset/check/package/lockfile inputs are explicitly bound. Earlier Node 20 CLI/server smoke passed; historical public branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f.",
+      "recordedAt": "2026-10-13T16:42:56.303Z",
       "sourceHashes": {
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a"
       },
       "inputHashes": {
-        "src/scan.js": "abe8a29866cf15590ae4ec329f608fd1b070f6a8684fef0106a08249832bc59d",
-        "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076",
+        "src/scan.js": "92d75546409df555afd39d6b71b850fd0e2f460d98474c1a66c279b974cb9048",
+        "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
         "public/index.html": "7ffe8da33798330ca414264215344f291eb4729576474ce8ce9924a16114c1d0",
-        "public/app.js": "2ea81509ba03121453d8c12ca442007b256adbbe0ac665319748035228b47c93",
+        "public/app.js": "0240e4fc0b6adc6b7549ecdbe8ea932796a2f8e4b0a0c91e2a1869e0aa4b1c45",
         "public/styles.css": "92b395669311c3a5a44635268edc7884e70a90bdf6e3f75d01bfe893ca459449",
         "tests/server.test.js": "ce0bc27eba427c23bb16d1b54bc048c39cd946ba16d748e6b9e5b181e1a9f749",
         "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
-        "tests/ui.test.js": "4475c24426f2957bf2c2eb8a0e869ea45c92cd62d7767ec4adc382e183396e34",
-        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885",
-        ".buildmap/project.json": "02ff86482d7c66c9703b6586643a6dd716ba234daa35c001206c38c4a546c735"
+        "tests/ui.test.js": "5db35c1004f2ab5c52c3307b3bd9488102acef0b54191d9271b0eb84cc3c5959",
+        "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+        ".buildmap/project.json": "625061a5afde55a5f9f3d151250a05779d44a5858570504228cb4f4624a25b7f",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2"
       }
     },
     "verification": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "All 53 tests passed on Node v20.20.2 and v24.19.0, with named implementation/asset/configuration inputs explicitly bound. Client/inspector tests use a DOM double; real browser layout/accessibility/integration remains unverified. Explicit input identity does not prove complete input coverage or authenticate checks.",
-      "recordedAt": "2026-10-13T16:21:09.634Z",
+      "note": "All 58 tests passed on Node v20.20.2 and v24.19.0 after a clean locked install. Named implementation/parser/asset/package/lockfile inputs are explicitly bound. Client/inspector tests use a DOM double; real browser layout/accessibility/integration remains unverified. Matching HTTP paths cannot grant runtime proof or prove deployed origin.",
+      "recordedAt": "2026-10-13T16:42:56.303Z",
       "sourceHashes": {
-        "tests/scan.test.js": "558003d8a7fe50e4ca5c51a6f1890ee78d5b0db8ed5678d5cfaf3e6d313a01cc",
+        "tests/scan.test.js": "3893de2b53ac005f9dd5cd101258df26b154ed0e9cec1779f9b3a73ce2520a60",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
         "tests/server.test.js": "ce0bc27eba427c23bb16d1b54bc048c39cd946ba16d748e6b9e5b181e1a9f749",
-        "tests/ui.test.js": "4475c24426f2957bf2c2eb8a0e869ea45c92cd62d7767ec4adc382e183396e34",
+        "tests/ui.test.js": "5db35c1004f2ab5c52c3307b3bd9488102acef0b54191d9271b0eb84cc3c5959",
         "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7"
       },
       "inputHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
-        "src/scan.js": "abe8a29866cf15590ae4ec329f608fd1b070f6a8684fef0106a08249832bc59d",
-        "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076",
+        "src/scan.js": "92d75546409df555afd39d6b71b850fd0e2f460d98474c1a66c279b974cb9048",
+        "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
         "public/index.html": "7ffe8da33798330ca414264215344f291eb4729576474ce8ce9924a16114c1d0",
-        "public/app.js": "2ea81509ba03121453d8c12ca442007b256adbbe0ac665319748035228b47c93",
+        "public/app.js": "0240e4fc0b6adc6b7549ecdbe8ea932796a2f8e4b0a0c91e2a1869e0aa4b1c45",
         "public/styles.css": "92b395669311c3a5a44635268edc7884e70a90bdf6e3f75d01bfe893ca459449",
-        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885",
-        ".buildmap/project.json": "02ff86482d7c66c9703b6586643a6dd716ba234daa35c001206c38c4a546c735"
+        "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+        ".buildmap/project.json": "625061a5afde55a5f9f3d151250a05779d44a5858570504228cb4f4624a25b7f",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2"
       }
     }
   }

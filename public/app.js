@@ -235,9 +235,12 @@ function connectionList(id) {
   const edges = model.edges.filter(e => e.type !== 'contributes' && (e.from === id || e.to === id));
   return edges.length ? edges.map(e => {
     const other = model.nodes.find(n => n.id === (e.from === id ? e.to : e.from));
-    const label = e.type === 'code' ? (e.planStatus === 'undeclared' ? 'Observed · outside declared plan' : 'Observed source') : e.observed ? 'Declared · also observed' : 'Declared · unobserved';
+    const httpOnly = e.observations?.length && e.observations.every(o => o.kind === 'http-source');
+    const label = e.type === 'code' ? (e.planStatus === 'undeclared' ? 'Observed · outside declared plan' : httpOnly ? 'Observed HTTP path match · heuristic' : 'Observed source') : e.observed ? 'Declared · also observed' : 'Declared · unobserved';
     const direction = e.to === id ? 'Depends on' : 'Dependency of';
-    return `<p><strong>${label}:</strong> ${direction} ${escapeHtml(other?.name || 'unknown')}${(e.observations || []).map(o => `<br><small>${escapeHtml(o.importer)} references ${escapeHtml(o.imported)}</small>`).join('')}</p>`;
+    return `<p><strong>${label}:</strong> ${direction} ${escapeHtml(other?.name || 'unknown')}${(e.observations || []).map(o => o.kind === 'http-source'
+      ? `<br><small>${escapeHtml(o.importer)}:${escapeHtml(o.importerLocation?.line ?? '?')}:${escapeHtml(o.importerLocation?.column ?? '?')} requests ${escapeHtml(o.method)} ${escapeHtml(o.endpoint)}; handler condition at ${escapeHtml(o.imported)}:${escapeHtml(o.providerLocation?.line ?? '?')}:${escapeHtml(o.providerLocation?.column ?? '?')} (${escapeHtml(o.providerMethod || 'method unresolved')}). Source path match; runtime origin/execution unproved.</small>`
+      : `<br><small>${escapeHtml(o.importer)} references ${escapeHtml(o.imported)}</small>`).join('')}</p>`;
   }).join('') : '<p>No cross-piece source connections discovered. Runtime wiring may exist outside scanner support.</p>';
 }
 function receiptText(receipt, assessment, label = 'Recorded claim') {

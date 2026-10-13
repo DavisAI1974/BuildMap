@@ -1,20 +1,14 @@
 # BuildMap v0.1 remaining build gaps
 
-Source checkpoint reviewed: PR #1 at `87692a1`, followed by the selected-input freshness pass documented in `REVIEW_NOTES.md`. Current checks: 53 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
+Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 58 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
 
 ## What the current map actually reports
 
 BuildMap's manifest has five implemented components: four have source-bound recorded test receipts with selected dependency/test-input bindings; the visualizer is source-connected. There are no missing implementation files, unexpected declared-plan dependencies, or unmapped evidence claims in the dogfood map.
 
-Its three findings all concern the visualizer:
+Its only current finding is the visualizer's `unproved` behavior: exercise the real UI and record the supported observation against its source.
 
-| Map finding | What it means | Closure |
-| --- | --- | --- |
-| `unproved` | Browser behavior/layout has no observation receipt. | Exercise the real UI and record the supported behavior against its source. |
-| `no-observed-connection` | No cross-component source edge links the visualizer to the server. Internal HTML/assets are discovered. | Add an explicit, evidence-backed HTTP relationship adapter or retain this documented discovery limit. |
-| `unobserved-dependency` | The declared server dependency has no matching import/reference edge under current discovery. | Same HTTP discovery work as above. |
-
-The HTTP path is implemented. The graph findings describe the scanner's visibility; they do not establish that the application is disconnected at runtime.
+The parser-backed adapter now finds the literal `/api/map` fetch and its unique Node HTTP handler condition, with file/line provenance. That closes the previous no-observed-connection/unobserved-dependency findings within the supported source-matching scope. It does not establish runtime origin, transport, execution, or browser behavior, and grants no upper visualizer state.
 
 ## Next release-confidence checks
 
@@ -30,7 +24,7 @@ PR #1 remains open. Merging and public release are separate actions after review
 
 | Priority | Gap | Current boundary | Useful next implementation |
 | --- | --- | --- | --- |
-| 2 | Broader, more accurate wiring discovery. | Heuristic JS/TS/Python/HTML/CSS discovery; HTTP, aliases, Python `src` layouts, regular-expression/template corner cases, and other languages are incomplete. | Parser-backed adapters with source provenance; distinguish source references, runtime relationships, and planned wiring. |
+| 2 | Broader, more accurate wiring discovery. | Parsed JS plus bounded Node-HTTP/fetch source path matching; TypeScript/JSX and Python/HTML/CSS remain heuristic. HTTP wrappers/frameworks/origin routing, aliases, Python `src` layouts, and other languages are incomplete. | Expand adapters from concrete repository needs with source provenance, while preserving source/runtime/plan distinctions. |
 | 3 | Broader proof freshness and independent provenance. | Manual claims; source hashes cover each piece, and optional input hashes cover only selected dependency/test/data/config files. Complete transitive input coverage, environments, CI authenticity, and continuing deployment liveness are not established. | Automatic inspectable input-set discovery when justified, plus independent CI/runtime receipts. Never run commands or infer upper states merely from their existence. |
 | 4 | Large-repository performance and navigation. | Full synchronous rescan/hash per API request; all cards/edges are rendered; layering is bounded and cycles are tolerated without deeper layout semantics. No scale benchmark is claimed. | Measure a realistic large sample, reduce repeated work while preserving change detection, and add capability/subsystem drill-down or filtering. |
 | 5 | Deeper intent and visual explanation. | First useful README prose or a declared mission; filename/comment/symbol heuristics and illustrative mini-visuals. No built-in interview or semantic contradiction analysis. | Preserve attribution/uncertainty while comparing documented goals with implementation and deriving inspectable mechanism descriptions. |

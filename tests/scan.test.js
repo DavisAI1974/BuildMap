@@ -410,3 +410,98 @@ test('file-only input-bound claims retain their scope and report stale inputs in
   write(root, 'test-data.json', '{}');
   assert.equal(node(scanProject(root), 'file:src/a.js').status, 'verified');
 });
+
+function httpServer(endpoint = '/api/map') {
+  return `import http from 'node:http';
+http.createServer((req, res) => {
+  const url = new URL(req.url || '/', 'http://localhost');
+  if (url.pathname === '${endpoint}') return res.end('ok');
+});`;
+}
+
+test('HTTP source matches preserve endpoint/method/location provenance and grant source state only', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'server.js', `import {createServer as serve} from 'node:http';
+serve((req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/api/map') res.end('ok');
+  if (req.method === 'POST' && url.pathname === '/submit') res.end('submitted');
+  if (req.url === '/raw?key=1') res.end('raw');
+});`);
+  write(root, 'client.js', "fetch('/api/map?version=1#part');\nfetch('/api/map');\nfetch('/submit', {method:'POST'});\nfetch('/raw?key=1#part');");
+  planned(root, [{ id: 'server', files: ['server.js'] }, { id: 'client', files: ['client.js'], dependsOn: ['server'] }]);
+  const map = scanProject(root), edge = map.edges.find(e => e.type === 'code');
+  assert.equal(edge.from, 'server'); assert.equal(edge.to, 'client'); assert.equal(edge.planStatus, 'matched');
+  assert.equal(edge.observations.length, 4); assert.equal(map.scan.httpReferenceCount, 4); assert.equal(map.scan.importCount, 0);
+  for (const o of edge.observations) {
+    assert.equal(o.kind, 'http-source'); assert.equal(o.heuristic, true);
+    assert.ok(o.importerLocation.line > 0); assert.ok(o.providerLocation.line > 0);
+  }
+  assert.equal(edge.observations.find(o => o.endpoint === '/submit').providerMethod, 'POST');
+  assert.equal(node(map, 'client').status, 'connected'); assert.equal(map.project.counts.verified, 0); assert.equal(map.project.counts.live, 0);
+  assert.ok(map.gaps.some(g => g.kind === 'unproved' && g.nodeId === 'client'));
+  assert.equal(map.gaps.some(g => g.kind === 'unobserved-dependency'), false);
+  planned(root, [{ id: 'server', files: ['server.js'] }, { id: 'client', files: ['client.js'], dependsOn: [] }]);
+  assert.ok(scanProject(root).gaps.some(g => g.kind === 'unexpected-dependency' && g.dependencyId === 'server'));
+});
+
+test('ambiguous/missing HTTP providers stay unresolved and source-bound input edits invalidate proof', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'one.js', httpServer()); write(root, 'two.js', httpServer()); write(root, 'client.js', "fetch('/api/map');");
+  planned(root, [{ id: 'server', files: ['one.js'] }, { id: 'second', files: ['two.js'] }, { id: 'client', files: ['client.js'], dependsOn: ['server'] }]);
+  let map = scanProject(root);
+  assert.equal(map.scan.httpReferenceCount, 0); assert.equal(node(map, 'client').status, 'coded');
+  assert.ok(map.gaps.some(g => g.kind === 'ambiguous-http-reference'));
+  fs.rmSync(path.join(root, 'two.js')); map = scanProject(root);
+  assert.equal(map.scan.httpReferenceCount, 1);
+  write(root, '.buildmap/evidence.json', { components: { client: { status: 'verified', note: 'Fixture check.',
+    sourceHashes: node(map, 'client').sourceHashes, inputHashes: node(map, 'server').sourceHashes } } });
+  assert.equal(node(scanProject(root), 'client').status, 'verified');
+  write(root, 'one.js', httpServer('/other')); map = scanProject(root);
+  assert.equal(map.scan.httpReferenceCount, 0); assert.equal(node(map, 'client').status, 'coded');
+  assert.ok(map.gaps.some(g => g.kind === 'unresolved-http-reference'));
+  assert.ok(map.gaps.some(g => g.kind === 'unsupported-evidence' && g.nodeId === 'client'));
+});
+
+test('parser discovers actual imports in template expressions while excluding regex/examples and shadowed calls', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  for (const f of ['a.js', 'b.js', 'unused.js']) write(root, f, 'export const value = 1;');
+  write(root, 'main.js', String.raw`const regex = /import\('\.\/unused.js'\)/;
+const example = "require('./unused.js'); fetch('/api/map')";
+const literal = import('./\u0061.js');
+const template = ` + '`value ${import("./b.js")}`;' + `
+function custom(require, fetch) { require('./unused.js'); fetch('/api/map'); }`);
+  write(root, 'server.js', httpServer());
+  const map = scanProject(root);
+  assert.equal(node(map, 'file:unused.js').status, 'coded');
+  assert.equal(map.scan.httpReferenceCount, 0);
+  for (const f of ['a.js', 'b.js']) assert.ok(map.edges.some(e => e.from === `file:${f}` && e.to === 'file:main.js'));
+});
+
+test('unsupported JavaScript syntax and unsupported HTTP forms cannot invent connections', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'dep.js', 'export const dep = 1;');
+  write(root, 'broken.js', "import './dep.js'; const = invalid;");
+  write(root, 'client.js', "fetch('/api/map'); fetch('https://example.invalid/api/map'); fetch('/api/map'+suffix);");
+  write(root, 'server.js', `const http = {createServer: callback => callback};
+http.createServer((req,res) => {if(req.url === '/api/map') res.end('mock');});`);
+  let map = scanProject(root);
+  assert.equal(node(map, 'file:broken.js').status, 'coded'); assert.equal(node(map, 'file:dep.js').status, 'coded');
+  assert.ok(map.gaps.some(g => g.kind === 'javascript-parse-failed'));
+  assert.equal(map.scan.httpReferenceCount, 0);
+  write(root, 'server.js', `const {createServer: serve} = require('node:http');
+serve((req,res) => {if(req.method === 'POST' && req.url === '/api/map') res.end('post');});`);
+  map = scanProject(root); assert.equal(map.scan.httpReferenceCount, 0);
+  write(root, 'client.js', "fetch('/api/map', {method:'POST'});");
+  assert.equal(scanProject(root).scan.httpReferenceCount, 1);
+  write(root, 'server.js', `import http from 'node:http';
+http.createServer((req,res) => {if(req.url !== '/api/map') res.end('other');});`);
+  assert.equal(scanProject(root).scan.httpReferenceCount, 0);
+  write(root, 'server.js', `import http from 'node:http';
+http.createServer((req,res) => {if(req.url === '/api/map') console.log(res);});`);
+  assert.equal(scanProject(root).scan.httpReferenceCount, 0);
+  write(root, 'server.js', `import http from 'node:http';
+function send(response, value) { response.end(value); }
+http.createServer((req,res) => {if(req.url === '/api/map') send(res, 'ok');});`);
+  assert.equal(scanProject(root).scan.httpReferenceCount, 1);
+});

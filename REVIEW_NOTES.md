@@ -1,6 +1,6 @@
 # BuildMap v0.1 review and improvement pass
 
-Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_REVIEW_HANDOFF.md`, the manifest/evidence, source, and tests. No framework or npm runtime dependency was introduced.
+Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_REVIEW_HANDOFF.md`, the manifest/evidence, source, and tests. The initial pass introduced no framework or npm runtime dependency; the later parser pass below adds Acorn.
 
 ## Findings and changes
 
@@ -82,3 +82,14 @@ Optional `inputHashes` extends recorded receipts to explicitly selected dependen
 The inspector exposes recorded/current input hashes and limited coverage for both component and file-only claims. Malformed bindings cannot grant proof. Existing receipts retain their semantics; input-only bindings still disclose unknown implementation freshness. Source identity, explicit input identity, receipt authenticity, complete dependency coverage, and runtime/deployment liveness remain separate.
 
 Validation: **53/53 tests pass on Node v20.20.2 and v24.19.0**. Five regression tests cover input edits/deletion/restoration, unchanged receipt compatibility, source-binding and descriptive-evidence requirements, malformed/unsafe/outside-root inputs, file-only scope, and escaped inspector output. The existing HTTP test now verifies input-only edits reaching `/api/map` and `/api/gaps`. A Node 20 CLI smoke against a temporary copy of BuildMap showed that one selected configuration edit invalidated all four receipts; the original checkout stayed unchanged. Syntax and whitespace checks pass. Dogfood receipts now bind selected dependencies/checks/configuration after successful tests; the visualizer still has no computing/verified/live claim. Browser restrictions remain in effect, and PR #1 stays open without deployment.
+
+
+## Continuation from b43600a
+
+JavaScript (`.js`, `.mjs`, `.cjs`) now uses Acorn syntax trees for import/re-export discovery. This excludes regex/comment/string examples, handles escaped literals and actual imports in template expressions, and reports parse failures rather than falling back to misleading source matches. TypeScript/JSX retain their lexical adapter. Acorn is pinned as the sole runtime dependency; `npm ci`, the lockfile, and installation documentation replace the former dependency-free setup.
+
+The bounded HTTP adapter matches literal root-relative global fetch calls to a unique supported inline Node `http.createServer` response-related path condition. It retains endpoint/method and both source locations; mock factories, logging-only branches, negative comparisons, method mismatches, and ambiguous providers cannot grant a match. Dynamic routing, other frameworks, broad method guards, and deployed origin/port association remain outside support. These are explicitly labeled heuristic source path matches, not observations of execution.
+
+BuildMap now finds its own `/api/map` server-to-visualizer match, so the no-observed-connection and unobserved-dependency prompts close within supported discovery. The visualizer's only finding remains behavior-unproved. No computing/verified/live receipt was added to it.
+
+Validation: **58/58 tests pass on Node v20.20.2 and v24.19.0**. Five new regressions cover method/query/path/location provenance and source-only states, missing/ambiguous providers and input-bound freshness, syntax/regex/template/shadowed-call handling, unsupported/mock/logging/negative handler forms, and escaped HTTP inspector metadata. Clean locked installation, syntax/whitespace checks, and package dry-run pass. Refreshed dogfood receipts bind the complete scanner implementation plus selected dependency/check/package-lock inputs. Browser restrictions remain unchanged; PR #1 remains open and nothing is deployed/live.

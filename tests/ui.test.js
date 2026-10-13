@@ -150,3 +150,16 @@ test('receipt inspector shows recorded/current inputs and safely labels their li
   assert.doesNotMatch(detail, /<img|<script>/);
   assert.match(detail, /File claim: verified · rejected/);
 });
+
+test('inspector labels HTTP path matching as source evidence and escapes endpoint/location metadata', async () => {
+  const input = model('http', [piece('server'), piece('client')]);
+  input.edges = [{ from:'server', to:'client', type:'code', planStatus:'matched', observations:[{
+    kind:'http-source', importer:'client.js', imported:'server.js', method:'GET', endpoint:'/<img onerror=evil()>',
+    importerLocation:{line:12,column:4}, providerLocation:{line:8,column:'<script>evil</script>'}, providerMethod:null
+  }] }];
+  const ui = await client(input); ui.get('nodeLayer').children.find(e => e.dataset.id === 'client').click();
+  const detail = ui.get('detail').innerHTML;
+  assert.match(detail, /Observed HTTP path match · heuristic/); assert.match(detail, /client.js:12:4 requests GET/);
+  assert.match(detail, /method unresolved/); assert.match(detail, /runtime origin\/execution unproved/);
+  assert.match(detail, /&lt;img/); assert.match(detail, /&lt;script&gt;/); assert.doesNotMatch(detail, /<img|<script>/);
+});

@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readIntent } from './intent.js';
-import { importSpecs, resolveImport } from './imports.js';
+import { sourceReferences, resolveImport } from './imports.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -35,7 +35,8 @@ export function scanProject(root, { source = null } = {}) {
     }
   }
   files.sort((a,b) => a.path.localeCompare(b.path));
-  const importEdges = discoverImports(root, files, fileSet, diagnostics);
+  const discovery = discoverImports(root, files, fileSet, diagnostics);
+  const importEdges = discovery.edges;
   const fileHashes = new Map(files.map(f => [f.path, f.hash]));
   const inputCache = new Map();
   function readInputHash(rel) {
@@ -132,7 +133,8 @@ export function scanProject(root, { source = null } = {}) {
   const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
     states: STATES, nodes, edges: uniqueEdges(edges), gaps, diagnostics,
-    scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: importEdges.length, dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], heuristic: true },
+    scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,
+      dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], javascriptParser: 'acorn', httpAdapter: 'literal-fetch/node-http-path', heuristic: true },
     generatedAt: new Date().toISOString() };
   result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence: rawEvidence });
   return result;
@@ -335,19 +337,37 @@ function walkFiles(root, diagnostics) {
 }
 
 function discoverImports(root, files, fileSet, diagnostics) {
-  const edges = [];
+  const edges = [], requests = [], providers = [];
   for (const file of files) {
     if (file.size > 1_000_000) { diagnostics.push({ code: 'large-file', message: `${file.path} is present but import discovery is skipped above 1 MB.` }); continue; }
     try {
       const ext = path.extname(file.path).toLowerCase();
-      for (const spec of importSpecs(fs.readFileSync(path.join(root, file.path), 'utf8'), ext)) {
+      const references = sourceReferences(fs.readFileSync(path.join(root, file.path), 'utf8'), ext);
+      if (references.error) diagnostics.push({ code: 'javascript-parse-failed', message: `${file.path}: ${references.error}` });
+      requests.push(...references.requests.map(r => ({ ...r, file: file.path })));
+      providers.push(...references.providers.map(p => ({ ...p, file: file.path })));
+      for (const spec of references.imports) {
         const target = resolveImport(file.path, spec, fileSet, ext);
         if (target && target !== file.path) edges.push({ from: file.path, to: target, type: 'import' });
         else if (!target && ext !== '.py' && spec.startsWith('.')) diagnostics.push({ code: 'unresolved-import', message: `${file.path} references ${spec}, but no supported local file resolves.` });
       }
-    } catch (err) { diagnostics.push({ code: 'unreadable-file', message: `Import discovery failed for ${file.path}: ${err.code}.` }); }
+    } catch (err) { diagnostics.push({ code: 'unreadable-file', message: `Source reference discovery failed for ${file.path}: ${err.code || err.name}.` }); }
   }
-  return uniqueEdges(edges);
+  const importCount = uniqueEdges(edges).length;
+  for (const request of requests) {
+    const matches = providers.filter(p => (p.raw ? p.endpoint === request.rawPath : p.endpoint === request.path) && (!p.method || p.method === request.method));
+    if (matches.length !== 1) {
+      diagnostics.push({ code: matches.length ? 'ambiguous-http-reference' : 'unresolved-http-reference',
+        message: `${request.file}:${request.line} requests ${request.method} ${request.endpoint}, but ${matches.length ? 'multiple supported handler conditions match' : 'no supported local handler condition matches'}. HTTP source wiring remains unresolved.` });
+    } else if (matches[0].file !== request.file) {
+      const provider = matches[0];
+      edges.push({ from: request.file, to: provider.file, type: 'http', endpoint: request.endpoint, method: request.method,
+        importerLocation: { line: request.line, column: request.column }, providerLocation: { line: provider.line, column: provider.column },
+        providerMethod: provider.method });
+    }
+  }
+  const unique = uniqueEdges(edges);
+  return { edges: unique, importCount, httpCount: unique.filter(e => e.type === 'http').length };
 }
 
 function buildComponentEdges(nodes, importEdges) {
@@ -360,7 +380,9 @@ function buildComponentEdges(nodes, importEdges) {
     if (!from || !to || from === to) continue;
     let edge = edges.find(x => x.from === from && x.to === to && x.type === 'code');
     if (!edge) { edge = { from, to, type: 'code', observations: [] }; edges.push(edge); }
-    edge.observations.push({ importer: e.from, imported: e.to });
+    edge.observations.push({ importer: e.from, imported: e.to, ...(e.type === 'http' ? {
+      kind: 'http-source', endpoint: e.endpoint, method: e.method, importerLocation: e.importerLocation,
+      providerLocation: e.providerLocation, providerMethod: e.providerMethod, heuristic: true } : {}) });
   }
   for (const edge of edges) {
     const dependent = nodes.find(n => n.id === edge.to);
@@ -458,7 +480,7 @@ function slug(value) {
 function uniqueEdges(edges) {
   const seen = new Set();
   return edges.filter(e => {
-    const k = `${e.from}|${e.to}|${e.type}`;
+    const k = JSON.stringify([e.from, e.to, e.type, e.endpoint, e.method, e.importerLocation]);
     if (seen.has(k)) return false;
     seen.add(k); return true;
   });

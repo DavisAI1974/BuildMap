@@ -23,9 +23,10 @@
       "group": "Discover",
       "files": [
         "src/scan.js",
-        "src/imports.js"
+        "src/imports.js",
+        "src/javascript.js"
       ],
-      "purpose": "Inventory Git-tracked and non-ignored source, discover code relationships, and distinguish current implementation from recorded evidence and gaps.",
+      "purpose": "Inventory Git-tracked and non-ignored source, discover imports and bounded HTTP source path relationships, and distinguish current implementation from recorded evidence and gaps.",
       "contributes": "Turns source code into the living set of puzzle pieces.",
       "dependsOn": [
         "intent"

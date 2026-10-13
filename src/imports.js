@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { analyzeJavaScript } from './javascript.js';
 
 const JS_EXT = ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx'];
 
@@ -48,7 +49,14 @@ function pythonSpecs(source) {
   return [...specs];
 }
 
-export function importSpecs(source, ext) {
+export function sourceReferences(source, ext) {
+  if (['.js', '.mjs', '.cjs'].includes(ext)) return analyzeJavaScript(source, ext);
+  return { imports: lexicalSpecs(source, ext), requests: [], providers: [] };
+}
+
+export function importSpecs(source, ext) { return sourceReferences(source, ext).imports; }
+
+function lexicalSpecs(source, ext) {
   if (JS_EXT.includes(ext)) return jsSpecs(source);
   if (ext === '.py') return pythonSpecs(source);
   if (['.html', '.htm'].includes(ext)) {

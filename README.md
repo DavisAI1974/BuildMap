@@ -8,7 +8,7 @@ The core contract is **existence, connection, computation, verification, and liv
 
 ## Quick start
 
-Requires Node.js 20+ and no npm dependencies. Git is required for GitHub URL input and Git-inventory tests. Local mapping falls back to filesystem discovery when Git is unavailable.
+Requires Node.js 20+. Install the single pinned runtime parser dependency, [Acorn](https://github.com/acornjs/acorn), with `npm ci`. Git is required for GitHub URL input and Git-inventory tests. Local mapping falls back to filesystem discovery when Git is unavailable.
 
 v0.1 is currently on [PR #1](https://github.com/DavisAI1974/BuildMap/pull/1); the default branch does not contain the app yet.
 
@@ -16,6 +16,7 @@ v0.1 is currently on [PR #1](https://github.com/DavisAI1974/BuildMap/pull/1); th
 git clone https://github.com/DavisAI1974/BuildMap.git
 cd BuildMap
 git switch feat/buildmap-v1-living-map
+npm ci
 npm test
 node src/cli.js .
 ```
@@ -43,7 +44,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 53 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 58 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -206,7 +207,7 @@ The prioritized gap list includes:
 - existing pieces with no computation/verification evidence;
 - unbound receipts, unmapped targets, file-only claims inside components, malformed configuration, unresolved relative JS/TS references, and scan limitations.
 
-A missing source connection is a **review prompt**, not proof of dead code. Entry points, HTTP calls, dependency injection, generated code, and unsupported languages can be connected at runtime without visible imports. BuildMap deliberately shows its own server-to-browser dependency as unobserved because its HTTP wiring is outside import discovery.
+A missing source connection is a **review prompt**, not proof of dead code. Entry points, unsupported HTTP frameworks, dependency injection, generated code, and unsupported languages can be connected at runtime without visible source matches. BuildMap now discovers its own server-to-browser `/api/map` path match, with locations for the literal fetch and Node handler condition. This earns source connectivity only; the visualizer remains behavior-unproved.
 
 ### Discovery scope
 
@@ -218,21 +219,31 @@ Outside Git, or when Git is unavailable, filesystem discovery skips default depe
 
 Neither mode inspects binaries or follows directory symlinks; Git inventory does not recurse into submodules. Explicit manifest files may override ignores and can include configuration/assets, but cannot establish implementation outside the mapped root. A symlink alias for the project root is supported.
 
-Relationship discovery is heuristic:
+JavaScript syntax discovery uses a parser; relationship resolution and the remaining language adapters are still bounded:
 
 | Source | Relationships discovered |
 | --- | --- |
-| JavaScript/TypeScript | Local static imports, literal-argument `require`/dynamic imports (computed paths are skipped), re-exports, extensionless and index modules, `.js` references to `.ts`/`.tsx` sources. Comments and ordinary string examples are skipped. |
+| JavaScript (`.js`, `.mjs`, `.cjs`) | Acorn-parsed local imports/re-exports and literal `require`/dynamic imports, including escaped literals and actual imports in template expressions. Regex/string/comment examples are excluded. Computed paths are skipped. Extension/index resolution and emitted `.js` → TS sources remain supported. |
+| TypeScript/JSX (`.ts`, `.tsx`, `.jsx`) | Lexical import/re-export discovery with documented regex/template/alias limitations; no HTTP adapter yet. |
+| JavaScript HTTP | Literal root-relative global `fetch` requests matched to one supported Node `http.createServer` handler condition, with endpoint/method and file/line/column provenance. |
 | Python | Repository-root modules, packages, sibling/parent relative imports, named submodules. |
 | HTML | Local script/link references; leading `/` is interpreted relative to the project root; query strings/fragments are ignored for file lookup. |
 | CSS | Quoted `@import` references. |
 | Other inventoried languages | Files only; no relationship parser yet. |
 
-JS regular-expression literals, template interpolation, import shadowing, TypeScript aliases, Python `src` layouts and multiline import forms, bundler resolution, and HTML server-root conventions are not fully modeled. Dependency discovery above 1 MB is skipped with a diagnostic; the file stays in the inventory. Syntax presence does not prove a reference executes. Changes to scanned file contents change the fingerprint even when the graph stays the same.
+JavaScript parser failures skip source references with a visible diagnostic; `.js`/`.mjs` use module syntax and `.cjs` uses CommonJS syntax. Local bindings/reassignments conservatively suppress `require`, `fetch`, and HTTP factory recognition, sometimes across the entire file. TypeScript/JSX regex/template handling, TypeScript aliases, Python `src` layouts and multiline imports, bundler resolution, and HTML server-root conventions remain incomplete. Dependency discovery above 1 MB is skipped with a diagnostic; the file stays in the inventory. Syntax presence does not prove a reference executes. Changes to scanned file contents change the fingerprint even when the graph stays the same.
+
+### HTTP source matches
+
+The HTTP adapter recognizes default/namespace `http` imports, named `createServer` imports, and equivalent top-level native `require` forms. The handler must be an inline callback with request/response identifiers. Supported positive `if` conditions compare `req.url`, or the `pathname` of a directly parsed request URL, with a literal path. The branch must reference a response write/end directly or through a recognized local helper. Literal method constraints in the same condition are checked; broader guards are not inferred.
+
+Only root-relative global fetches with an omitted options object or a literal options object and known method participate. Computed paths/options, wrappers, named callbacks, Express and other frameworks, mount prefixes, HTTPS factories, and dynamic routing remain unsupported. Zero or multiple matching handler conditions produce unresolved/ambiguous findings rather than selecting a provider. Query strings/fragments use URL semantics appropriate to raw URL versus pathname comparisons.
+
+HTTP observations stay on source edges with `kind: "http-source"`, the request `endpoint`/`method`, `importerLocation`, `providerLocation`, and the handler's `providerMethod` (null when unresolved). The inspector labels them **heuristic source path matches**. They participate in declared-plan comparison, but path equality in a repository does not establish a shared deployed origin/port, reachable transport, actual execution, or useful behavior. No HTTP source match grants computing, verified, or live status.
 
 ## Agent/API access
 
-No database, bundler, framework, or third-party runtime dependencies are required.
+No database, bundler, or framework is required. Acorn is the sole runtime dependency; its exact version and install integrity are recorded in `package.json` and `package-lock.json`.
 
 | Interface | Output |
 | --- | --- |
@@ -242,17 +253,17 @@ No database, bundler, framework, or third-party runtime dependencies are require
 | `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
 | `node src/cli.js PATH --html OUTPUT` | Self-contained interactive HTML snapshot to a new file, then exit. |
 
-Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. Nodes expose `dependencyIntent`, `conflictingFiles`, and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
+Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. The `scan` summary separates `importCount` from `httpReferenceCount` and names the JavaScript parser and HTTP adapter. Nodes expose `dependencyIntent`, `conflictingFiles`, and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
 
 ## Architecture and validation
 
-Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discovery (`src/imports.js`) feed the snapshot/evidence/gap model (`src/scan.js`). The CLI selects a target; the local server exposes snapshots and serves `public/`. The live browser client polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails. `src/export.js` embeds the captured map and those same assets into one HTML file; snapshot mode performs no requests or polling.
+Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discovery (`src/imports.js` and parser adapter `src/javascript.js`) feed the snapshot/evidence/gap model (`src/scan.js`). The CLI selects a target; the local server exposes snapshots and serves `public/`. The live browser client polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails. `src/export.js` embeds the captured map and those same assets into one HTML file; snapshot mode performs no requests or polling.
 
 ```bash
 npm test
 ```
 
-Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and source/selected-input freshness, unmapped/file-only claims, explicit-plan drift, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, branch/tag selection and clone provenance, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for review findings and [BUILD_GAPS.md](BUILD_GAPS.md) for the current remaining work, with release checks separated from later capabilities.
+Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and source/selected-input freshness, unmapped/file-only claims, explicit-plan drift, parser-backed JS/imports/assets and HTTP path provenance/ambiguity/method/scope checks, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, branch/tag selection and clone provenance, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for review findings and [BUILD_GAPS.md](BUILD_GAPS.md) for the current remaining work, with release checks separated from later capabilities.
 
 BuildMap dogfoods its own manifest and source-bound test receipts with selected dependency/test-input hashes. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 

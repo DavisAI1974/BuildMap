@@ -10,7 +10,7 @@ The core contract is **existence, connection, computation, verification, and liv
 
 BuildMap focuses on beginner-to-intermediate builders, especially people working with coding agents who need help understanding how a complete application fits together and keeping work aligned with its goal. Experienced developers can use the same source and evidence detail. The original map stays free; the paid walkthrough adds goal-specific behavior review.
 
-Setup still requires Node/Git commands, and plans/evidence are authored in files. An approachable setup flow is remaining product work, not an existing no-code capability.
+Setup still requires Node/Git commands. An optional local `--init` interview writes your initial goal and finished-product description without hand-editing JSON. Piece/walkthrough plans and evidence are still authored in files; this is not an existing no-code application builder.
 
 ## Quick start
 
@@ -39,7 +39,7 @@ node src/cli.js ../some-project --html ../buildmap.html
 node src/cli.js --help
 ```
 
-A nonexistent local target becomes an empty project folder. Mapping otherwise reads the project without modifying it. The HTTP server binds to loopback by default and exposes map metadata, including local paths and recorded evidence; choose a broader `--host` only when you intend that information to be accessible.
+A nonexistent local target becomes an empty project folder. Mapping otherwise reads the project without modifying it. The separate, explicitly requested `--init` operation below writes an initial project description. The HTTP server binds to loopback by default and exposes map metadata, including local paths and recorded evidence; choose a broader `--host` only when you intend that information to be accessible.
 
 Public GitHub repository URLs are also supported:
 
@@ -50,7 +50,31 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 74 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 78 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+
+## Describe a new project with four questions
+
+```bash
+node src/cli.js ../my-project --init
+node src/cli.js ../my-project
+```
+
+Setup asks for the project name, what it should help someone accomplish, what the finished experience should look/feel like (optional), and what it should do (defaults to your goal). It creates `.buildmap/project.json`, then exits. Existing source and evidence remain intact; an existing project plan is never overwritten. Unfinished or empty-goal answers produce no project description. Setup accepts local folders only, separately from mapping/exports, and rejects a symlinked `.buildmap` directory. No implementation, dependencies, components, walkthrough plan, or proof is invented. Existing source is discovered when you open the map.
+
+The bottom of each map inspector and walkthrough has **What we’re building toward**: the intended finished experience and behavior. This ending is free project context in both views and in focused task briefs. It describes the destination rather than claiming the current build delivers it. Without a declared ending, documented intent supplies the behavior with its original attribution; appearance stays undescribed. Unknown intent stays unknown.
+
+You can author the same description directly in the manifest:
+
+```json
+{
+  "finishedProduct": {
+    "experience": "The owner’s description of what using this project should be like.",
+    "behavior": "The owner’s description of what the finished product should accomplish."
+  }
+}
+```
+
+`behavior` must be a nonempty string; `experience` is an optional nonempty string. Invalid descriptions produce a finding and fall back to attributed intent. `/api/map`, `/api/gaps` project summaries, JSON output, live refresh, and snapshots carry `project.finishedProduct`. It never grants evidence states or rewrites a goal’s walkthrough plan.
 
 ## Share an interactive snapshot
 
@@ -73,7 +97,7 @@ Brownfield uses this intent ladder:
 3. Discovered implementation and source relationships.
 4. Comparison of declared dependencies with observed connections.
 
-Intent is labeled **declared**, **inferred**, or **unknown**. README extraction is a heuristic, not a semantic understanding of the repository. A gap recommends documenting intent or interviewing the owner when it is missing. There is no built-in interview agent in v0.1.
+Intent is labeled **declared**, **inferred**, or **unknown**. README extraction is a heuristic, not a semantic understanding of the repository. A gap recommends documenting intent or interviewing the owner when it is missing. The optional local `--init` interview collects a description from the owner; it is not an autonomous interview agent or an automatic component/walkthrough designer.
 
 ## How files join the map
 

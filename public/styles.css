@@ -162,6 +162,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .gap-guidance summary, .task-brief summary { color: #b8c9dc; cursor: pointer; font-size: 12px; }
 .task-brief textarea { width: 100%; margin: 10px 0; padding: 10px; color: var(--text); background: #0c1219; border: 1px solid #34445a; border-radius: 6px; font-size: 12px; line-height: 1.5; resize: vertical; }
 .task-brief textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.finished-product { margin-top: 24px; padding: 16px; border: 1px solid #345347; border-radius: 7px; background: #14221d; }
+.finished-product h2 { margin: 8px 0 16px; }
+.finished-product h3 { margin-top: 16px; }
 .view-switch { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: #0f151d; }
 .view-switch button span { color: var(--muted); font-size: 10px; margin-left: 8px; text-transform: uppercase; }
 .view-switch button[aria-pressed="true"] { background: #1b354b; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }

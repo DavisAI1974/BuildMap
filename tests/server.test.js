@@ -16,7 +16,7 @@ function fixture(t) {
 }
 
 test('CLI consumes flag values independently of project position and rejects mistakes', () => {
-  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, help: false });
+  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, help: false });
   for (const args of [['--port'], ['--port', 'NaN'], ['--port', '65536'], ['--unknown'], ['a', 'b'], ['--html'], ['--html', 'out.html', '--json'], ['--ref'], ['--ref', 'main', '.'], ['https://github.com/owner/repo', '--ref', '-bad']]) assert.throws(() => parseArgs(args));
 });
 
@@ -110,4 +110,64 @@ test('CLI maps selected branches/tags, reports the exact revision, and cleans up
   const failed = spawnSync(process.execPath, ['src/cli.js', url, '--ref', 'missing-ref', '--json'], { encoding: 'utf8', env, timeout: 5000 });
   assert.equal(failed.status, 1); assert.match(failed.stderr, /branch\/tag missing-ref/);
   assert.equal(fs.readdirSync(root).some(f => f.startsWith('buildmap-')), false);
+});
+
+test('guided local setup creates a declared destination while preserving existing source and evidence', t => {
+  const root = fixture(t);
+  fs.writeFileSync(path.join(root, 'main.js'), 'export const main = 7;');
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  const evidence = '{"files":{"main.js":{"status":"computing","note":"Earlier observation."}}}\n';
+  fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), evidence);
+  const init = spawnSync(process.execPath, ['src/cli.js', root, '--init'], { encoding: 'utf8', timeout: 5000,
+    input: 'Our project\nHelp our customers track appointments.\nA simple appointment calendar.\nShow appointments and booking status.\n' });
+  assert.equal(init.status, 0, init.stderr);
+  assert.match(init.stdout, /What should someone see or experience/);
+  assert.match(init.stdout, /No implementation or proof was created/);
+  assert.match(init.stdout, /Next, open the map/);
+  const plan = JSON.parse(fs.readFileSync(path.join(root, '.buildmap/project.json'), 'utf8'));
+  assert.deepEqual(plan.components, []); assert.equal(plan.outcomes, undefined);
+  assert.equal(plan.finishedProduct.experience, 'A simple appointment calendar.');
+  assert.equal(plan.finishedProduct.behavior, 'Show appointments and booking status.');
+  assert.equal(fs.readFileSync(path.join(root, 'main.js'), 'utf8'), 'export const main = 7;');
+  assert.equal(fs.readFileSync(path.join(root, '.buildmap/evidence.json'), 'utf8'), evidence);
+  const mapped = spawnSync(process.execPath, ['src/cli.js', root, '--json'], { encoding: 'utf8', timeout: 5000 });
+  assert.equal(mapped.status, 0, mapped.stderr);
+  const map = JSON.parse(mapped.stdout);
+  assert.equal(map.project.finishedProduct.confidence, 'declared');
+  assert.equal(map.project.intent.text, plan.mission);
+  assert.equal(map.project.counts.computing, 1); assert.equal(map.project.counts.verified, 0); assert.equal(map.project.counts.live, 0);
+  const prior = fs.readFileSync(path.join(root, '.buildmap/project.json'), 'utf8');
+  const again = spawnSync(process.execPath, ['src/cli.js', root, '--init'], { encoding: 'utf8', input: 'Replace it\n', timeout: 5000 });
+  assert.equal(again.status, 1); assert.match(again.stderr, /will not overwrite/);
+  assert.equal(fs.readFileSync(path.join(root, '.buildmap/project.json'), 'utf8'), prior);
+});
+
+test('guided setup handles defaults, unfinished answers, and incompatible targets without making proof or changing plans', t => {
+  const root = fixture(t);
+  const invoke = (target, input, flags = []) => spawnSync(process.execPath, ['src/cli.js', target, '--init', ...flags], { encoding: 'utf8', input, timeout: 5000 });
+  const fresh = path.join(root, 'fresh');
+  const result = invoke(fresh, '\nBuild a useful tool.\n\n\n');
+  assert.equal(result.status, 0, result.stderr);
+  const plan = JSON.parse(fs.readFileSync(path.join(fresh, '.buildmap/project.json'), 'utf8'));
+  assert.equal(plan.name, 'fresh'); assert.equal(plan.finishedProduct.experience, undefined);
+  assert.equal(plan.finishedProduct.behavior, plan.mission);
+  assert.equal(fs.existsSync(path.join(fresh, '.buildmap/evidence.json')), false);
+  for (const [suffix, input] of [['stopped', 'Name\nGoal\n'], ['empty-goal', 'Name\n\n']]) {
+    const target = path.join(root, suffix), r = invoke(target, input);
+    assert.equal(r.status, 1); assert.match(r.stderr, /No project description was written/);
+    assert.equal(fs.existsSync(target), false);
+  }
+  for (const flags of [['--json'], ['--html', path.join(root, 'out.html')]]) {
+    const target = path.join(root, 'invalid-mode');
+    const invalid = invoke(target, '', flags);
+    assert.equal(invalid.status, 1); assert.match(invalid.stderr, /local setup only/);
+    assert.equal(fs.existsSync(target), false);
+  }
+  const remote = invoke('https://github.com/owner/repo', '');
+  assert.equal(remote.status, 1); assert.match(remote.stderr, /local setup only/);
+  const outside = path.join(root, 'outside'), linked = path.join(root, 'linked');
+  fs.mkdirSync(outside); fs.mkdirSync(linked); fs.symlinkSync(outside, path.join(linked, '.buildmap'));
+  const unsafe = invoke(linked, 'Name\nGoal\nScreen\nBehavior\n');
+  assert.equal(unsafe.status, 1); assert.match(unsafe.stderr, /regular .buildmap directory/);
+  assert.deepEqual(fs.readdirSync(outside), []);
 });

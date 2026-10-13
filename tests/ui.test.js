@@ -341,7 +341,7 @@ test('scanned outcome walkthroughs show real sample data, navigate pieces, and s
   assert.ok(card('file:extra.js').classes.has('outside-outcome'));
   steps.children[0].children[0].click();
   assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
-  ui.get('detail').children.at(-1).click();
+  ui.get('detail').children.find(e => e.classes.has('return-outcome')).click();
   assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
   plan.outcomes[0].goal = 'A changed goal.'; save(); ui.setModel(scanProject(root)); await ui.refresh();
   assert.match(ui.get('detail').innerHTML, /A changed goal/);
@@ -430,7 +430,7 @@ test('the full free map and paid walkthrough are separate views over unchanged e
     assert.equal(ui.get('mapShell').hidden, false);
     assert.match(ui.get('detail').innerHTML, /<h2>b<\/h2>/);
     assert.equal(card('b').tabIndex, 0);
-    ui.get('detail').children.at(-1).click();
+    ui.get('detail').children.find(e => e.classes.has('return-outcome')).click();
     assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
     assert.equal(JSON.stringify(input), original);
     if (offline) assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
@@ -516,4 +516,44 @@ test('scanned walkthrough briefs focus on the first unresolved step and scope re
   ui.get('outcomes').children[0].click();
   assert.match(brief(), new RegExp(next.fingerprint));
   assert.equal(next.outcomes[0].status, 'unproved');
+});
+
+test('the declared finished product ends both explanations, refreshes safely, and never changes proof or invents an experience', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-destination-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'a.js'), 'export const a = 1;');
+  const plan = { mission: 'Our actual project goal.', finishedProduct: { experience: '<img onerror=evil()> Our screen.', behavior: '<script>Our result</script>' },
+    outcomes: [{ id: 'goal', goal: 'Our actual result.', steps: [{ id: 'do', nodeId: 'file:a.js', label: 'Do our job', expected: 'Our output.' }] }] };
+  const save = () => fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan));
+  save(); const initial = scanProject(root), original = JSON.stringify(initial);
+  for (const offline of [false, true]) {
+    const ui = await client(initial, offline);
+    const ending = () => ui.get('detail').children.at(-1);
+    ui.get('nodeLayer').children.find(n => n.dataset.id === 'file:a.js').click();
+    assert.ok(ending().classes.has('finished-product'));
+    assert.match(ending().innerHTML, /What you should see and experience/);
+    assert.match(ending().innerHTML, /&lt;img/); assert.match(ending().innerHTML, /&lt;script&gt;/);
+    assert.doesNotMatch(ending().innerHTML, /<img|<script>/);
+    assert.match(ending().innerHTML, /does not establish that the current build delivers it/);
+    assert.match(ending().innerHTML, /project.json · declared/);
+    const index = ui.get('progressText').textContent;
+    ui.get('walkthroughViewButton').click(); ui.get('outcomes').children[0].click();
+    assert.ok(ending().classes.has('finished-product')); assert.match(ending().innerHTML, /Our screen/);
+    assert.equal(ui.get('progressText').textContent, index); assert.equal(JSON.stringify(initial), original);
+    if (offline) { assert.deepEqual(ui.counts(), { requests: 0, polls: 0 }); continue; }
+    delete plan.finishedProduct; save(); const next = scanProject(root); ui.setModel(next); await ui.refresh();
+    assert.match(ending().innerHTML, /finished experience has not been described/);
+    assert.match(ending().innerHTML, /Our actual project goal/);
+    assert.notEqual(next.fingerprint, initial.fingerprint);
+    assert.deepEqual(next.project.counts, initial.project.counts); assert.equal(next.outcomes[0].status, 'unproved');
+    plan.finishedProduct = { behavior: 42 }; save(); const malformed = scanProject(root); ui.setModel(malformed); await ui.refresh();
+    assert.ok(malformed.gaps.some(g => g.kind === 'invalid-config' && g.message.includes('finishedProduct')));
+    assert.match(ending().innerHTML, /Our actual project goal/);
+    plan.finishedProduct = initial.project.finishedProduct;
+  }
+  const unknown = model('unknown'); unknown.project.intent = { text: 'Unknown placeholder.', confidence: 'unknown' };
+  const ui = await client(unknown); ui.get('nodeLayer').children.find(n => n.dataset.id === 'a').click();
+  assert.match(ui.get('detail').children.at(-1).innerHTML, /intended result is not documented/);
+  assert.doesNotMatch(ui.get('detail').children.at(-1).innerHTML, /Unknown placeholder/);
 });

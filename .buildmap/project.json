@@ -10,7 +10,7 @@
       "files": [
         "src/intent.js"
       ],
-      "purpose": "Start from whatever intent evidence exists \u2014 README, docs, manifest, or eventually an interview \u2014 without blocking the map.",
+      "purpose": "Start from available intent evidence \u2014 README, docs, manifest, or an owner description \u2014 without blocking the map.",
       "contributes": "Keeps the build focused on what the project is actually trying to accomplish.",
       "visual": {
         "kind": "lens",
@@ -44,9 +44,10 @@
       "files": [
         "src/server.js",
         "src/cli.js",
-        "src/export.js"
+        "src/export.js",
+        "src/setup.js"
       ],
-      "purpose": "Serve current maps and actionable gaps, or export a self-contained HTML snapshot for offline review.",
+      "purpose": "Serve current maps and actionable gaps, export an offline HTML snapshot, or collect an initial owner description through explicit local setup.",
       "contributes": "Makes progress visible while the software is being built instead of after the fact.",
       "dependsOn": [
         "scanner"
@@ -140,5 +141,9 @@
         }
       ]
     }
-  ]
+  ],
+  "finishedProduct": {
+    "experience": "You open your project and see a clear visual map of its pieces, files, and connections. Select a piece to understand its job in plain English. In the additional walkthrough view, follow your own goal through readable steps and real recorded examples, with the first unfinished point clearly visible.",
+    "behavior": "Help beginner-to-intermediate builders understand how a complete application fits together, see what has actually been demonstrated, and keep coding-agent work focused on the intended result. The original map stays free; the paid walkthrough adds goal-specific behavior review. Missing work and unsupported claims stay visible so progress is grounded in evidence."
+  }
 }

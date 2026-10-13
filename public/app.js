@@ -312,6 +312,7 @@ function renderDetail(id) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'return-outcome'; button.textContent = 'Return to walkthrough';
     button.addEventListener('click', () => selectOutcome(walkthroughReturnId)); $('detail').appendChild(button);
   }
+  appendFinishedProduct();
 }
 
 function renderOutcomes() {
@@ -369,6 +370,7 @@ function renderOutcomeDetail(id) {
     ${outcome.supports.length ? `<p>Supporting pieces: ${outcome.supports.map(escapeHtml).join(', ')}. Their files are included in the example’s source binding.</p>` : ''}`;
   detail.appendChild(evidence);
   if (finding) appendTaskBrief(finding, null, outcome);
+  appendFinishedProduct();
 }
 
 function isOutcomeGap(gap) {
@@ -392,6 +394,7 @@ function renderPaidDetail() {
       const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Inspect piece';
       button.addEventListener('click', () => selectPiece(node.id, true, selectedOutcomeId)); $('detail').appendChild(button);
     }
+    appendFinishedProduct();
   }
   else if (selectedOutcomeId) renderOutcomeDetail(selectedOutcomeId);
   else $('detail').innerHTML = '<div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div><h2>Choose a goal</h2><p>Follow its steps, expected results, and recorded example to see where the journey needs work.</p>';
@@ -420,6 +423,17 @@ function showView(view) {
 
 function outcomeLabel(state) {
   return ({ computing: 'Observed example', verified: 'Verified example' })[state] || 'Outcome unproved';
+}
+function appendFinishedProduct() {
+  const ending = model.project.finishedProduct || { behavior: model.project.intent.confidence === 'unknown' ? null : model.project.intent.text,
+    source: model.project.intent.source, confidence: model.project.intent.confidence };
+  const section = document.createElement('section'); section.className = 'detail-section finished-product';
+  section.innerHTML = `<div class="eyebrow">THE DESTINATION</div><h2>What we’re building toward</h2>
+    <h3>What you should see and experience</h3><p>${escapeHtml(ending.experience || 'The finished experience has not been described yet. Ask the project owner what using it should feel and look like.')}</p>
+    <h3>What the finished product should do</h3><p>${escapeHtml(ending.behavior || 'The intended result is not documented yet. Agree on it before adding more work.')}</p>
+    <p>These pieces build toward this intended result. This description is the destination; it does not establish that the current build delivers it.</p>
+    <p>${escapeHtml(ending.source ? `Description source: ${ending.source} · ${ending.confidence}` : 'Description source: unknown')}</p>`;
+  $('detail').appendChild(section);
 }
 function walkthroughLabel(state) {
   return ({ observed: 'Observation recorded', failed: 'Recorded failure', unobserved: 'No observation recorded',
@@ -489,7 +503,7 @@ function taskBrief(gap, node, outcome, capturedFingerprint) {
   const step = outcome?.firstGap;
   const target = node || model.nodes.find(n => n.id === step?.nodeId);
   const context = {
-    project: model.project.name, mission: model.project.intent,
+    project: model.project.name, mission: model.project.intent, finishedProduct: model.project.finishedProduct,
     source: model.project.source, snapshot: { fingerprint: capturedFingerprint, capturedAt: model.generatedAt,
       mode: snapshot ? 'exported snapshot' : model.project.source?.kind === 'github' ? 'GitHub clone snapshot' : 'local viewer snapshot', refreshFailed: $('refreshStatus').classList.contains('stale') },
     finding: { id: gap.id, kind: gap.kind, message: gap.message, priority: gap.priority, dependencyId: gap.dependencyId, observations: gap.observations },

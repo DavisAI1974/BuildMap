@@ -27,6 +27,19 @@ export function readIntent(root, manifest = {}) {
   };
 }
 
+// A declared destination explains the intended experience; it is not proof
+// that the implementation delivers it. Existing projects fall back to intent.
+export function readFinishedProduct(manifest, intent, diagnostics = []) {
+  const value = manifest.finishedProduct;
+  const text = s => typeof s === 'string' && Boolean(s.trim());
+  const valid = value && typeof value === 'object' && !Array.isArray(value) && text(value.behavior) &&
+    (value.experience === undefined || text(value.experience));
+  if (value !== undefined && !valid) diagnostics.push({ code: 'invalid-config',
+    message: 'finishedProduct needs a nonempty behavior string and an optional nonempty experience string.' });
+  return valid ? { experience: value.experience?.trim() || null, behavior: value.behavior.trim(), source: '.buildmap/project.json', confidence: 'declared' }
+    : { experience: null, behavior: intent.confidence === 'unknown' ? null : intent.text, source: intent.source, confidence: intent.confidence };
+}
+
 export function summarizeMarkdown(markdown) {
   const lines = markdown.split(/\r?\n/);
   const parts = [];

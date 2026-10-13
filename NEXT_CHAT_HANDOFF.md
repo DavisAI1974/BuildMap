@@ -6,7 +6,7 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base for the plain-English guidance/focused-task pass: `4ae99a3681e7848bdd57538f4fbbc7770c128222`; use the current branch head, not the continuation base.
+Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469a5a6b110734506662f5e45`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
@@ -63,7 +63,15 @@ The user confirmed beginner-to-intermediate coder/builders as the primary audien
 
 The shared client explains findings in plain English and offers one useful next step plus a reviewable, manually copied task brief. Free-map briefs remain free. Paid briefs add the selected goal and first unresolved step. Context includes captured fingerprint/source and relevant files/assessment; the brief asks agents to inspect/re-scan, keep the change small, report observed results, and stop before widening scope. It never sends tasks, runs commands, updates evidence, or decides that an unassigned piece should be deleted. Scoped piece findings can be reviewed in the paid view and then inspected in the free map. Clipboard absence/rejection falls back to selectable text; these are DOM-double interaction checks, not real-browser observations. Two focused regressions bring the suite to 74.
 
-CLI setup and file-based plan/evidence authoring are still a usability gap for the primary audience. Do not claim a no-code onboarding flow or build accounts/billing/a broad editor without a scoped use case.
+## Finished product ending and guided local start
+
+The user requested the ending that the pieces are building toward at the bottom of both explanation views. Map inspectors, walkthroughs, and scoped walkthrough finding explanations now end with "What we’re building toward": what the finished experience should look/feel like and what it should do. Optional manifest `finishedProduct` has required nonempty `behavior` and optional nonempty `experience`; the scanner exposes this as attributed `project.finishedProduct`. Without it, behavior falls back to documented intent and experience stays undescribed. Unknown intent and malformed descriptions remain honest; nothing grants proof or rewrites walkthrough definitions. BuildMap declares its own intended finished experience and behavior. Focused task context includes this destination.
+
+The next scoped usability gap was starting without manual JSON authoring. `node src/cli.js LOCAL_PATH --init` asks four plain-English questions and creates only the initial manifest, then exits. It preserves source/evidence, refuses existing plans and incompatible remote/export/ref modes, and does not invent implementation, components, dependencies, walkthroughs, or receipts. Empty goals/unfinished input write no description; symlinked `.buildmap` folders are rejected. `src/setup.js` is retained product source assigned to the server component. Default mapping remains read-only.
+
+Four focused checks bring the suite to 78: attributed/malformed/unknown destination handling; real scan-to-live/offline ending placement, escaping, refresh and unchanged proof; actual CLI setup/defaults; preservation/refusal/cancellation/incompatible target behavior. Both Node 20 and 24 pass. Backend partial observations are refreshed; the browser step is still unobserved and no piece is live.
+
+CLI installation/startup and component/walkthrough/evidence authoring remain usability gaps. Browser onboarding is not built. Do not claim a no-code application builder or add accounts/billing/a broad editor without a scoped use case. The next useful work should come from review feedback or a concrete repository need; the real-browser release check remains blocked by the documented environment restrictions.
 
 ## Business idea to revisit
 
@@ -89,7 +97,7 @@ The user confirmed free mapping with paid walkthroughs as the product split, esp
 
 ## Current validation and proof state
 
-- **74/74 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **78/78 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.

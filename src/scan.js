@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { readIntent } from './intent.js';
+import { readIntent, readFinishedProduct } from './intent.js';
 import { sourceReferences, resolveImport } from './imports.js';
 import { buildOutcomes } from './outcomes.js';
 
@@ -64,6 +64,7 @@ export function scanProject(root, { source = null } = {}) {
     diagnostics.push({ code: 'unreadable-intent', message: `Could not read intent documents: ${err.code || err.message}.` });
     intent = { text: 'Project intent could not be read. Check the documents and permissions.', source: null, confidence: 'unknown' };
   }
+  const finishedProduct = readFinishedProduct(manifest, intent, diagnostics);
   const assignedFiles = new Set();
   const fileOwners = new Map();
   for (const component of components) {
@@ -134,7 +135,7 @@ export function scanProject(root, { source = null } = {}) {
     files: [], presentFiles: [], missingFiles: [], status: 'planned', purpose: intent.text, contributes: '',
     visual: { kind: 'goal', label: 'Intended outcome' }, plannedDependencies: [], evidence: null, source: intent.source || 'interview-needed' });
   for (const node of nodes) if (node.contributes) edges.push({ from: node.id, to: '__mission__', type: 'contributes' });
-  const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, progress,
+  const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, finishedProduct, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
     states: STATES, nodes, edges: uniqueEdges(edges), outcomes: outcomeMap.outcomes, gaps, diagnostics,
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,

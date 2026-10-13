@@ -10,11 +10,15 @@ Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
+## BuildMap stage checkpoint
+
+The user asked to finish the BuildMap stage, then return to refinements, and to update the gap sheet to stay on track. The current free source-build scope is implemented and tracked row by row in `BUILD_GAPS.md`. No additional core source task is currently assigned. Real-browser acceptance remains blocked by the documented restrictions; do not label the product released, deployed, fully browser-verified or live. Begin later refinement only from concrete feedback or an observed issue. This supersedes earlier “next free work” suggestions below.
+
 ## Latest user priorities
 
 Finish the free tier's usable builder flow before expanding paid Guide work. Do not create or update HTML preview artifacts unless the user explicitly asks; this does not remove the product's existing export command. Continue source changes and appropriate checks without generating a preview each pass.
 
-A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which now has 87 passing free-tier tests. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
+A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which now has 89 passing free-tier tests. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
 
 Guided grouping of available mapped files and planned-piece descriptions is now implemented with `--piece`; existing-piece edits and ownership/reference migration remain file-authored. Preserve existing project fields, exact file scope, source/evidence distinctions and current walkthrough authoring. Follow that with a clear review of recorded evidence and the permitted real-browser check. The free tier should let a beginner describe a project, map it, organize its pieces, follow a goal, find an unfinished point and prepare a bounded task; the wider paid roadmap can wait.
 
@@ -110,7 +114,7 @@ The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/ba
 
 ## Current validation and proof state
 
-- **87/87 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **89/89 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
@@ -222,3 +226,12 @@ Authoring rejects unsafe/non-file/linked paths and existing ownership. Direct wa
 87/87 tests pass on Node 20.20.2 and 24.19.0. Four focused regressions cover reviewed grouping/planned/empty pieces with preserved fields/source/evidence and file-only/orphan claims; ownership/direct-goal/unsafe-path/mode/cancellation refusals; concurrent plan edits/new receipts; and the actual CLI init→piece→file-arrival→walkthrough path rendered through the shared DOM double with unchanged proof. Existing walkthrough and export checks remain. Syntax/whitespace checks pass. Test receipts and partial backend observations are refreshed after checks; the browser step and whole outcome remain unproved, with no live states.
 
 Guide work stays parked on `guide/source-code-preview-20261013`; it has not been merged into this free branch. No user-facing HTML preview was generated. Next free work should clarify how beginners review recorded examples/evidence without mistaking file presence, agent claims or source connections for behavior proof. A real-browser observation still needs a permitted environment; do not retry or bypass the documented restrictions.
+
+
+## Evidence review and stage checkpoint from 3f7ae7f
+
+The free piece inspector now separates file/source facts, attributed recorded descriptions, binding/coverage checks and what remains unknown. Original raw claims, assessments, selected-input details and current hashes stay inspectable. It includes plain-English state meanings and manual observation-recording guidance; it does not run/authenticate checks or create/change receipts. The walkthrough distinguishes plans from samples, counts observed/failed/unaccepted step records and keeps whole-example acceptance separate from piece checks and mission proof. Explanations refer to the captured snapshot, including offline/stale contexts.
+
+89/89 tests pass on Node 20.20.2 and 24.19.0. Two focused scan-to-client regressions cover accepted/stale/invalid-input/unbound/file-only/missing evidence, attributed text escaping, refresh and offline behavior; and absent/partial/failed/accepted/stale-plan examples with unchanged piece proof. Existing free map, task briefs, CLI builder flow, APIs and export checks remain. Syntax/whitespace checks pass. Test receipts and partial backend intent/scan/HTTP observations are refreshed only after checks; the browser step and whole outcome stay unproved, with no live state.
+
+The user’s gap-sheet request is implemented in `BUILD_GAPS.md`: current stage requirements are marked implemented/checked, the real-browser acceptance row is blocked, and broader refinements/paid Guide are separate later work. Keep this checkpoint stable for review rather than expanding its scope indefinitely. No user-facing HTML preview was generated.

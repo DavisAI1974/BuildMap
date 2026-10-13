@@ -313,7 +313,7 @@ function renderDetail(id) {
     <div class="detail-section"><h3>Files</h3>${node.kind !== 'mission' ? `<p>${escapeHtml(fileSummary(node))}. ${node.source === 'discovered' ? 'Discovered source file; use the guided local --piece command to group available files into a new piece, or assign its exact path in .buildmap/project.json.' : 'Assigned by .buildmap/project.json; new source files appear separately until explicitly grouped.'}</p>` : ''}${fileList(node)}</div>
     <div class="detail-section"><h3>Source connections</h3>${connectionList(id)}</div>
     <div class="detail-section"><h3>Gaps to review</h3>${pieceGaps().filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId)).map(g => `<p>${escapeHtml(g.message)}</p>${Object.hasOwn(g, 'evidence') ? `<details><summary>Recorded claim</summary><pre>${escapeHtml(JSON.stringify(g.evidence, null, 2))}</pre></details>` : ''}`).join('') || '<p>No detected gaps.</p>'}</div>
-    <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>
+    <div class="detail-section"><h3>Evidence</h3>${pieceEvidenceReview(node)}<details class="evidence-details"><summary>Recorded claims, assessment and hashes</summary><div class="evidence-box">${evidenceText(node)}</div></details></div>
   `;
   if (finding) appendTaskBrief(finding, node);
   if (walkthroughReturnId && model.outcomes?.some(o => o.id === walkthroughReturnId)) {
@@ -350,6 +350,7 @@ function renderOutcomeDetail(id) {
   detail.innerHTML = `<div class="eyebrow">OUTCOME WALKTHROUGH</div><h2>${escapeHtml(outcome.name)}</h2><p>${escapeHtml(outcome.goal)}</p>
     <div class="detail-status">${outcomeLabel(outcome.status)}</div>
     <p>Ordered steps are the declared behavior plan. Source arrows do not establish these handoffs. Examples are user-recorded observations; BuildMap does not execute or authenticate them.</p>
+    ${outcomeEvidenceReview(outcome)}
     <div class="evidence-box">${escapeHtml(outcome.evidenceAssessment.reason)}</div>
     <div class="detail-section"><h3>Next point to review</h3><p>${outcome.firstGap ? `${escapeHtml(outcome.firstGap.label)} · ${walkthroughLabel(outcome.firstGap.state)}` : outcome.evidenceAssessment.accepted ? 'All steps and handoffs have a current recorded example. This covers the named example, not every possible input.' : escapeHtml(outcome.evidenceAssessment.reason)}</p></div>`;
   const findings = (model.gaps || []).filter(g => g.outcomeId === id);
@@ -576,6 +577,55 @@ function connectionList(id) {
 function receiptText(receipt, assessment, label = 'Recorded claim') {
   if (!receipt || typeof receipt !== 'object') return `<p>${label}: ${escapeHtml(JSON.stringify(receipt))} · rejected</p>`;
   return `<p>${label}: ${escapeHtml(receipt.status || 'invalid')} · ${assessment?.accepted ? 'accepted' : 'rejected'}</p>${['note','command','proof'].filter(k => receipt[k]).map(k => `<p><strong>${k}:</strong> ${escapeHtml(receipt[k])}</p>`).join('')}${inputBindingText(receipt, assessment)}`;
+}
+
+function bindingReview(receipt, assessment) {
+  if (!receipt || typeof receipt !== 'object') return 'No supported record establishes source freshness.';
+  const source = ({ current: 'Recorded implementation hashes match the captured files.',
+    unbound: 'Source freshness is unknown: this record has no implementation hashes.',
+    stale: 'The record does not match the captured source, plan or selected inputs.',
+    invalid: 'A recorded binding is invalid; inspect the assessment before using this claim.' })[assessment?.binding]
+    || 'A valid source binding has not been established for this record.';
+  const inputs = !Object.hasOwn(receipt, 'inputHashes') ? 'Dependency and test-input freshness is not tracked.'
+    : assessment?.inputs?.binding === 'current' ? 'Only the explicitly listed inputs match; unlisted files and the environment are not covered.'
+      : 'Selected input bindings are not accepted or have not been assessed.';
+  return `${source} ${inputs}`;
+}
+
+function pieceEvidenceReview(node) {
+  if (node.kind === 'mission') return '<div class="evidence-review"><h4>Read evidence in this snapshot</h4><p>This is the intended project result. A file, a connection, or a verified piece does not establish that the whole project delivers it.</p></div>';
+  const count = node.files?.length || 0, present = node.presentFiles?.length || 0;
+  const implementation = count ? `${present} of ${count} assigned files are present${present < count ? '; implementation is incomplete' : '; presence alone does not show that they work'}.`
+    : 'No implementation files are assigned; this piece remains planned.';
+  const structure = node.baseStatus === 'connected' ? 'The scanner found a source reference in the complete implementation. This is syntax, not a recorded execution.'
+    : 'Source structure does not establish that this piece has run or delivered a result.';
+  const receipt = node.evidence, assessment = node.evidenceAssessment;
+  const recorded = receipt && typeof receipt === 'object' ? `Someone recorded a ${receipt.status || 'unrecognized'} claim. ${assessment?.accepted ? 'It is accepted for this piece in the captured snapshot.' : 'It is not accepted for this piece in the captured snapshot.'}`
+    : 'No supported piece-level behavior claim is available. File-only claims and invalid records may still be inspectable below.';
+  const description = receipt && ['note', 'proof', 'command'].find(k => typeof receipt[k] === 'string' && receipt[k].trim());
+  const target = node.kind === 'file' ? `files[${JSON.stringify(node.files[0])}]` : `components[${JSON.stringify(node.id)}]`;
+  return `<div class="evidence-review"><h4>Read evidence in this snapshot</h4>
+    <p><strong>What the files show:</strong> ${escapeHtml(implementation)} ${escapeHtml(structure)}</p>
+    <p><strong>What someone recorded:</strong> ${escapeHtml(recorded)}</p>
+    ${description ? `<p><strong>Recorded ${description}:</strong> ${escapeHtml(receipt[description])}</p>` : ''}
+    <p><strong>Does the record still match?</strong> ${escapeHtml(bindingReview(receipt, assessment))}</p>
+    <p><strong>What it does not establish:</strong> BuildMap does not run or authenticate the recorded check. Acceptance is not proof of the whole goal, every input, or continuing live use. These facts describe the captured snapshot; refresh may be needed.</p>
+    <details><summary>How to record a piece observation</summary><p>After actually observing useful work or running a behavior check, describe what you observed in <code>.buildmap/evidence.json</code> under <code>${escapeHtml(target)}</code>. Use computing for reported useful work or verified for a reported passing check. A command name, test file or agent assertion alone is not an observed result.</p>
+      <p>Record the complete implementation hashes after the observation/check. Optionally bind the dependency/test inputs you used. If a record is stale, repeat the observation or check before replacing hashes; changing hashes alone is not new evidence. Existing file-only claims cannot prove the whole component.</p></details>
+    <details><summary>What the state names mean</summary><p>Planned: implementation is missing or unassigned. Coded: all implementation files are present. Connected: the scanner found source references. Computing: useful work was reported. Verified: a passing behavior check was reported. Live: active use was reported. The last three are manually recorded claims, not independent BuildMap observations.</p></details></div>`;
+}
+
+function outcomeEvidenceReview(outcome) {
+  const observed = outcome.steps.filter(s => s.state === 'observed').length;
+  const failed = outcome.steps.filter(s => s.state === 'failed').length;
+  const remaining = outcome.steps.length - observed - failed;
+  return `<div class="evidence-review"><h3>Read this example in the snapshot</h3>
+    <p><strong>Plan versus record:</strong> Expected results describe what should happen. Only recorded sample inputs/outputs describe what someone says they observed.</p>
+    <p><strong>Recorded steps:</strong> ${observed} of ${outcome.steps.length} are currently marked observed; ${failed} failed; ${remaining} lack an accepted observation. Stale, missing or rejected records are not counted as observed.</p>
+    <p><strong>Whole example:</strong> ${outcome.evidenceAssessment?.accepted ? 'The named example is accepted for this captured plan and source. It covers that example, not every input or the mission.' : 'The whole example remains unproved, even if individual pieces have passing check records.'}</p>
+    <p><strong>Record freshness:</strong> ${escapeHtml(bindingReview(outcome.evidence, outcome.evidenceAssessment))}</p>
+    <p>BuildMap does not execute or authenticate these observations. A later step needs its own input/output and an explicit handoff record; source imports cannot supply that evidence. Failed or partial examples should stay visible.</p>
+    <details><summary>How to record a walkthrough example</summary><p>After observing the goal, record a named example under <code>outcomes[${escapeHtml(JSON.stringify(outcome.id))}]</code> in <code>.buildmap/evidence.json</code>. Include overall input/output, one ordered record for each step, and handoff descriptions after the first. Bind the plan's definition hash and every participating/supporting implementation hash after the observation. Use the README format; do not fill in unobserved outputs or upgrade a piece merely to complete the walkthrough.</p></details></div>`;
 }
 function inputBindingText(receipt, assessment) {
   if (!Object.hasOwn(receipt, 'inputHashes')) return '<p>Dependency and test-input freshness is not tracked by this receipt; no input hashes were recorded.</p>';

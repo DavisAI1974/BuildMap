@@ -286,6 +286,82 @@ test('guided free builder flow creates a piece, follows file arrival and makes i
   assert.equal(final.outcomes[0].status, 'unproved'); assert.equal(final.outcomes[0].steps[0].state, 'unobserved');
 });
 
+test('free evidence review separates file presence, accepted claims, unknown freshness, rejected inputs and file-only proof', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-evidence-review-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true })); fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'main.js'), 'export const main = true;'); fs.writeFileSync(path.join(root, 'data.json'), '{}');
+  fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify({ components: [
+    { id: 'main', files: ['main.js'] }, { id: 'planned', files: ['missing.js'] }
+  ] }));
+  const initial = scanProject(root), sourceHashes = initial.nodes.find(n => n.id === 'main').sourceHashes;
+  const receipt = { status: 'verified', note: '<script>Recorded result</script>', sourceHashes, inputHashes: { 'data.json': sourceHashes['main.js'] } };
+  const save = value => fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), JSON.stringify(value));
+  // Read the current input hash through the existing assessment, then bind the fixture.
+  save({ components: { main: receipt } }); receipt.inputHashes = scanProject(root).nodes.find(n => n.id === 'main').evidenceAssessment.inputs.currentHashes;
+  save({ components: { main: receipt } });
+  const originalInputs = { ...receipt.inputHashes };
+  for (const offline of [false, true]) {
+    const input = scanProject(root), original = JSON.stringify(input), ui = await client(input, offline);
+    const choose = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id).click(); choose('main');
+    assert.match(ui.get('detail').innerHTML, /1 of 1 assigned files are present/);
+    assert.match(ui.get('detail').innerHTML, /accepted for this piece/); assert.match(ui.get('detail').innerHTML, /match the captured files/);
+    assert.match(ui.get('detail').innerHTML, /Only the explicitly listed inputs match/);
+    assert.match(ui.get('detail').innerHTML, /&lt;script&gt;Recorded result/); assert.doesNotMatch(ui.get('detail').innerHTML, /<script>/);
+    assert.match(ui.get('detail').innerHTML, /does not run or authenticate/); assert.match(ui.get('detail').innerHTML, /recorded check/);
+    assert.match(ui.get('detail').innerHTML, /components\[&quot;main&quot;\]/);
+    choose('planned'); assert.match(ui.get('detail').innerHTML, /0 of 1 assigned files are present; implementation is incomplete/);
+    assert.equal(JSON.stringify(input), original);
+    if (offline) { assert.deepEqual(ui.counts(), { requests: 0, polls: 0 }); continue; }
+    choose('main'); fs.writeFileSync(path.join(root, 'data.json'), '{"changed":true}'); ui.setModel(scanProject(root)); await ui.refresh();
+    assert.match(ui.get('detail').innerHTML, /not accepted for this piece/); assert.match(ui.get('detail').innerHTML, /does not match the captured source, plan or selected inputs/);
+    assert.match(ui.get('detail').innerHTML, /repeat the observation or check before replacing hashes/i);
+    receipt.inputHashes = { 'data.json': 'invalid' }; save({ components: { main: receipt } }); ui.setModel(scanProject(root)); await ui.refresh();
+    assert.match(ui.get('detail').innerHTML, /recorded binding is invalid/);
+    save({ components: { main: { status: 'verified', note: 'Unbound claim.' } } }); ui.setModel(scanProject(root)); await ui.refresh();
+    assert.match(ui.get('detail').innerHTML, /freshness is unknown/);
+    save({ files: { 'main.js': { status: 'verified', note: 'File only.', sourceHashes } } }); ui.setModel(scanProject(root)); await ui.refresh();
+    assert.match(ui.get('detail').innerHTML, /No supported piece-level behavior claim/);
+    assert.match(ui.get('detail').innerHTML, /File-only claim/); assert.match(ui.get('detail').innerHTML, /cannot prove the whole component/);
+    assert.equal(scanProject(root).nodes.find(n => n.id === 'main').status, 'coded');
+    // Restore the captured fixture for the independent offline iteration.
+    fs.writeFileSync(path.join(root, 'data.json'), '{}'); save({ components: { main: { status: 'verified', note: '<script>Recorded result</script>', sourceHashes,
+      inputHashes: originalInputs } } });
+  }
+});
+
+test('free walkthrough evidence review distinguishes absent, partial, failed, accepted and stale examples from piece checks', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-example-review-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true })); fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'a.js'), 'export const a = 1;'); fs.writeFileSync(path.join(root, 'b.js'), 'export const b = 1;');
+  const plan = { outcomes: [{ id: 'goal', goal: 'Show a useful result.', steps: [
+    { id: 'a', nodeId: 'file:a.js', label: 'First', expected: 'An intended result.' }, { id: 'b', nodeId: 'file:b.js', label: 'Second', expected: 'A final result.' }
+  ] }] };
+  const planPath = path.join(root, '.buildmap/project.json'); fs.writeFileSync(planPath, JSON.stringify(plan));
+  const initial = scanProject(root), outcome = initial.outcomes[0];
+  const claims = { files: Object.fromEntries(initial.nodes.filter(n => n.kind === 'file').map(n => [n.files[0], { status: 'verified', note: 'Piece fixture check.', sourceHashes: n.sourceHashes }])) };
+  const save = () => fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), JSON.stringify(claims)); save();
+  const ui = await client(scanProject(root)); ui.get('outcomes').children[0].click();
+  assert.match(ui.get('detail').innerHTML, /0 of 2 are currently marked observed/);
+  assert.match(ui.get('detail').innerHTML, /whole example remains unproved/);
+  const receipt = { status: 'verified', note: 'Fixture example.', sourceHashes: outcome.sourceHashes, definitionHash: outcome.definitionHash,
+    example: { name: 'Fixture', input: 0, output: null, steps: [{ stepId: 'a', result: 'observed', input: 0, output: false }] } };
+  claims.outcomes = { goal: receipt }; save(); ui.setModel(scanProject(root)); await ui.refresh();
+  assert.match(ui.get('detail').innerHTML, /1 of 2 are currently marked observed; 0 failed; 1 lack/);
+  assert.match(ui.get('detail').innerHTML, /whole example remains unproved/);
+  receipt.example.steps.push({ stepId: 'b', result: 'failed', handoff: 'Passed false onward.', input: false, output: 0 });
+  save(); ui.setModel(scanProject(root)); await ui.refresh(); assert.match(ui.get('detail').innerHTML, /1 of 2 are currently marked observed; 1 failed; 0 lack/);
+  receipt.example.steps[1].result = 'observed'; receipt.example.output = 0; save(); const accepted = scanProject(root);
+  ui.setModel(accepted); await ui.refresh(); assert.match(ui.get('detail').innerHTML, /named example is accepted/);
+  assert.match(ui.get('detail').innerHTML, /not every input or the mission/);
+  const offline = await client(accepted, true); offline.get('outcomes').children[0].click();
+  assert.match(offline.get('detail').innerHTML, /named example is accepted/); assert.deepEqual(offline.counts(), { requests: 0, polls: 0 });
+  plan.outcomes[0].steps[1].expected = 'A changed intended result.'; fs.writeFileSync(planPath, JSON.stringify(plan));
+  const stale = scanProject(root); ui.setModel(stale); await ui.refresh();
+  assert.match(ui.get('detail').innerHTML, /0 of 2 are currently marked observed/);
+  assert.match(ui.get('detail').innerHTML, /source, plan or selected inputs/);
+  assert.equal(stale.project.counts.verified, 2); assert.equal(stale.outcomes[0].status, 'unproved');
+});
+
 test('search locates a piece by any assigned file, safely renders results, and supports Enter/Escape', async () => {
   const file = 'src/<img onerror=evil()>.js';
   const ui = await client(model('search-files', [piece('engine', { name: '<script>Engine</script>',

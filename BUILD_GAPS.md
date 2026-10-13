@@ -1,69 +1,58 @@
-# BuildMap v0.1 remaining build gaps
+# BuildMap stage and remaining gaps
 
-Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 87 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
+**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. No additional core source feature is currently assigned. Browser acceptance remains blocked; this is not a release, deployment, or live-completion claim.
 
-## What the current map actually reports
+This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **89/89 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. Client interaction checks use a DOM double, not a real browser.
 
-BuildMap's manifest has five implemented components: four have source-bound recorded test receipts with selected dependency/test-input bindings; the visualizer is source-connected. There are no missing implementation files, unexpected declared-plan dependencies, or unmapped evidence claims in the dogfood map.
+## Free BuildMap stage checklist
 
-Its release-confidence findings are the visualizer's `unproved` behavior and the separate unproved "Understand the current build" outcome. Backend receipt states cannot close its browser walkthrough step. Exercise the real UI in a permitted environment before recording that observation.
-
-The parser-backed adapter now finds the literal `/api/map` fetch and its unique Node HTTP handler condition, with file/line provenance. That closes the previous no-observed-connection/unobserved-dependency findings within the supported source-matching scope. It does not establish runtime origin, transport, execution, or browser behavior, and grants no upper visualizer state.
-
-## MVP scope
-
-The existing CLI/server/map/export core is the original free MVP. The updated strategy keeps the complete map, current walkthrough and basic agent task briefs free. Goals can be selected in the map sidebar and read beside the graph, or in the wider Walkthrough · Free reading view; Map remains the default. BuildMap Guide is the proposed paid tier, with no Guide capabilities or billing implemented. File previews and present/missing counts are implemented in the shared live/export client; the full list stays in the inspector. New supported source files appear independently until explicitly grouped in the manifest. Clickable search results, match counts, Enter/Escape shortcuts, and card navigation from results/gaps are implemented in that same client. Refresh preserves focus on surviving cards/results. Navigation checks use the DOM double; browser behavior remains unobserved. Outcome walkthroughs now add declared goals, ordered steps and expected results, supporting-piece assignments, source/definition-bound recorded examples, and the first unresolved point. The inspector exposes samples and links back to participating pieces; unassigned pieces become informational scope-review findings. Outcome findings appear in the free walkthrough reading view, while the map keeps the original source/evidence findings and complete map features. Both reading views belong to BuildMap Free; billing/access enforcement is not built. These plans never manufacture source edges, piece proof, mission proof, or deployment claims. Further MVP work must carry into the product. The broader roadmap below can wait for concrete usage needs.
-
-The product now focuses on beginner-to-intermediate builders, including people using coding agents without full-stack or architecture experience. Plain-English finding guidance and manually copied focused task briefs are implemented in the shared client. They suggest one bounded review, with goal/first-step context in the free walkthrough, without removing free features or manufacturing proof. An explicit local `--init` interview now collects the goal and finished-product description without hand-editing JSON. Both explanation views end with that attributed destination, without claiming completion. A separate explicit local `--walkthrough` interview now appends a reviewed goal, ordered mapped pieces, expected results, explanations and support assignments without hand-writing JSON or granting proof. Guided local `--piece` setup now appends reviewed groups or planned pieces. CLI installation/startup, existing-piece/walkthrough editing and evidence authoring remain usability gaps for this audience; broader browser onboarding and editors should be scoped before adding a platform.
-
-## Free-tier completion comes first
-
-The user prioritized completing the free builder flow before expanding paid Guide. The active MVP keeps the complete map, goals/current walkthroughs and basic briefs. The tested JavaScript Guide code preview is parked separately on `guide/source-code-preview-20261013` at `3277533`; it is not included in this branch or PR #1.
-
-| Free builder step | Current position | Next completion criterion |
+| Stage requirement | Status | Implementation and check boundary |
 | --- | --- | --- |
-| Describe and open a project | `--init`, local mapping and README startup commands exist. | Keep setup instructions clear and verify them through normal use; do not claim browser onboarding. |
-| Organize existing files and planned pieces | `--piece` now appends a reviewed group or planned piece, preserving existing plans/source/evidence and missing-file visibility. | Existing-piece edits, moving owned files and migrating direct walkthrough references still require file authoring; expand only from a concrete use case. |
-| Follow a goal and prepare one task | Free map goals, walkthrough authoring, first unfinished point and basic briefs exist. | Preserve this complete path while adding piece authoring; avoid new billing or orchestration infrastructure. |
-| Review evidence and interface behavior | Receipt inspection and backend/DOM-double checks exist; browser proof is pending. | Next: make recording versus proving behavior clear in beginner guidance, then record a permitted real-browser observation when available. |
+| Describe a project and its intended finished experience/behavior | Implemented | Explicit local `--init`; attributed README/manifest intent; unknown intent and malformed descriptions stay visible. Both explanation views end with the destination. |
+| Map the repository and every mapped piece/file | Implemented | Git/filesystem inventory, supported source discovery and exact declared paths. Full file inspectors, present/missing counts and planned pieces. This is not automatic inventory of every unsupported repository asset. |
+| Organize files and describe planned pieces | Implemented | Reviewed local `--piece` appends groups or missing/empty pieces, preserving existing plans/source/evidence. Ownership and direct walkthrough references block unsafe regrouping. Existing-piece edits remain file-authored. |
+| Separate implementation, source wiring and behavior claims | Implemented | Planned/coded/connected/computing/verified/live contract; declared dependencies cannot grant source connectivity. Missing/overlapping implementation and stale/rejected claims remain visible. |
+| Follow goals through the build | Implemented | Free goals beside the graph and a wider free walkthrough; reviewed local `--walkthrough`; ordered steps, expected results, samples, handoffs, first unfinished point and supporting pieces. |
+| Prepare one focused task for a coding agent | Implemented | Free finding guidance and basic copy briefs, including goal/first-step context. Relevant files, captured fingerprint, scope limits and manual copy fallback; BuildMap does not send or execute tasks. |
+| Read evidence without confusing a claim with proof | Implemented | Plain-English piece/whole-example review, recorded descriptions, binding/coverage limits, observed/failed/unaccepted step counts and recording guidance. Original raw claims/assessments/hashes remain inspectable. Evidence authoring remains manual. |
+| Navigate and follow local source changes | Implemented | Search across assigned paths, result/gap focus, selection highlights, fit/actual size, refresh/removal and refresh-failure feedback. Checked through shared-client DOM tests; real layout/accessibility is pending. |
+| Use APIs and portable snapshots | Implemented | Read-only map/gaps/health, JSON and self-contained HTML export; GitHub branch/tag snapshot provenance and cleanup. Export shares the live client and does not poll. No preview artifact is generated unless requested. |
+| Support the documented local runtime/startup | Checked | Node 20+ commands remain required; full tests on Node 20.20.2 and 24.19.0. Historical public clone/ref and Node 20 CLI/server/API/assets/exit smoke results remain documented. No no-code/browser onboarding claim. |
+| Observe the real browser experience | Blocked | Live server and export, narrow/larger maps, clipboard, search/fit/scroll, keyboard/accessibility, edits and failure/recovery still need a permitted browser environment. |
 
-Create HTML preview artifacts only on explicit user request. Existing export functionality stays available.
+The implemented source checkpoint can now be reviewed as one free BuildMap flow. Further source work should come from a concrete finding, user feedback, or the permitted browser observation rather than treating all future capabilities as unfinished MVP work.
 
-## Next release-confidence checks
+## Current dogfood evidence
 
-| Priority | Remaining check | Done when |
+The manifest has five implemented components. Four backend/test pieces have current manually recorded, source-bound test receipts with selected dependency/test-input bindings. The visualizer is source-connected and behavior-unproved. There are no missing implementation files, unexpected declared-plan dependencies, or unmapped evidence claims in the dogfood map.
+
+The literal `/api/map` fetch and supported Node HTTP handler match with source locations. This is source syntax, not proof of runtime origin, transport, execution, or browser behavior. A partial Node intent/scan/local-HTTP example records selected fields for three steps; its browser step and the whole “Understand the current build” outcome remain unproved. No piece is live.
+
+Hash matches establish identity, not receipt authenticity, complete transitive input coverage, environment identity, or continuing liveness. Piece proof and outcome/mission proof remain independent.
+
+## Remaining stage acceptance check
+
+The available cloud browser could not reach workspace loopback, and its URL policy rejected local HTML navigation and prohibited workarounds. No workaround was used. Do not retry or bypass those restrictions; complete the browser checklist only in a permitted environment and record only what is observed.
+
+PR #1 remains open. Merge, deployment, npm publication and paid launch are separate actions. Nothing is marked live.
+
+## Refinements after this checkpoint
+
+| Area | Current boundary | Later work when a concrete need justifies it |
 | --- | --- | --- |
-| 1 | Real browser end-to-end, including narrow screens and a larger sample map. | Open the live server and exported snapshot, exercise selection, gaps, filtering, fit/scroll, keyboard use, live edits, and refresh failure/recovery; fix findings and record only the behavior actually observed. |
+| Easier onboarding and plan editing | CLI setup and append-only piece/walkthrough interviews; existing edits, ownership moves and reference migration require file authoring. | Simplify installation, or add a narrowly scoped editor/migration flow from actual usage. |
+| Evidence capture and independent provenance | Manual receipts and explicit selected inputs; recording guidance is implemented, not automatic capture. | Assisted entry or authenticated CI/runtime observations; retain scope, freshness and uncertainty. No command execution or upper states inferred from file/agent presence. |
+| Broader wiring discovery | Parsed JavaScript and bounded HTTP source matching; TypeScript/JSX, Python/HTML/CSS have disclosed heuristic limits. | Concrete adapters for frameworks/wrappers, aliases, Python src layouts and other languages with provenance. |
+| Larger repositories | Full scans/hashes and all-card rendering; no scale benchmark. | Measure realistic use, then improve caching/layout/navigation while preserving change detection. |
+| Deeper intent and mechanisms | Attributed prose, declared descriptions and illustrative visuals. | Compare documented goals with implementation and explain mechanisms with inspectable source facts and uncertainty. |
+| Remote/history/zoom extensions | GitHub inputs are fixed snapshots; conceptual multi-level navigation/history animation is deferred. | Add only from a real navigation or collaboration need. |
 
-The available cloud browser cannot reach this workspace's loopback server, and its URL policy rejects local HTML-file navigation. No workaround around that security rejection has been used. Browser verification needs a permitted browser environment. The Node 20 runtime check is now complete: the full suite and dogfood CLI JSON/server/API/assets/SIGTERM smoke passed on v20.20.2.
+## Parked paid Guide work
 
-PR #1 remains open. Merging and public release are separate actions after review; this pass does not claim that the default branch already contains v0.1.
+The tested JavaScript code-reading preview is preserved on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`; it is not in this free branch or PR #1. Preserve it for later integration.
 
-## Important product work for broader use
+The strategy in `docs/BUILDMAP_COMPETITIVE_STRATEGY_HANDOFF_20261013.md` proposes deeper coaching with acceptance criteria, impact previews, post-agent review, guided verification and continuity. Pricing/billing remain undecided or unbuilt. The current complete map, walkthrough and basic task briefs stay free. No separate coding agent or broad orchestration platform is required for this checkpoint.
 
-| Priority | Gap | Current boundary | Useful next implementation |
-| --- | --- | --- | --- |
-| 2 | Broader, more accurate wiring discovery. | Parsed JS plus bounded Node-HTTP/fetch source path matching; TypeScript/JSX and Python/HTML/CSS remain heuristic. HTTP wrappers/frameworks/origin routing, aliases, Python `src` layouts, and other languages are incomplete. | Expand adapters from concrete repository needs with source provenance, while preserving source/runtime/plan distinctions. |
-| 3 | Broader proof freshness and independent provenance. | Manual claims; source hashes cover each piece, and optional input hashes cover only selected dependency/test/data/config files. Complete transitive input coverage, environments, CI authenticity, and continuing deployment liveness are not established. | Automatic inspectable input-set discovery when justified, plus independent CI/runtime receipts. Never run commands or infer upper states merely from their existence. |
-| 4 | Large-repository performance and navigation. | Full synchronous rescan/hash per API request; all cards/edges are rendered; layering is bounded and cycles are tolerated without deeper layout semantics. No scale benchmark is claimed. | Measure a realistic large sample, reduce repeated work while preserving change detection, and add capability/subsystem drill-down or filtering. |
-| 5 | Deeper intent and visual explanation. | First useful README prose or a declared mission; filename/comment/symbol heuristics and illustrative mini-visuals. A local description interview is available; no autonomous interview or semantic contradiction analysis. | Preserve attribution/uncertainty while comparing documented goals with implementation and deriving inspectable mechanism descriptions. |
+## Working rules
 
-These are product improvements beyond the implemented v0.1 core, rather than a claim that six source modules are still missing. Each should be scoped from an actual use case before adding infrastructure.
-
-New outcome plans can be added through the guided local `--walkthrough` interview or the manifest. Existing-plan editing and example capture still use the manifest/evidence files. Automatic runtime instrumentation, authenticated capture, semantic checking of expected results, branching journeys, and an in-app editor are deferred until usage justifies them. The implemented ordered walkthrough is a retained product model and interface.
-
-## Deferred extensions
-
-- Git arrival/history animation: current clone provenance identifies the selected commit but does not reconstruct when individual pieces arrived.
-- Continuous remote GitHub refresh: current GitHub input is a clone snapshot; local mode follows source edits.
-- Five-level navigation (`File → Mechanism → Capability → Subsystem → Mission`): later product direction, not a prerequisite for the current proof of concept.
-- Automated publication/deployment: no deployment exists and no piece is marked live.
-
-## Working rules for the next pass
-
-Use the current PR head and preserve newer commits. Read the README, this gap report, source, and tests before expanding scope. Keep declared plans distinct from discovered wiring. Preserve file/component evidence scope and source-binding checks. Update receipts only after the relevant check succeeds, and retain the browser limitation until an actual permitted observation closes it.
-
-
-## Proposed BuildMap Guide
-
-The updated strategy in `docs/BUILDMAP_COMPETITIVE_STRATEGY_HANDOFF_20261013.md` proposes paid deeper code explanations, bounded coaching with acceptance criteria, impact previews, review of agent changes, guided verification and session continuity. None is claimed as implemented. The first scoped increment should be deeper source-attributed code explanations from a concrete project, with uncertainty and source/runtime distinctions intact. Do not rebrand the existing walkthrough or basic copy brief as paid. Pricing and billing remain undecided; no broad coding-agent/orchestration platform is required by this strategy.
+Fetch the current branch and preserve newer work. Keep this sheet tied to source/tests and observed evidence, and keep browser limitations explicit. Create or update user-facing HTML previews only when the user asks; retain the product export command. Defer refinements until feedback or an observed issue gives them a concrete purpose. Refresh receipts only after the relevant checks pass; do not manufacture proof to close a row.

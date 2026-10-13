@@ -126,3 +126,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 }
 .detail pre { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font-size: 11px; }
 .project-source { color: var(--muted); font-size: 10px; margin-top: 2px; overflow-wrap: anywhere; }
+.search-panel { margin-top: 10px; }
+#searchStatus { color: var(--muted); font-size: 11px; line-height: 1.4; }
+#searchResults { display: grid; gap: 6px; }
+.search-result { display: grid; gap: 4px; width: 100%; text-align: left; padding: 8px; font-size: 11px; overflow-wrap: anywhere; }
+.search-result span { color: var(--muted); font-size: 10px; }
+.search-result[aria-pressed="true"] { border-color: var(--accent); }
+#moreResults { margin-top: 8px; width: 100%; font-size: 11px; }

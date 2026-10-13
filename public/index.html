@@ -38,6 +38,11 @@
     <aside class="rail">
       <label class="search-label" for="search">Find a piece</label>
       <input id="search" type="search" placeholder="scanner, API, queue…" autocomplete="off" />
+      <section id="searchPanel" class="search-panel" aria-label="Search results" hidden>
+        <p id="searchStatus" role="status"></p>
+        <div id="searchResults"></div>
+        <button id="moreResults" type="button" hidden>Show all matches</button>
+      </section>
       <div class="legend" id="legend"></div>
       <div class="edge-key"><span>Solid → observed source dependency</span><span>Dashed → declared dependency</span><span>Green → contribution to mission</span></div>
       <section class="gaps-panel" aria-label="Build gaps"><h2 id="gapHeading">Next gaps</h2><div id="gaps"></div><button id="moreGaps" type="button" hidden>Show all gaps</button></section>

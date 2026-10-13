@@ -14,6 +14,7 @@ class Element {
     this.attributes = {}; this.listeners = {}; this.clientWidth = 800; this.clientHeight = 600;
     this.classes = new Set(); this.textContent = ''; this.hidden = false; this._html = '';
     this.classList = { add: c => this.classes.add(c), remove: c => this.classes.delete(c),
+      contains: c => this.classes.has(c),
       toggle: (c, on) => on ? this.classes.add(c) : this.classes.delete(c) };
   }
   set innerHTML(value) { this._html = value; this.children = []; }
@@ -23,7 +24,9 @@ class Element {
   addEventListener(type, fn) { this.listeners[type] = fn; }
   appendChild(el) { this.children.push(el); }
   setAttribute(key, value) { this.attributes[key] = value; }
-  scrollTo() {}
+  scrollTo(options) { this.lastScroll = options; }
+  scrollIntoView(options) { this.revealOptions = options; }
+  focus(options) { this.focusOptions = options; this.document.activeElement = this; }
   click() { this.listeners.click?.(); }
 }
 function piece(id, overrides = {}) {
@@ -37,10 +40,13 @@ function model(fingerprint, nodes = [piece('a'), piece('__mission__', { kind: 'm
 }
 async function client(initial, offline = false) {
   const elements = new Map(); let current = initial; let failed = false;
-  const get = id => { if (id === 'buildmapSnapshot') return offline ? { textContent: JSON.stringify(initial) } : null; if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); };
+  const document = { activeElement: null };
+  const create = tag => { const el = new Element(tag); el.document = document; return el; };
+  const get = id => { if (id === 'buildmapSnapshot') return offline ? { textContent: JSON.stringify(initial) } : null; if (!elements.has(id)) elements.set(id, create('div')); return elements.get(id); };
   let requests = 0, polls = 0;
-  const context = vm.createContext({ document: { getElementById: get, createElement: tag => new Element(tag), createElementNS: (_,tag) => new Element(tag),
-    querySelectorAll: () => get('nodeLayer').children.filter(e => e.classes.has('node')) },
+  Object.assign(document, { getElementById: get, createElement: create, createElementNS: (_,tag) => create(tag),
+    querySelectorAll: () => get('nodeLayer').children.filter(e => e.classes.has('node')) });
+  const context = vm.createContext({ document,
     fetch: async () => { requests++; return { ok: !failed, status: failed ? 500 : 200, json: async () => current }; },
     ResizeObserver: class { observe() {} }, setInterval: () => { polls++; }, console: { error() {} } });
   const source = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
@@ -212,4 +218,84 @@ test('live scanned files appear separately, move into declared components, and r
   assert.match(card('engine').innerHTML, /3 files · 1 present · 2 missing/);
   assert.match(ui.get('detail').innerHTML, /src\/engine.js · missing/);
   assert.ok(card('engine').classes.has('planned'));
+});
+
+test('search locates a piece by any assigned file, safely renders results, and supports Enter/Escape', async () => {
+  const file = 'src/<img onerror=evil()>.js';
+  const ui = await client(model('search-files', [piece('engine', { name: '<script>Engine</script>',
+    files: ['src/first.js', 'src/second.js', file], presentFiles: ['src/first.js', 'src/second.js', file] }), piece('other')]));
+  const input = value => ui.get('search').listeners.input({ target: { value } });
+  const key = key => { let prevented = false; ui.get('search').listeners.keydown({ key, preventDefault: () => { prevented = true; } }); return prevented; };
+  assert.equal(ui.get('searchPanel').hidden, true);
+  input('<img');
+  assert.match(ui.get('searchStatus').textContent, /^1 match/);
+  const result = ui.get('searchResults').children[0];
+  assert.equal(result.children[0].textContent, '<script>Engine</script>');
+  assert.equal(result.children[1].textContent, `coded · ${file}`);
+  assert.equal(key('Enter'), true);
+  const card = ui.get('nodeLayer').children.find(e => e.dataset.id === 'engine');
+  assert.equal(card.attributes['aria-pressed'], 'true');
+  assert.equal(ui.context.document.activeElement, card);
+  assert.equal(card.focusOptions.preventScroll, true);
+  assert.equal(card.revealOptions.block, 'nearest');
+  assert.match(ui.get('detail').innerHTML, /&lt;img/);
+  input('no-such-piece');
+  assert.match(ui.get('searchStatus').textContent, /No matching pieces/);
+  assert.equal(ui.get('searchResults').children.length, 0);
+  assert.equal(key('Enter'), false);
+  assert.equal(key('Escape'), true);
+  assert.equal(ui.get('search').value, '');
+  assert.equal(ui.get('searchPanel').hidden, true);
+  assert.ok(ui.get('nodeLayer').children.filter(e => e.dataset.id).every(e => e.tabIndex === 0));
+});
+
+test('search results disclose all matches, follow edits, and behave the same offline', async () => {
+  const nodes = Array.from({ length: 25 }, (_, i) => piece(`p${i}`, { files: [`src/p${i}.js`], presentFiles: [`src/p${i}.js`] }));
+  for (const offline of [false, true]) {
+    const ui = await client(model('many', nodes), offline);
+    ui.get('search').listeners.input({ target: { value: 'src/' } });
+    assert.match(ui.get('searchStatus').textContent, /^25 matches/);
+    assert.equal(ui.get('searchResults').children.length, 12);
+    assert.equal(ui.get('moreResults').hidden, false);
+    ui.get('moreResults').click();
+    assert.equal(ui.get('searchResults').children.length, 25);
+    ui.get('searchResults').children[24].click();
+    assert.match(ui.get('detail').innerHTML, /src\/p24.js/);
+    assert.ok(ui.get('mapViewport').lastScroll.top > 1000);
+    ui.get('fitButton').click();
+    ui.get('searchResults').children[24].click();
+    assert.equal(ui.get('mapViewport').lastScroll.top, 0); // Fit geometry is scaled.
+    ui.get('sizeButton').click();
+    if (!offline) {
+      ui.setModel(model('edited', nodes.slice(0, 24))); await ui.refresh();
+      assert.match(ui.get('searchStatus').textContent, /^24 matches/);
+      assert.equal(ui.get('searchResults').children.length, 24);
+      assert.match(ui.get('detail').innerHTML, /Piece removed/);
+      assert.equal(ui.context.document.activeElement, ui.get('search'));
+    } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+  }
+});
+
+test('gap navigation reaches a distant card and refresh retains keyboard focus without stealing it', async () => {
+  const nodes = Array.from({ length: 30 }, (_, i) => piece(`p${String(i).padStart(2, '0')}`));
+  const initial = model('navigation', nodes);
+  initial.gaps = [{ nodeId: 'p29', priority: 'warning', kind: 'unproved', message: 'Record useful behavior.' }];
+  const ui = await client(initial);
+  ui.get('gaps').children[0].click();
+  assert.ok(ui.get('mapViewport').lastScroll.top > 6000);
+  let card = ui.get('nodeLayer').children.find(e => e.dataset.id === 'p29');
+  assert.equal(ui.context.document.activeElement, card);
+  ui.setModel(model('next', nodes)); await ui.refresh();
+  card = ui.get('nodeLayer').children.find(e => e.dataset.id === 'p29');
+  assert.equal(ui.context.document.activeElement, card);
+  ui.get('search').focus();
+  ui.get('search').listeners.input({ target: { value: 'p00' } });
+  ui.setModel(model('third', nodes)); await ui.refresh();
+  assert.equal(ui.context.document.activeElement, ui.get('search'));
+  ui.get('searchResults').children[0].focus();
+  ui.setModel(model('fourth', nodes)); await ui.refresh();
+  assert.equal(ui.context.document.activeElement, ui.get('searchResults').children[0]);
+  ui.setModel(model('fifth', nodes.slice(1))); await ui.refresh();
+  assert.equal(ui.context.document.activeElement, ui.get('search'));
+  assert.match(ui.get('searchStatus').textContent, /No matching pieces/);
 });

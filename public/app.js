@@ -10,6 +10,9 @@ let mapSize = { width: 1000, height: 680 };
 let fit = false;
 let showAllGaps = false;
 let refreshing = false;
+let showAllResults = false;
+let mapPositions = new Map();
+let mapScale = 1;
 
 const $ = id => document.getElementById(id);
 const snapshotElement = $('buildmapSnapshot');
@@ -17,7 +20,16 @@ const snapshot = snapshotElement ? JSON.parse(snapshotElement.textContent) : nul
 const nodeLayer = $('nodeLayer');
 const edgeLayer = $('edgeLayer');
 const viewport = $('mapViewport');
-$('search').addEventListener('input', e => { filter = e.target.value.trim().toLowerCase(); applyFilter(); });
+$('search').addEventListener('input', e => { filter = e.target.value.trim().toLowerCase(); showAllResults = false; applyFilter(); });
+$('search').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && filter) {
+    const first = searchMatches()[0];
+    if (first) { e.preventDefault(); selectPiece(first.id, true); }
+  } else if (e.key === 'Escape') {
+    e.preventDefault(); $('search').value = ''; filter = ''; showAllResults = false; applyFilter();
+  }
+});
+$('moreResults').addEventListener('click', () => { showAllResults = !showAllResults; renderSearchResults(); });
 $('fitButton').addEventListener('click', () => { fit = true; scaleMap(); viewport.scrollTo({ left: 0, top: 0 }); });
 $('sizeButton').addEventListener('click', () => { fit = false; scaleMap(); });
 $('moreGaps').addEventListener('click', () => { showAllGaps = !showAllGaps; renderGaps(); });
@@ -39,6 +51,10 @@ async function refresh() {
     $('refreshStatus').textContent = snapshot ? `Snapshot · ${new Date(snapshot.generatedAt).toLocaleString()}` : 'Updated just now';
     $('refreshStatus').classList.remove('stale');
     if (next.fingerprint === currentFingerprint) return;
+    const active = document.activeElement;
+    const focusedId = active?.dataset?.id;
+    const focusInResults = active?.classList.contains('search-result');
+    const focusOnCard = active?.classList.contains('node');
     currentFingerprint = next.fingerprint;
     model = next;
     renderHeader();
@@ -48,6 +64,11 @@ async function refresh() {
     if (selectedId) {
       if (model.nodes.some(n => n.id === selectedId)) renderDetail(selectedId);
       else { selectedId = null; $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
+    }
+    if (focusedId && (focusOnCard || focusInResults)) {
+      const candidates = focusInResults ? [...$('searchResults').children] : [...document.querySelectorAll('.node')];
+      const replacement = candidates.find(el => el.dataset.id === focusedId && el.tabIndex !== -1);
+      (replacement || $('search')).focus({ preventScroll: true });
     }
   } catch (err) {
     $('refreshStatus').textContent = model ? 'Refresh failed · showing last snapshot' : 'Could not load map · retrying';
@@ -87,6 +108,7 @@ function renderMap() {
   edgeLayer.innerHTML = '';
 
   const positions = layout(model.nodes, model.edges);
+  mapPositions = positions;
   const maxX = Math.max(1000, ...[...positions.values()].map(p => p.x + 250));
   const maxY = Math.max(680, ...[...positions.values()].map(p => p.y + 260));
   const canvas = $('mapCanvas');
@@ -125,6 +147,7 @@ function renderMap() {
     el.className = `node ${node.status} ${node.kind === 'mission' ? 'mission' : ''}`;
     el.dataset.id = node.id;
     el.classList.toggle('selected', node.id === selectedId);
+    el.setAttribute('aria-pressed', String(node.id === selectedId));
     const findings = model.gaps.filter(g => g.nodeId === node.id);
     el.classList.toggle('has-gap', findings.some(g => g.priority !== 'info'));
     el.setAttribute('aria-label', `${node.name}, ${node.status}${node.kind !== 'mission' ? `, ${fileSummary(node)}` : ''}${findings.length ? `, ${findings.length} findings` : ''}`);
@@ -146,6 +169,7 @@ function scaleMap() {
   $('mapCanvas').style.transform = `scale(${scale})`;
   $('mapSizer').style.width = `${mapSize.width * scale}px`;
   $('mapSizer').style.height = `${mapSize.height * scale}px`;
+  mapScale = scale;
 }
 
 function layout(nodes, edges) {
@@ -175,11 +199,23 @@ function layout(nodes, edges) {
   return pos;
 }
 
-function selectPiece(id) {
+function selectPiece(id, reveal = false) {
+  if (!model.nodes.some(n => n.id === id)) return;
   selectedId = id;
-  document.querySelectorAll('.node').forEach(n => n.classList.toggle('selected', n.dataset.id === id));
+  document.querySelectorAll('.node').forEach(n => {
+    n.classList.toggle('selected', n.dataset.id === id);
+    n.setAttribute('aria-pressed', String(n.dataset.id === id));
+  });
   applyFilter();
   renderDetail(id);
+  if (reveal) {
+    const p = mapPositions.get(id);
+    if (p) viewport.scrollTo({ left: Math.max(0, Math.min(mapSize.width * mapScale - viewport.clientWidth, (p.x + p.w / 2) * mapScale - viewport.clientWidth / 2)),
+      top: Math.max(0, Math.min(mapSize.height * mapScale - viewport.clientHeight, (p.y + p.h / 2) * mapScale - viewport.clientHeight / 2)) });
+    const card = [...document.querySelectorAll('.node')].find(n => n.dataset.id === id);
+    card?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    card?.focus({ preventScroll: true });
+  }
 }
 function signalText(gap) {
   return ({ 'missing-implementation': 'Implementation missing', 'unsupported-evidence': 'Evidence claim rejected',
@@ -197,7 +233,7 @@ function renderGaps() {
     el.type = 'button';
     const name = model.nodes.find(n => n.id === gap.nodeId)?.name || 'Project';
     el.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(gap.message)}</span>`;
-    el.addEventListener('click', () => selectPiece(gap.nodeId || '__mission__'));
+    el.addEventListener('click', () => selectPiece(gap.nodeId || '__mission__', true));
     $('gaps').appendChild(el);
   }
   $('moreGaps').hidden = gaps.length <= 12;
@@ -286,12 +322,43 @@ function applyFilter() {
   const q = filter;
   document.querySelectorAll('.node').forEach(el => {
     const n = model?.nodes.find(x => x.id === el.dataset.id);
-    const hay = n ? `${n.name} ${n.purpose} ${n.files.join(' ')} ${n.group} ${n.status} ${(model.gaps || []).filter(g => g.nodeId === n.id).map(g => g.message).join(' ')}`.toLowerCase() : '';
-    const filtered = Boolean(q && n?.id !== selectedId && !hay.includes(q));
+    const filtered = Boolean(q && n?.id !== selectedId && !matchesSearch(n));
     el.classList.toggle('filtered', filtered);
     el.tabIndex = filtered ? -1 : 0;
     el.setAttribute('aria-hidden', String(filtered));
   });
+  renderSearchResults();
+}
+
+function matchesSearch(node) {
+  if (!node) return false;
+  return `${node.id} ${node.name} ${node.purpose} ${node.files.join(' ')} ${node.group} ${node.status} ${(model.gaps || []).filter(g => g.nodeId === node.id).map(g => g.message).join(' ')}`.toLowerCase().includes(filter);
+}
+function searchMatches() {
+  return model?.nodes.filter(matchesSearch) || [];
+}
+function renderSearchResults() {
+  const panel = $('searchPanel');
+  panel.hidden = !filter;
+  const results = $('searchResults');
+  results.innerHTML = '';
+  if (!filter) { $('searchStatus').textContent = ''; $('moreResults').hidden = true; return; }
+  const matches = searchMatches();
+  $('searchStatus').textContent = matches.length ? `${matches.length} ${matches.length === 1 ? 'match' : 'matches'} · select to locate` : 'No matching pieces. Try a name, file path, state, or gap.';
+  for (const node of (showAllResults ? matches : matches.slice(0, 12))) {
+    const result = document.createElement('button');
+    result.type = 'button'; result.className = 'search-result'; result.dataset.id = node.id;
+    result.setAttribute('aria-pressed', String(node.id === selectedId));
+    const name = document.createElement('strong'); name.textContent = node.name;
+    const hint = document.createElement('span');
+    const file = node.files.find(f => f.toLowerCase().includes(filter));
+    hint.textContent = `${node.kind === 'mission' ? 'Intent target' : node.status}${file ? ` · ${file}` : ''}`;
+    result.appendChild(name); result.appendChild(hint);
+    result.addEventListener('click', () => selectPiece(node.id, true));
+    results.appendChild(result);
+  }
+  $('moreResults').hidden = matches.length <= 12;
+  $('moreResults').textContent = showAllResults ? 'Show fewer matches' : `Show all ${matches.length} matches`;
 }
 
 function miniViz(kind) {

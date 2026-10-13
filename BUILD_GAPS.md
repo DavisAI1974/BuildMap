@@ -1,6 +1,6 @@
 # BuildMap v0.1 remaining build gaps
 
-Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 60 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
+Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 63 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
 
 ## What the current map actually reports
 
@@ -12,7 +12,7 @@ The parser-backed adapter now finds the literal `/api/map` fetch and its unique 
 
 ## MVP scope
 
-The existing CLI/server/map/export core is the MVP. File previews and present/missing counts are implemented in the shared live/export client; the full list stays in the inspector. New supported source files appear independently until explicitly grouped in the manifest. Further MVP work must carry into the product. The broader roadmap below can wait for concrete usage needs.
+The existing CLI/server/map/export core is the MVP. File previews and present/missing counts are implemented in the shared live/export client; the full list stays in the inspector. New supported source files appear independently until explicitly grouped in the manifest. Clickable search results, match counts, Enter/Escape shortcuts, and card navigation from results/gaps are implemented in that same client. Refresh preserves focus on surviving cards/results. Navigation checks use the DOM double; browser behavior remains unobserved. Further MVP work must carry into the product. The broader roadmap below can wait for concrete usage needs.
 
 ## Next release-confidence checks
 

@@ -6,7 +6,7 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base: `b43600ab8d920ed4a872c9e8f7405456839bd353`. The parser/HTTP-source pass follows this commit; use the current branch head, not the continuation base.
+Continuation base for this MVP navigation pass: `023ddb39e542346f6f599fca38bb73b89750e02c`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
@@ -29,7 +29,7 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 
 ## Current MVP direction
 
-The user wants a usable MVP and insists work carries into the final build. Improve the existing product source, rather than building a parallel prototype. Cards now preview two file paths, show present/missing counts and additional-file counts, and open the full inspector list. Discovered files remain independent pieces until explicitly grouped in the manifest. Tests exercise actual scan-to-client creation, grouping, deletion, and selection refresh. The live app and standalone exports share the same client.
+The user wants a usable MVP and insists work carries into the final build. Improve the existing product source, rather than building a parallel prototype. Cards now preview two file paths, show present/missing counts and additional-file counts, and open the full inspector list. Discovered files remain independent pieces until explicitly grouped in the manifest. Tests exercise actual scan-to-client creation, grouping, deletion, and selection refresh. The live app and standalone exports share the same client. Search now lists clickable matches, searches every assigned file, shows counts/no-match feedback, and supports Enter/Escape. Result/gap selection scrolls to and focuses its card. Poll-driven redraws retain focus on surviving cards/results or return it to search when the target disappears.
 
 A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside the repository. It is a snapshot, not a hosted/deployed/live product. Browser limitations still apply. The wider roadmap is not required before using the core MVP.
 
@@ -53,9 +53,10 @@ A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside 
 
 ## Current validation and proof state
 
-- **60/60 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **63/63 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
+- Three added DOM-harness regressions cover safe searchable paths, result expansion/live edits/offline mode, scaled navigation to distant cards, and focus continuity. They do not establish real scrolling/layout/accessibility behavior.
 - JS syntax and whitespace checks passed.
 - Local HTTP/API/assets and live source edits covered by tests.
 - Public default-clone smoke with `octocat/Hello-World` recovered README intent and cleaned up.
@@ -128,6 +129,6 @@ The output must be a new file; put it outside the mapped repo.
 
 Shell clones/fetches work, but shell push failed because GitHub username credentials are unavailable. The connected GitHub API successfully published tested trees in focused commits and updated the branch with an expected-head lease and `force:false`. Published tree hashes were compared against the tested local tree. Do not repeatedly try unauthenticated shell push or force-overwrite newer work; use the connector when needed and verify the final PR head.
 
-The current checkout is `/workspace/scratch/89392d8bfad0/BuildMap`; scratch may not persist into the next chat, so Git is authoritative. Equivalent local commits were preserved in `review/local-*` backup branches before aligning to API-created commits. There are no active subagents and no intentional smoke server left running. Temporary JSON/HTML review files are reproducible intermediates, not remaining deliverables.
+The current checkout is `/workspace/scratch/a6ddd169062c/BuildMap`; scratch may not persist into the next chat, so Git is authoritative. Equivalent local commits were preserved in `review/local-*` backup branches before aligning to API-created commits. There are no active subagents and no intentional smoke server left running. Temporary JSON/HTML review files are reproducible intermediates, not remaining deliverables.
 
 Refresh receipts only after relevant checks pass. Avoid framework churn and gratuitous tests/validators. Keep commentary brief and continue within the user's authorized scope.

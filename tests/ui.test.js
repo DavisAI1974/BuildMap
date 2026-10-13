@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import os from 'node:os';
+import path from 'node:path';
+import { scanProject } from '../src/scan.js';
 
 // Executes the real client against a small DOM double. This covers rendering
 // logic and interactions, not CSS layout or browser integration.
@@ -162,4 +165,51 @@ test('inspector labels HTTP path matching as source evidence and escapes endpoin
   assert.match(detail, /Observed HTTP path match · heuristic/); assert.match(detail, /client.js:12:4 requests GET/);
   assert.match(detail, /method unresolved/); assert.match(detail, /runtime origin\/execution unproved/);
   assert.match(detail, /&lt;img/); assert.match(detail, /&lt;script&gt;/); assert.doesNotMatch(detail, /<img|<script>/);
+});
+
+test('cards preview file inventory safely and inspector lists the full declared scope', async () => {
+  const files = ['src/first.js', 'src/<img onerror=evil()>.js', 'src/third.js', 'src/planned.js'];
+  const ui = await client(model('files', [piece('a', { status: 'planned', files, presentFiles: [files[0], files[2]] }),
+    piece('empty', { files: [], presentFiles: [] }), piece('__mission__', { kind: 'mission', files: [], presentFiles: [] })]));
+  const card = id => ui.get('nodeLayer').children.find(e => e.dataset.id === id);
+  assert.match(card('a').innerHTML, /4 files · 2 present · 2 missing/);
+  assert.match(card('a').innerHTML, /&lt;img onerror=evil\(\)&gt;.js · missing/);
+  assert.doesNotMatch(card('a').innerHTML, /<img/);
+  assert.match(card('a').innerHTML, /\+2 more · select to see all/);
+  assert.match(card('a').attributes['aria-label'], /2 missing/);
+  assert.doesNotMatch(card('__mission__').innerHTML, /node-files/);
+  card('a').click();
+  for (const file of ['src/first.js', 'src/third.js', 'src/planned.js · missing']) assert.ok(ui.get('detail').innerHTML.includes(file));
+  card('empty').click();
+  assert.match(ui.get('detail').innerHTML, /No implementation files assigned yet/);
+  assert.doesNotMatch(ui.get('detail').innerHTML, /this is the mission/);
+});
+
+test('live scanned files appear separately, move into declared components, and remain visible when missing', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-ui-files-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.mkdirSync(path.join(root, 'src'));
+  const manifest = { mission: 'Track the build.', components: [{ id: 'engine', files: ['src/engine.js', 'src/planned.js'] }] };
+  const saveManifest = () => fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(manifest));
+  saveManifest();
+  const ui = await client(scanProject(root));
+  const card = id => ui.get('nodeLayer').children.find(e => e.dataset.id === id);
+  assert.match(card('engine').innerHTML, /2 files · 0 present · 2 missing/);
+  fs.writeFileSync(path.join(root, 'src/engine.js'), 'export const engine = true;');
+  fs.writeFileSync(path.join(root, 'src/helper.js'), 'export const helper = true;');
+  ui.setModel(scanProject(root)); await ui.refresh();
+  assert.match(card('engine').innerHTML, /2 files · 1 present · 1 missing/);
+  card('file:src/helper.js').click();
+  assert.match(ui.get('detail').innerHTML, /Discovered source file/);
+  manifest.components[0].files.push('src/helper.js'); saveManifest();
+  ui.setModel(scanProject(root)); await ui.refresh();
+  assert.equal(card('file:src/helper.js'), undefined);
+  card('engine').click();
+  assert.match(ui.get('detail').innerHTML, /src\/helper.js/);
+  fs.unlinkSync(path.join(root, 'src/engine.js'));
+  ui.setModel(scanProject(root)); await ui.refresh();
+  assert.match(card('engine').innerHTML, /3 files · 1 present · 2 missing/);
+  assert.match(ui.get('detail').innerHTML, /src\/engine.js · missing/);
+  assert.ok(card('engine').classes.has('planned'));
 });

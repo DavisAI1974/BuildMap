@@ -21,7 +21,7 @@ npm test
 node src/cli.js .
 ```
 
-Open **http://127.0.0.1:4173**. Click a piece or a gap to inspect its files, purpose, contribution, connections, evidence assessment, and source hashes. Search includes names, paths, states, and gap descriptions. Filtered cards leave keyboard navigation; selecting a gap keeps its piece visible while the search remains active. **Fit map** scales the full map into the viewport; **Actual size** restores readable cards and scrolling.
+Open **http://127.0.0.1:4173**. Each piece previews up to two file paths and shows present/missing counts; select it for the full file list. Click a piece or a gap to inspect its files, purpose, contribution, connections, evidence assessment, and source hashes. Search includes names, paths, states, and gap descriptions. Filtered cards leave keyboard navigation; selecting a gap keeps its piece visible while the search remains active. **Fit map** scales the full map into the viewport; **Actual size** restores readable cards and scrolling.
 
 Point it at another project, choose a port, or get a one-shot snapshot:
 
@@ -44,7 +44,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 58 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 60 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -68,6 +68,14 @@ Brownfield uses this intent ladder:
 4. Comparison of declared dependencies with observed connections.
 
 Intent is labeled **declared**, **inferred**, or **unknown**. README extraction is a heuristic, not a semantic understanding of the repository. A gap recommends documenting intent or interviewing the owner when it is missing. There is no built-in interview agent in v0.1.
+
+## How files join the map
+
+Supported source files that are not assigned in `.buildmap/project.json` appear as their own pieces. They are not automatically assigned to an existing component. Add their exact paths to a component's `files` list to group them; local polling then reflects that assignment. Declared paths remain visible as missing before creation or after deletion.
+
+Cards preview two paths and show how many more are in the inspector. All mapped files appear in their piece's full file list. This is a supported-source inventory plus explicit declarations, not an automatic list of every repository file. Other assets/configuration can be declared explicitly; see the discovery limits below. File presence does not establish that a piece works.
+
+The live app and HTML snapshots use the same product interface. A snapshot freezes the map data; it does not watch ongoing edits.
 
 ## Evidence states
 

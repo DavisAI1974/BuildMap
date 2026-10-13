@@ -101,7 +101,15 @@ code { color: #b8ddff; }
 .map-viewport { height: calc(100vh - 175px); min-height: 420px; }
 #mapSizer { position: relative; overflow: hidden; }
 .map-canvas { min-width: 0; min-height: 0; }
-.node { min-height: 138px; }
+.node { height: 224px; overflow: hidden; }
+.node-title { max-height: 32px; overflow: hidden; }
+.node.mission { height: 138px; }
+.node-files { height: 62px; margin-bottom: 4px; color: #a9bad0; font-size: 9px; line-height: 1.45; }
+.node-file-count { color: #d0dce9; margin-bottom: 2px; }
+.node-file { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node-file.missing { color: #d3a46d; }
+.node-file-more { color: var(--muted); }
+.file-list li { overflow-wrap: anywhere; }
 .node-signal { font-size: 9px; color: #d3a46d; margin: 5px 0; }
 .node.mission .node-signal { color: var(--muted); }
 .node.has-gap { border-top-color: #ba8c47; }

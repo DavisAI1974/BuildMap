@@ -93,3 +93,10 @@ The bounded HTTP adapter matches literal root-relative global fetch calls to a u
 BuildMap now finds its own `/api/map` server-to-visualizer match, so the no-observed-connection and unobserved-dependency prompts close within supported discovery. The visualizer's only finding remains behavior-unproved. No computing/verified/live receipt was added to it.
 
 Validation: **58/58 tests pass on Node v20.20.2 and v24.19.0**. Five new regressions cover method/query/path/location provenance and source-only states, missing/ambiguous providers and input-bound freshness, syntax/regex/template/shadowed-call handling, unsupported/mock/logging/negative handler forms, and escaped HTTP inspector metadata. Clean locked installation, syntax/whitespace checks, and package dry-run pass. Refreshed dogfood receipts bind the complete scanner implementation plus selected dependency/check/package-lock inputs. Browser restrictions remain unchanged; PR #1 remains open and nothing is deployed/live.
+
+
+## MVP file visibility from 14412b4
+
+The shared product client now previews two implementation paths per card, reports present/missing and additional-file counts, and shows the full list in the inspector. Discovered-file inspection explains explicit grouping; an empty planned component is no longer mislabeled as a mission node. Card spacing is adjusted for the inventory preview. The live app and standalone export use the same code, so this is retained product work.
+
+Validation: **60/60 tests pass on Node v20.20.2 and v24.19.0**. New checks cover escaped paths, partial/empty/mission file scope, and real scanner snapshots fed into the client through file creation, explicit grouping, deletion, and selected-inspector refresh. These checks use the DOM double, not real browser layout verification. Receipts were refreshed only for the relevant recorded test checks; the visualizer stays source-connected with no upper-state receipt. PR #1 remains open and nothing is deployed/live.

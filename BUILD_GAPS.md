@@ -1,6 +1,6 @@
 # BuildMap v0.1 remaining build gaps
 
-Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 58 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
+Source checkpoint reviewed: PR #1 at `b43600a`, followed by the parser/HTTP-source pass documented in `REVIEW_NOTES.md`. Current checks: 60 tests pass on Node v20.20.2 and v24.19.0; the Node 20 CLI/server smoke passed; local HTTP, default GitHub clone, and branch-specific GitHub clone/JSON paths have been exercised. No browser or live deployment proof is claimed.
 
 ## What the current map actually reports
 
@@ -9,6 +9,10 @@ BuildMap's manifest has five implemented components: four have source-bound reco
 Its only current finding is the visualizer's `unproved` behavior: exercise the real UI and record the supported observation against its source.
 
 The parser-backed adapter now finds the literal `/api/map` fetch and its unique Node HTTP handler condition, with file/line provenance. That closes the previous no-observed-connection/unobserved-dependency findings within the supported source-matching scope. It does not establish runtime origin, transport, execution, or browser behavior, and grants no upper visualizer state.
+
+## MVP scope
+
+The existing CLI/server/map/export core is the MVP. File previews and present/missing counts are implemented in the shared live/export client; the full list stays in the inspector. New supported source files appear independently until explicitly grouped in the manifest. Further MVP work must carry into the product. The broader roadmap below can wait for concrete usage needs.
 
 ## Next release-confidence checks
 

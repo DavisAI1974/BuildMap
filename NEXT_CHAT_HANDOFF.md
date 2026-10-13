@@ -27,6 +27,12 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 
 `GPT6_REVIEW_HANDOFF.md` preserves the original product intent; its historical test counts, progress claims, and initial implementation descriptions have been superseded by the current files.
 
+## Current MVP direction
+
+The user wants a usable MVP and insists work carries into the final build. Improve the existing product source, rather than building a parallel prototype. Cards now preview two file paths, show present/missing counts and additional-file counts, and open the full inspector list. Discovered files remain independent pieces until explicitly grouped in the manifest. Tests exercise actual scan-to-client creation, grouping, deletion, and selection refresh. The live app and standalone exports share the same client.
+
+A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside the repository. It is a snapshot, not a hosted/deployed/live product. Browser limitations still apply. The wider roadmap is not required before using the core MVP.
+
 ## What landed
 
 - Source existence, observed connectivity, and explicit proof claims are separate. Declared dependencies never grant connected status; bare manifest statuses and status-only receipts never grant upper states.
@@ -47,7 +53,7 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 
 ## Current validation and proof state
 
-- **58/58 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **60/60 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - JS syntax and whitespace checks passed.

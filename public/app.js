@@ -88,7 +88,7 @@ function renderMap() {
 
   const positions = layout(model.nodes, model.edges);
   const maxX = Math.max(1000, ...[...positions.values()].map(p => p.x + 250));
-  const maxY = Math.max(680, ...[...positions.values()].map(p => p.y + 180));
+  const maxY = Math.max(680, ...[...positions.values()].map(p => p.y + 260));
   const canvas = $('mapCanvas');
   canvas.style.width = `${maxX}px`;
   canvas.style.height = `${maxY}px`;
@@ -127,11 +127,12 @@ function renderMap() {
     el.classList.toggle('selected', node.id === selectedId);
     const findings = model.gaps.filter(g => g.nodeId === node.id);
     el.classList.toggle('has-gap', findings.some(g => g.priority !== 'info'));
-    el.setAttribute('aria-label', `${node.name}, ${node.status}${findings.length ? `, ${findings.length} findings` : ''}`);
+    el.setAttribute('aria-label', `${node.name}, ${node.status}${node.kind !== 'mission' ? `, ${fileSummary(node)}` : ''}${findings.length ? `, ${findings.length} findings` : ''}`);
     el.style.cssText += `left:${p.x}px;top:${p.y}px;--state:${stateColors[node.status]}`;
     el.innerHTML = `
       <div class="node-top"><div class="node-title">${escapeHtml(node.name)}</div><div class="status-chip">${node.status}</div></div>
       <div class="node-purpose">${escapeHtml(node.purpose)}</div>
+      ${node.kind !== 'mission' ? cardFiles(node) : ''}
       ${node.kind === 'mission' ? '<div class="node-signal">Intent target · outcome unproved</div>' : findings.length ? `<div class="node-signal">${escapeHtml(signalText(findings[0]))}</div>` : '<div class="node-signal">No detected gaps</div>'}
       <div class="mini-viz">${miniViz(node.visual?.kind)}<span>${escapeHtml(node.visual?.label || 'work')}</span></div>`;
     el.addEventListener('click', () => selectPiece(node.id));
@@ -168,7 +169,7 @@ function layout(nodes, edges) {
   const columns = [...byDepth.keys()].sort((a,b) => a-b);
   for (const [column,d] of columns.entries()) {
     const list = byDepth.get(d).sort((a,b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
-    list.forEach((n,i) => pos.set(n.id, { x: 40 + column * 245, y: 62 + i * 168, depth: d, w: 194, h: 138 }));
+    list.forEach((n,i) => pos.set(n.id, { x: 40 + column * 245, y: 62 + i * 254, depth: d, w: 194, h: 224 }));
   }
   pos.set('__mission__', { x: 40 + columns.length * 245, y: 62, depth: 99, w: 220, h: 138 });
   return pos;
@@ -224,7 +225,7 @@ function renderDetail(id) {
     ${node.baseStatus ? `<p>Source state: ${escapeHtml(node.baseStatus)} · implementation ${escapeHtml(node.implementation)}<br>Purpose and mini-visual: ${node.source === 'discovered' ? 'inferred illustrations' : 'manifest descriptions or inferred illustrations'}</p>` : ''}
     <p>${escapeHtml(node.purpose)}</p>
     ${node.contributes ? `<div class="detail-section"><h3>Why it matters</h3><p>${escapeHtml(node.contributes)}</p></div>` : ''}
-    <div class="detail-section"><h3>Files</h3>${fileList(node)}</div>
+    <div class="detail-section"><h3>Files</h3>${node.kind !== 'mission' ? `<p>${escapeHtml(fileSummary(node))}. ${node.source === 'discovered' ? 'Discovered source file; assign its exact path in .buildmap/project.json to group it into a component.' : 'Assigned by .buildmap/project.json; new source files appear separately until explicitly grouped.'}</p>` : ''}${fileList(node)}</div>
     <div class="detail-section"><h3>Source connections</h3>${connectionList(id)}</div>
     <div class="detail-section"><h3>Gaps to review</h3>${(model.gaps || []).filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId)).map(g => `<p>${escapeHtml(g.message)}</p>${Object.hasOwn(g, 'evidence') ? `<details><summary>Recorded claim</summary><pre>${escapeHtml(JSON.stringify(g.evidence, null, 2))}</pre></details>` : ''}`).join('') || '<p>No detected gaps.</p>'}</div>
     <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>
@@ -267,8 +268,17 @@ function evidenceText(node) {
   return `${escapeHtml(assessment?.reason || 'Source structure only; higher states require evidence.')}${claim}${fileClaims}${hashes.length ? `<details><summary>Current source hashes (SHA-256)</summary>${hashes.map(([f,h]) => `<p>${escapeHtml(f)}<br><code>${escapeHtml(h)}</code></p>`).join('')}</details>` : ''}`;
 }
 
+function fileSummary(node) {
+  const count = node.files?.length || 0;
+  const present = node.files?.filter(f => node.presentFiles?.includes(f)).length || 0;
+  return count ? `${count} ${count === 1 ? 'file' : 'files'} · ${present} present${count > present ? ` · ${count - present} missing` : ''}` : 'No files assigned';
+}
+function cardFiles(node) {
+  const files = node.files || [];
+  return `<div class="node-files"><div class="node-file-count">${escapeHtml(fileSummary(node))}</div>${files.slice(0, 2).map(f => `<div class="node-file ${node.presentFiles?.includes(f) ? '' : 'missing'}" title="${escapeHtml(f)}">${escapeHtml(f)}${node.presentFiles?.includes(f) ? '' : ' · missing'}</div>`).join('')}${files.length > 2 ? `<div class="node-file-more">+${files.length - 2} more · select to see all</div>` : ''}</div>`;
+}
 function fileList(node) {
-  if (!node.files?.length) return '<p>No files — this is the mission/outcome node.</p>';
+  if (!node.files?.length) return `<p>${node.kind === 'mission' ? 'No files — this is the mission/outcome node.' : 'No implementation files assigned yet.'}</p>`;
   return `<ul class="file-list">${node.files.map(f => `<li class="${node.presentFiles.includes(f) ? '' : 'missing'}">${escapeHtml(f)}${node.presentFiles.includes(f) ? '' : ' · missing'}${node.conflictingFiles?.includes(f) ? ' · ownership conflict' : ''}</li>`).join('')}</ul>`;
 }
 

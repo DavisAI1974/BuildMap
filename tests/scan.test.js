@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { scanProject, resolveStatus } from '../src/scan.js';
 
 function fixture() {
@@ -311,4 +312,101 @@ test('root-relative HTML/CSS assets resolve with query strings and fragments', t
   for (const [importer, imported] of [['public/index.html', 'public/app.js'], ['public/index.html', 'public/styles.css'], ['public/styles.css', 'public/theme.css']]) {
     assert.ok(map.edges.some(e => e.type === 'code' && e.observations.some(o => o.importer === importer && o.imported === imported)));
   }
+});
+
+test('selected dependency and non-source input changes stale a receipt without changing its implementation', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/dependency.js', 'export const dependency = 1;');
+  write(root, 'src/engine.js', "import './dependency.js';");
+  write(root, 'fixtures/input.json', '{"value":1}');
+  planned(root, [{ id: 'engine', files: ['src/engine.js'] }]);
+  const before = scanProject(root);
+  const digest = file => crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex');
+  const receipt = { status: 'verified', note: 'Behavior check passed with these inputs.',
+    sourceHashes: node(before, 'engine').sourceHashes,
+    inputHashes: Object.fromEntries(['src/dependency.js', 'fixtures/input.json'].map(f => [f, digest(f)])) };
+  write(root, '.buildmap/evidence.json', { components: { engine: receipt } });
+  const current = scanProject(root);
+  assert.equal(node(current, 'engine').status, 'verified');
+  assert.equal(node(current, 'engine').evidenceAssessment.inputs.binding, 'current');
+  assert.equal(current.nodes.some(n => n.files.includes('fixtures/input.json')), false);
+  for (const file of Object.keys(receipt.inputHashes)) {
+    const original = fs.readFileSync(path.join(root, file), 'utf8');
+    write(root, file, original + '\n');
+    const changed = scanProject(root); const engine = node(changed, 'engine');
+    assert.deepEqual(engine.sourceHashes, receipt.sourceHashes);
+    assert.equal(engine.status, engine.baseStatus); assert.equal(engine.status, 'connected');
+    assert.equal(engine.evidenceAssessment.binding, 'stale');
+    assert.ok(engine.evidenceAssessment.inputs.issues.some(i => i.file === file));
+    assert.equal(engine.evidenceAssessment.inputs.currentHashes[file], digest(file));
+    assert.notEqual(changed.fingerprint, current.fingerprint);
+    assert.ok(changed.gaps.some(g => g.kind === 'unsupported-evidence' && g.nodeId === 'engine' && g.message.includes(file)));
+    write(root, file, original);
+    assert.equal(node(scanProject(root), 'engine').status, 'verified');
+  }
+  fs.rmSync(path.join(root, 'fixtures/input.json'));
+  const missing = node(scanProject(root), 'engine');
+  assert.equal(missing.evidenceAssessment.accepted, false);
+  assert.equal(missing.evidenceAssessment.inputs.currentHashes['fixtures/input.json'], null);
+});
+
+test('input bindings are optional and cannot replace source binding or a descriptive proof claim', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/a.js', 'export const a = 1;'); write(root, 'data.json', '{}');
+  planned(root, [{ id: 'a', files: ['src/a.js'] }]);
+  const inputHashes = { 'data.json': crypto.createHash('sha256').update('{}').digest('hex') };
+  const note = 'Recorded check.';
+  write(root, '.buildmap/evidence.json', { components: { a: { status: 'verified', note } } });
+  let map = scanProject(root); assert.equal(node(map, 'a').status, 'verified');
+  assert.equal(node(map, 'a').evidenceAssessment.inputs, undefined);
+  write(root, '.buildmap/evidence.json', { components: { a: { status: 'verified', note, inputHashes } } });
+  map = scanProject(root);
+  assert.equal(node(map, 'a').evidenceAssessment.binding, 'unbound');
+  assert.equal(node(map, 'a').evidenceAssessment.inputs.binding, 'current');
+  assert.ok(map.gaps.some(g => g.kind === 'unbound-evidence'));
+  write(root, 'src/a.js', 'export const a = 2;');
+  assert.equal(node(scanProject(root), 'a').evidenceAssessment.binding, 'unbound');
+  write(root, '.buildmap/evidence.json', { components: { a: { status: 'live', inputHashes } } });
+  assert.equal(node(scanProject(root), 'a').status, 'coded');
+});
+
+test('malformed input bindings reject proof and unsafe paths never expose outside hashes', t => {
+  const root = fixture(); const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-input-outside-'));
+  t.after(() => { fs.rmSync(root, { recursive: true, force: true }); fs.rmSync(outside, { recursive: true, force: true }); });
+  write(root, 'src/a.js', 'export const a = 1;'); write(outside, 'private.json', '{"private":true}');
+  fs.symlinkSync(path.join(outside, 'private.json'), path.join(root, 'escape.json'));
+  planned(root, [{ id: 'a', files: ['src/a.js'] }]);
+  const sourceHashes = node(scanProject(root), 'a').sourceHashes;
+  for (const inputHashes of [null, [], {}, 'data.json', { 'src/a.js': 'invalid' }, { 'src/a.js': { hash: 'invalid' } }]) {
+    write(root, '.buildmap/evidence.json', { components: { a: { status: 'verified', note: 'Check.', sourceHashes, inputHashes } } });
+    const assessment = node(scanProject(root), 'a').evidenceAssessment;
+    assert.equal(assessment.accepted, false); assert.equal(assessment.inputs.binding, 'invalid');
+  }
+  for (const file of [path.join(outside, 'private.json'), '../private.json', './src/a.js', 'src/../src/a.js', 'C:/private.json', 'escape.json', 'src']) {
+    write(root, '.buildmap/evidence.json', { components: { a: { status: 'live', note: 'Check.', sourceHashes, inputHashes: { [file]: '0'.repeat(64) } } } });
+    const assessment = node(scanProject(root), 'a').evidenceAssessment;
+    assert.equal(assessment.accepted, false); assert.equal(assessment.inputs.currentHashes[file], null);
+    assert.ok(assessment.inputs.issues.some(i => i.file === file));
+  }
+});
+
+test('file-only input-bound claims retain their scope and report stale inputs inside a component', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/a.js', 'export const a = 1;'); write(root, 'src/b.js', 'export const b = 1;');
+  write(root, 'test-data.json', '{}'); planned(root, [{ id: 'bundle', files: ['src/a.js', 'src/b.js'] }]);
+  const receipt = { status: 'verified', note: 'File check.',
+    sourceHashes: { 'src/a.js': node(scanProject(root), 'bundle').sourceHashes['src/a.js'] },
+    inputHashes: { 'test-data.json': crypto.createHash('sha256').update('{}').digest('hex') } };
+  write(root, '.buildmap/evidence.json', { files: { 'src/a.js': receipt } });
+  let map = scanProject(root);
+  assert.equal(node(map, 'bundle').status, 'coded');
+  assert.equal(node(map, 'bundle').fileEvidence[0].assessment.accepted, true);
+  write(root, 'test-data.json', '{"changed":true}'); map = scanProject(root);
+  assert.equal(node(map, 'bundle').status, 'coded');
+  assert.equal(node(map, 'bundle').fileEvidence[0].assessment.inputs.binding, 'stale');
+  assert.equal(map.gaps.find(g => g.kind === 'file-evidence-in-component').priority, 'blocker');
+  planned(root, []); // The same receipt may verify only the standalone discovered file.
+  assert.equal(node(scanProject(root), 'file:src/a.js').status, 'coded');
+  write(root, 'test-data.json', '{}');
+  assert.equal(node(scanProject(root), 'file:src/a.js').status, 'verified');
 });

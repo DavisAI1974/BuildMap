@@ -131,3 +131,22 @@ test('search removes filtered cards from keyboard navigation and gap selection r
   assert.match(ui.get('detail').innerHTML, /b.js · ownership conflict/);
   card('a').click(); assert.equal(card('b').tabIndex, -1);
 });
+
+test('receipt inspector shows recorded/current inputs and safely labels their limited scope', async () => {
+  const file = '<img src=x onerror=evil()>.json';
+  const receipt = { status: 'verified', note: 'Check recorded.', inputHashes: { [file]: '0'.repeat(64) } };
+  const assessment = { accepted: false, binding: 'stale', reason: 'Input changed.', inputs: {
+    binding: 'stale', currentHashes: { [file]: 'a'.repeat(64), 'gone.json': null }, issues: [{ file, reason: '<script>changed</script>' }] } };
+  const input = model('inputs', [piece('a', { evidence: receipt, evidenceAssessment: assessment,
+    fileEvidence: [{ file: 'a.js', evidence: receipt, assessment }] })]);
+  const ui = await client(input); ui.get('nodeLayer').children.find(e => e.dataset.id === 'a').click();
+  const detail = ui.get('detail').innerHTML;
+  assert.match(detail, /Selected input bindings · stale/);
+  assert.match(detail, /Only explicitly listed inputs are covered/);
+  assert.match(detail, /Recorded input hashes/); assert.match(detail, /Current input hashes/);
+  assert.match(detail, /000000000000/); assert.match(detail, /aaaaaaaaaaaa/);
+  assert.match(detail, /gone.json/); assert.match(detail, /Unavailable/);
+  assert.match(detail, /&lt;img/); assert.match(detail, /&lt;script&gt;/);
+  assert.doesNotMatch(detail, /<img|<script>/);
+  assert.match(detail, /File claim: verified · rejected/);
+});

@@ -3,45 +3,83 @@
     "intent": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Intent extraction and unknown-intent fallback passed in the full suite on Node v20.20.2 and v24.19.0.",
-      "recordedAt": "2026-10-13T11:26:38.591Z",
+      "note": "Intent extraction and unknown-intent fallback passed on Node v20.20.2 and v24.19.0; the named check/configuration inputs are explicitly bound.",
+      "recordedAt": "2026-10-13T16:21:09.634Z",
       "sourceHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c"
+      },
+      "inputHashes": {
+        "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
+        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885"
       }
     },
     "scanner": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Source/evidence semantics, full overlapping ownership/proof scope and ambiguity resolution, declared-versus-observed drift, receipt target/file scope, literal imports and asset URL suffixes, and Git inventory checks passed on Node v20.20.2 and v24.19.0.",
-      "recordedAt": "2026-10-13T11:26:38.591Z",
+      "note": "Source/evidence/ownership/drift/scope/discovery/inventory and selected-input edit/deletion/malformed/path-containment checks passed on Node v20.20.2 and v24.19.0. The named dependency/check/configuration inputs are explicitly bound; the set is not automatically complete.",
+      "recordedAt": "2026-10-13T16:21:09.634Z",
       "sourceHashes": {
-        "src/scan.js": "72efe0bcc70dba68a1df196f52bf746efd50ab4de5e8e6ecbe6b3b9ff21cb411",
+        "src/scan.js": "abe8a29866cf15590ae4ec329f608fd1b070f6a8684fef0106a08249832bc59d",
         "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076"
+      },
+      "inputHashes": {
+        "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
+        "tests/scan.test.js": "558003d8a7fe50e4ca5c51a6f1890ee78d5b0db8ed5678d5cfaf3e6d313a01cc",
+        "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
+        "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
+        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885",
+        ".buildmap/project.json": "02ff86482d7c66c9703b6586643a6dd716ba234daa35c001206c38c4a546c735"
       }
     },
     "server": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "CLI/API/export and branch/tag selection, revision provenance, failed-ref cleanup, and local-path refusal passed on Node v20.20.2 and v24.19.0. A separate Node 20 dogfood smoke passed CLI JSON/server/API/assets and clean SIGTERM exit. The historical GitHub branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f and cleaned up.",
-      "recordedAt": "2026-10-13T11:26:38.591Z",
+      "note": "CLI/API/export/ref/cleanup checks passed on Node v20.20.2 and v24.19.0, including input-only edits reaching map/gaps APIs. Named dependency/asset/check/configuration inputs are explicitly bound. The earlier Node 20 CLI/server smoke passed; the historical public branch smoke mapped 705ff1f3a523297e7c96474252bebb3ffc6e0a3f.",
+      "recordedAt": "2026-10-13T16:21:09.634Z",
       "sourceHashes": {
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a"
+      },
+      "inputHashes": {
+        "src/scan.js": "abe8a29866cf15590ae4ec329f608fd1b070f6a8684fef0106a08249832bc59d",
+        "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076",
+        "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
+        "public/index.html": "7ffe8da33798330ca414264215344f291eb4729576474ce8ce9924a16114c1d0",
+        "public/app.js": "2ea81509ba03121453d8c12ca442007b256adbbe0ac665319748035228b47c93",
+        "public/styles.css": "92b395669311c3a5a44635268edc7884e70a90bdf6e3f75d01bfe893ca459449",
+        "tests/server.test.js": "ce0bc27eba427c23bb16d1b54bc048c39cd946ba16d748e6b9e5b181e1a9f749",
+        "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
+        "tests/ui.test.js": "4475c24426f2957bf2c2eb8a0e869ea45c92cd62d7767ec4adc382e183396e34",
+        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885",
+        ".buildmap/project.json": "02ff86482d7c66c9703b6586643a6dd716ba234daa35c001206c38c4a546c735"
       }
     },
     "verification": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "All 48 tests passed on Node v20.20.2 and v24.19.0. Client/inspector/filter keyboard tests use a DOM double; real browser layout/accessibility/integration remains unverified. Node 20 dogfood CLI/server smoke passed.",
-      "recordedAt": "2026-10-13T11:26:38.591Z",
+      "note": "All 53 tests passed on Node v20.20.2 and v24.19.0, with named implementation/asset/configuration inputs explicitly bound. Client/inspector tests use a DOM double; real browser layout/accessibility/integration remains unverified. Explicit input identity does not prove complete input coverage or authenticate checks.",
+      "recordedAt": "2026-10-13T16:21:09.634Z",
       "sourceHashes": {
-        "tests/scan.test.js": "fd4ca085095d05ad217b2777ca223531ca6400deb26934dff6ed7b21287599e3",
+        "tests/scan.test.js": "558003d8a7fe50e4ca5c51a6f1890ee78d5b0db8ed5678d5cfaf3e6d313a01cc",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
-        "tests/server.test.js": "d738c9b1eb67e3510b5869b373d5520d9f1002b7940a71ff488dcac90e5055c8",
-        "tests/ui.test.js": "b4d7db1000870e57672ad782a8533b17cf2ff1630a3aa631083b47e6a2633ee2",
+        "tests/server.test.js": "ce0bc27eba427c23bb16d1b54bc048c39cd946ba16d748e6b9e5b181e1a9f749",
+        "tests/ui.test.js": "4475c24426f2957bf2c2eb8a0e869ea45c92cd62d7767ec4adc382e183396e34",
         "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7"
+      },
+      "inputHashes": {
+        "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c",
+        "src/scan.js": "abe8a29866cf15590ae4ec329f608fd1b070f6a8684fef0106a08249832bc59d",
+        "src/imports.js": "9d9df057e03cc74a139421e9d34ffd519a6b68884b651459fba7284b2d535076",
+        "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
+        "src/cli.js": "d5b8562b491d58743f964de715e74258f798e1bc255c30a754310b338dbe0de9",
+        "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
+        "public/index.html": "7ffe8da33798330ca414264215344f291eb4729576474ce8ce9924a16114c1d0",
+        "public/app.js": "2ea81509ba03121453d8c12ca442007b256adbbe0ac665319748035228b47c93",
+        "public/styles.css": "92b395669311c3a5a44635268edc7884e70a90bdf6e3f75d01bfe893ca459449",
+        "package.json": "b886638ad2db09c5545d0983fa2d356a80de36083f06009a59b417e80ec7e885",
+        ".buildmap/project.json": "02ff86482d7c66c9703b6586643a6dd716ba234daa35c001206c38c4a546c735"
       }
     }
   }

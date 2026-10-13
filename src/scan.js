@@ -37,6 +37,25 @@ export function scanProject(root, { source = null } = {}) {
   files.sort((a,b) => a.path.localeCompare(b.path));
   const importEdges = discoverImports(root, files, fileSet, diagnostics);
   const fileHashes = new Map(files.map(f => [f.path, f.hash]));
+  const inputCache = new Map();
+  function readInputHash(rel) {
+    if (inputCache.has(rel)) return inputCache.get(rel);
+    let result;
+    if (!rel || rel.includes('\\') || rel.includes('\0') || path.posix.isAbsolute(rel) ||
+      /^[A-Za-z]:/.test(rel) || path.posix.normalize(rel) !== rel || rel === '..' || rel.startsWith('../')) {
+      result = { hash: null, reason: 'Use an exact project-relative file path.' };
+    } else {
+      try {
+        result = safeFile(root, rel)
+          ? { hash: fileHashes.get(rel) || hash(fs.readFileSync(path.join(root, rel))) }
+          : { hash: null, reason: 'Not a regular file inside the mapped root.' };
+      } catch {
+        result = { hash: null, reason: 'File is missing, unreadable, or outside the mapped root.' };
+      }
+    }
+    inputCache.set(rel, result);
+    return result;
+  }
   let intent;
   try { intent = readIntent(root, manifest); }
   catch (err) {
@@ -64,7 +83,7 @@ export function scanProject(root, { source = null } = {}) {
     const conflictingFiles = fields.files.filter(f => (fileOwners.get(f)?.length || 0) > 1);
     const assessment = receipt && conflictingFiles.length
       ? { accepted: false, reason: 'Implementation ownership is ambiguous. Resolve overlapping component file assignments before claiming component behavior.' }
-      : assessEvidence(receipt, complete, sourceHashes);
+      : assessEvidence(receipt, complete, sourceHashes, readInputHash);
     return { ...fields, presentFiles: present, missingFiles: fields.files.filter(f => !fileSet.has(f)),
       conflictingFiles,
       implementation: complete ? 'complete' : present.length ? 'partial' : 'missing',
@@ -97,7 +116,7 @@ export function scanProject(root, { source = null } = {}) {
       plannedDependencies: [], dependencyIntent: 'unspecified', source: 'discovered'
     }, Object.hasOwn(evidence.files || {}, file.path) ? evidence.files[file.path] : undefined));
   }
-  auditEvidenceTargets(evidence, nodes, diagnostics);
+  auditEvidenceTargets(evidence, nodes, diagnostics, readInputHash);
   const edges = buildComponentEdges(nodes, importEdges);
   const counts = Object.fromEntries(STATES.map(s => [s, nodes.filter(n => n.status === s).length]));
   const progress = nodes.length ? Math.round(nodes.reduce((sum,n) => sum + WEIGHTS[n.status], 0) / nodes.length) : 0;
@@ -125,22 +144,51 @@ export function resolveStatus({ base = 'planned', evidence }) {
   return STATES[Math.max(baseIndex, evidenceIndex >= 0 ? evidenceIndex : 0)];
 }
 
-function assessEvidence(receipt, complete, hashes) {
+function assessEvidence(receipt, complete, hashes, readInputHash) {
   if (!receipt) return { accepted: false, reason: 'No explicit evidence record.' };
   if (typeof receipt !== 'object' || Array.isArray(receipt) || !STATES.includes(receipt.status)) return { accepted: false, reason: 'Invalid evidence record or status.' };
   if (!complete) return { accepted: false, reason: 'Implementation is incomplete; this claim cannot describe the current piece.' };
   if (STATES.indexOf(receipt.status) >= 3 && !['note', 'command', 'proof'].some(k => typeof receipt[k] === 'string' && receipt[k].trim())) {
     return { accepted: false, reason: 'A status alone is not evidence; describe the observation or check.' };
   }
+  let assessment;
   if (receipt.sourceHashes !== undefined) {
     const binding = receipt.sourceHashes;
     if (!binding || typeof binding !== 'object' || Array.isArray(binding) ||
       Object.keys(hashes).some(f => binding[f] !== hashes[f]) || Object.keys(binding).some(f => !Object.hasOwn(hashes, f))) {
-      return { accepted: false, binding: 'stale', reason: 'Source hashes no longer match all implementation files. Rerun the observation or check.' };
-    }
-    return { accepted: true, binding: 'current', reason: 'Recorded evidence matches the current implementation files; BuildMap does not execute or authenticate it.' };
+      assessment = { accepted: false, binding: 'stale', reason: 'Source hashes no longer match all implementation files. Rerun the observation or check.' };
+    } else assessment = { accepted: true, binding: 'current', reason: 'Recorded evidence matches the current implementation files; BuildMap does not execute or authenticate it.' };
+  } else assessment = { accepted: true, binding: 'unbound', reason: 'User-recorded evidence; freshness is unknown because it has no source hashes.' };
+  if (receipt.inputHashes === undefined) return assessment;
+  const inputs = assessInputs(receipt.inputHashes, readInputHash);
+  if (inputs.binding !== 'current') {
+    const failures = inputs.issues.map(i => `${i.file}: ${i.reason}`).join('; ');
+    return { ...assessment, accepted: false, binding: inputs.binding, inputs,
+      reason: `${assessment.accepted ? '' : assessment.reason + ' '}Input binding rejected: ${inputs.reason || failures} Rerun the observation or check before recording new hashes.` };
   }
-  return { accepted: true, binding: 'unbound', reason: 'User-recorded evidence; freshness is unknown because it has no source hashes.' };
+  return { ...assessment, inputs, reason: `${assessment.reason} Selected input hashes match; unlisted files and environments are not covered.` };
+}
+
+function assessInputs(binding, readInputHash) {
+  const inputs = { binding: 'current', currentHashes: {}, issues: [] };
+  if (!binding || typeof binding !== 'object' || Array.isArray(binding) || !Object.keys(binding).length) {
+    return { ...inputs, binding: 'invalid', reason: 'inputHashes must be a nonempty object keyed by selected project-relative file paths.' };
+  }
+  const current = [];
+  for (const [file, recorded] of Object.entries(binding)) {
+    const observed = readInputHash(file);
+    current.push([file, observed.hash]);
+    const validDigest = typeof recorded === 'string' && /^[a-f0-9]{64}$/.test(recorded);
+    if (!validDigest) {
+      inputs.binding = 'invalid'; inputs.issues.push({ file, reason: 'Expected a lowercase 64-character SHA-256.' });
+    }
+    if (observed.reason || (validDigest && observed.hash !== recorded)) {
+      if (inputs.binding !== 'invalid') inputs.binding = 'stale';
+      inputs.issues.push({ file, reason: observed.reason || 'Contents changed since the recorded check.' });
+    }
+  }
+  inputs.currentHashes = Object.fromEntries(current);
+  return inputs;
 }
 
 function findGaps(nodes, edges, diagnostics, intent) {
@@ -180,7 +228,7 @@ function evidenceCollections(raw, diagnostics) {
   return result;
 }
 
-function auditEvidenceTargets(evidence, nodes, diagnostics) {
+function auditEvidenceTargets(evidence, nodes, diagnostics, readInputHash) {
   const componentById = new Map(nodes.filter(n => n.kind === 'component').map(n => [n.id, n]));
   const ownerByFile = unambiguousOwners(nodes);
   for (const scope of ['components', 'files']) for (const [target, receipt] of Object.entries(evidence[scope] || {})) {
@@ -197,7 +245,7 @@ function auditEvidenceTargets(evidence, nodes, diagnostics) {
     }
     if (scope === 'files' && owner.kind === 'component') {
       const present = owner.presentFiles.includes(target);
-      const assessment = assessEvidence(receipt, present, present ? { [target]: owner.sourceHashes[target] } : {});
+      const assessment = assessEvidence(receipt, present, present ? { [target]: owner.sourceHashes[target] } : {}, readInputHash);
       owner.fileEvidence ??= [];
       owner.fileEvidence.push({ file: target, evidence: receipt, assessment });
       diagnostics.push({ code: 'file-evidence-in-component', nodeId: owner.id,

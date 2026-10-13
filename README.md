@@ -43,7 +43,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 48 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 53 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -126,7 +126,32 @@ For freshness, add an optional `sourceHashes` object containing the current SHA-
 }
 ```
 
-The placeholder is illustrative and will not match real source. A mismatch, missing hash, extra bound file, or missing implementation rejects the claim for the current snapshot. Unbound receipts remain supported but display **freshness unknown**. Matching hashes establish source identity only; they do not authenticate the observation, track transitive dependencies, or establish that a deployment is still running.
+The placeholder is illustrative and will not match real source. A mismatch, missing hash, extra bound file, or missing implementation rejects the claim for the current snapshot. Unbound receipts remain supported but display **freshness unknown**. Matching hashes establish source identity only; they do not authenticate the observation or establish that a deployment is still running. Dependency/test-input freshness is optional and covers only explicitly selected files.
+
+### Binding dependencies and test inputs
+
+An optional `inputHashes` object extends a receipt to selected dependency, test, fixture, or configuration files:
+
+```json
+{
+  "status": "verified",
+  "note": "Queue check passed with the recorded feed and fixture.",
+  "sourceHashes": {
+    "src/queue.js": "<actual SHA-256 for the implementation>"
+  },
+  "inputHashes": {
+    "src/feed.js": "<actual SHA-256 for the dependency>",
+    "tests/queue.test.js": "<actual SHA-256 for the check>",
+    "fixtures/input.json": "<actual SHA-256 for the fixture>"
+  }
+}
+```
+
+The placeholders reject the claim; use actual lowercase 64-character SHA-256 values after the observation/check passes. Input paths must be exact, normalized project-relative file paths inside the mapped root. The object must contain at least one input. Explicit inputs can include ignored or non-source files; they do not add mapped pieces or source connections. Missing/unreadable files, unsafe paths, malformed hashes, or changed bytes reject the receipt and name the affected input. Input changes update the snapshot fingerprint even when the graph and implementation files are unchanged.
+
+The inspector shows recorded/current input hashes and rejection reasons. `/api/map` and `--json` expose `evidenceAssessment.inputs` with `binding` (`current`, `stale`, or `invalid`), `currentHashes`, and `issues`; unavailable files have a null current hash. Supply the selected paths, then record those current hashes only after the check passes. The same assessment appears on file-only claims, which still cannot grant component proof.
+
+`inputHashes` supplements full-piece `sourceHashes`; it does not replace them. A receipt with inputs but no source binding still reports implementation freshness as unknown. Existing receipts without input hashes retain their behavior and disclose that dependency/test-input freshness is untracked. Only the named inputs are covered: BuildMap does not infer a complete dependency/test set, authenticate CI, capture the runtime environment, or establish continuing liveness. Avoid binding the receipt file to itself, since writing that receipt changes its bytes.
 
 ### Evidence index
 
@@ -227,9 +252,9 @@ Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discover
 npm test
 ```
 
-Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, unmapped/file-only claims, explicit-plan drift, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, branch/tag selection and clone provenance, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for review findings and [BUILD_GAPS.md](BUILD_GAPS.md) for the current remaining work, with release checks separated from later capabilities.
+Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and source/selected-input freshness, unmapped/file-only claims, explicit-plan drift, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, branch/tag selection and clone provenance, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for review findings and [BUILD_GAPS.md](BUILD_GAPS.md) for the current remaining work, with release checks separated from later capabilities.
 
-BuildMap dogfoods its own manifest and source-bound test receipts. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
+BuildMap dogfoods its own manifest and source-bound test receipts with selected dependency/test-input hashes. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 
 ## License
 

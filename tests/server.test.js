@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { once } from 'node:events';
 import { startServer } from '../src/server.js';
 import { parseArgs, prepareTarget } from '../src/cli.js';
@@ -39,6 +40,20 @@ test('server maps live edits, serves gaps/assets, and keeps repository files pri
   const after = await read('/api/map'); assert.notEqual(before.fingerprint, after.fingerprint);
   assert.equal(after.project.counts.coded, 1);
   const gaps = await read('/api/gaps'); assert.deepEqual(gaps.gaps, after.gaps);
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'data.json'), '{}');
+  fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), JSON.stringify({ files: {
+    'main.js': { status: 'verified', note: 'Recorded input check.',
+      sourceHashes: after.nodes.find(n => n.id === 'file:main.js').sourceHashes,
+      inputHashes: { 'data.json': crypto.createHash('sha256').update('{}').digest('hex') } }
+  } }));
+  const bound = await read('/api/map'); assert.equal(bound.project.counts.verified, 1);
+  fs.writeFileSync(path.join(root, 'data.json'), '{"changed":true}');
+  const stale = await read('/api/map'); assert.equal(stale.project.counts.verified, 0);
+  assert.notEqual(stale.fingerprint, bound.fingerprint);
+  const inputGaps = await read('/api/gaps');
+  assert.ok(inputGaps.gaps.some(g => g.kind === 'unsupported-evidence' && g.message.includes('data.json')));
+  assert.deepEqual(inputGaps.gaps, stale.gaps);
   for (const route of ['/', '/app.js', '/styles.css']) assert.equal((await fetch(base + route)).status, 200);
   for (const route of ['/secret.txt', '/src/scan.js', '/%2e%2e%2fpackage.json']) assert.equal((await fetch(base + route)).status, 404);
   assert.equal((await fetch(base + '/api/map', { method: 'POST' })).status, 405);

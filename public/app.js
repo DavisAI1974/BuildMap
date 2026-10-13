@@ -242,7 +242,17 @@ function connectionList(id) {
 }
 function receiptText(receipt, assessment, label = 'Recorded claim') {
   if (!receipt || typeof receipt !== 'object') return `<p>${label}: ${escapeHtml(JSON.stringify(receipt))} · rejected</p>`;
-  return `<p>${label}: ${escapeHtml(receipt.status || 'invalid')} · ${assessment?.accepted ? 'accepted' : 'rejected'}</p>${['note','command','proof'].filter(k => receipt[k]).map(k => `<p><strong>${k}:</strong> ${escapeHtml(receipt[k])}</p>`).join('')}`;
+  return `<p>${label}: ${escapeHtml(receipt.status || 'invalid')} · ${assessment?.accepted ? 'accepted' : 'rejected'}</p>${['note','command','proof'].filter(k => receipt[k]).map(k => `<p><strong>${k}:</strong> ${escapeHtml(receipt[k])}</p>`).join('')}${inputBindingText(receipt, assessment)}`;
+}
+function inputBindingText(receipt, assessment) {
+  if (!Object.hasOwn(receipt, 'inputHashes')) return '<p>Dependency and test-input freshness is not tracked by this receipt; no input hashes were recorded.</p>';
+  const inputs = assessment?.inputs;
+  const current = inputs ? `<h3>Current input hashes</h3>${Object.entries(inputs.currentHashes).map(([file, digest]) => `<p>${escapeHtml(file)}<br><code>${escapeHtml(digest || 'Unavailable')}</code></p>`).join('')}` : '';
+  const issues = inputs?.issues.map(i => `<p>${escapeHtml(i.file)}: ${escapeHtml(i.reason)}</p>`).join('') || '';
+  return `<details><summary>Selected input bindings${inputs ? ` · ${escapeHtml(inputs.binding)}` : ''}</summary>
+    <p>Only explicitly listed inputs are covered. This does not authenticate the check or bind the environment.</p>
+    <h3>Recorded input hashes</h3><pre>${escapeHtml(JSON.stringify(receipt.inputHashes, null, 2))}</pre>
+    ${current}${issues}${inputs?.reason ? `<p>${escapeHtml(inputs.reason)}</p>` : ''}</details>`;
 }
 function evidenceText(node) {
   if (node.kind === 'mission') return 'This is the intended outcome. Piece states do not independently prove the mission.';

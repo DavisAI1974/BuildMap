@@ -6,7 +6,7 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base: `a2330cc66d7e857d21b17e666278729f1d15c873`. The ownership/discovery/client corrections follow this commit; use the current branch head, not the continuation base.
+Continuation base: `87692a146f3f661ea285ba4269bbb32d1b8b2864`. The optional selected-input freshness pass follows this commit; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
@@ -30,6 +30,7 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 ## What landed
 
 - Source existence, observed connectivity, and explicit proof claims are separate. Declared dependencies never grant connected status; bare manifest statuses and status-only receipts never grant upper states.
+- Optional `inputHashes` binds selected dependency/test/data/config files without adding source pieces or edges. Changed/missing/unsafe/malformed inputs reject receipts and update fingerprints; the inspector/API exposes recorded/current inputs and reasons. Existing receipts keep their semantics; inputs cannot replace source binding or descriptive evidence.
 - Partial implementation stays visible. Source-bound receipts become stale on implementation changes; unbound claims disclose unknown freshness. The mission is an unproved intent target.
 - JS/TS lexical import/re-export discovery, Python packages/relative imports, HTML/CSS relationships, explicit assets/configuration, and visible scan limitations.
 - Consistent dependency-to-dependent arrows with file provenance; declared-vs-observed wiring is distinct.
@@ -45,16 +46,17 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 
 ## Current validation and proof state
 
-- **48/48 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **53/53 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - JS syntax and whitespace checks passed.
 - Local HTTP/API/assets and live source edits covered by tests.
 - Public default-clone smoke with `octocat/Hello-World` recovered README intent and cleaned up.
 - Real branch/JSON smoke cloned BuildMap's PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported that exact revision, and cleaned up.
 - Offline fixture checks cover branch and tag selection, failed-ref cleanup, HTML export safety/overwrite refusal, and client live/offline logic through a DOM double.
-- Dogfood map: **four verified components from current source-bound recorded receipts, one source-connected visualizer, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence**.
+- Dogfood map: **four verified components from current source-bound recorded receipts with selected dependency/test-input bindings, one source-connected visualizer, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence**.
 
-Do not call DOM-double tests browser verification. Receipts are manually recorded claims; source hashes bind each piece's implementation only, not transitive dependencies, test inputs, environment, or continuing deployment liveness.
+Do not call DOM-double tests browser verification. Receipts are manually recorded claims; source hashes bind each piece's implementation and optional input hashes bind only explicitly selected dependency/test/data/config files. Complete transitive input coverage, environment identity, and continuing deployment liveness are not established.
 
 ## Remaining gaps in priority order
 
@@ -67,7 +69,7 @@ Completed release check: the full suite and CLI/server smoke passed on Node 20.2
 ### Broader product work
 
 2. Parser-backed/wider wiring discovery: HTTP, TypeScript aliases, Python src layouts, regex/template corner cases, other languages.
-3. Dependency/test-input freshness and independent CI/runtime/deployment receipt provenance.
+3. Complete/automatic dependency/test-input coverage and independent CI/runtime/deployment receipt provenance. Explicit selected-input freshness is implemented.
 4. Large-repo performance and capability/subsystem navigation. Full scans/hashes and all-node rendering are current limitations.
 5. Deeper attributed intent recovery, contradiction review/interviews, and source-derived mechanism explanations.
 

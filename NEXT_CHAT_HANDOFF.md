@@ -19,11 +19,12 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 ## Read first
 
 1. `NEXT_CHAT_HANDOFF.md`
-2. `BUILD_GAPS.md`
-3. `README.md`
-4. `REVIEW_NOTES.md`
-5. `.buildmap/project.json` and `.buildmap/evidence.json`
-6. Source and tests relevant to the next change.
+2. `docs/BUILDMAP_COMPETITIVE_STRATEGY_HANDOFF_20261013.md` (updated strategy; preserve its research caveats)
+3. `BUILD_GAPS.md`
+4. `README.md`
+5. `REVIEW_NOTES.md`
+6. `.buildmap/project.json` and `.buildmap/evidence.json`
+7. Source and tests relevant to the next change.
 
 `GPT6_REVIEW_HANDOFF.md` preserves the original product intent; its historical test counts, progress claims, and initial implementation descriptions have been superseded by the current files.
 
@@ -49,19 +50,23 @@ Selected boxes should clearly light up. Gap choices now keep one pressed/selecte
 
 The user clarified twice that the earlier customer-order table was an example of plain wording, not a workflow or analogy to apply to every project. Explain each job's own goal and actual steps in simple language. BuildMap's walkthrough now reads "Agree on the goal", "Check what's built", "Make the results available", and "Review what works", with BuildMap-specific explanations. Optional per-step `explanation` and `example` strings support tailored wording; illustrations stay separate from recorded results. The full normalized definition, including these fields, is bound by the definition hash.
 
-## Confirmed free/paid boundary
+## Updated free and paid boundary
 
-The user confirmed: the original idea is the free Map, and the walkthrough is the paid layer on top. **Nothing is taken away from the original free experience.** Do not redefine the free product as a stripped-down teaser or make plain-English piece explanations, original evidence/gaps, file inventory, search/fit, APIs or exports paid-only.
+The user attached `BuildMap_Competitive_Strategy_Work_Handoff.docx` and instructed Work to use it as the updated product direction while preserving newer repository work. The matching Markdown strategy was already added in commit `2a54023`, above the guided-authoring commit `3363bce`; both are preserved. This supersedes the earlier paid-walkthrough split.
 
-The shared client now has separate Map · Free and Walkthrough · Paid buttons. Map is the default and retains the original mission/evidence index, graph, source/evidence gaps, search, files, and inspector. Walkthrough leads with the selected goal and ordered steps in a wider reading view; outcome/scope findings live there. Step inspection opens the free map and supports returning to the journey. Search, scale, map selection, gap selections, and goal selection remain available when navigating views. Orphan outcome claims remain inspectable. Underlying source/evidence data, original APIs, and the live/export engine are shared; no duplicate build was introduced.
+**The complete map, current goal-first walkthrough and basic focused task briefs are free.** Keep file inventory, source/evidence details, search/fit, gaps/drift findings, expected results, recorded examples, first unfinished point, finished-product ending, APIs/exports and Keep your agent focused. Do not retract any existing capability to manufacture a paid tier.
 
-Both views are accessible in the current MVP preview. Actual prices, accounts, billing, and access enforcement are deferred. No subscriptions were created and no service was launched. Client checks are still DOM-double checks; the real browser constraint remains.
+Goals now appear in the default map sidebar. Choosing one reads its walkthrough beside the graph and highlights participating/supporting pieces. Clear goal focus restores the search-filtered graph; inspecting a step and returning to the wider walkthrough still works. Map · Free and Walkthrough · Free are reading views of the same product. The original source/evidence gap list remains intact; outcome/scope findings remain separately inspectable in the free walkthrough. Refresh, selection, examples and briefs share the existing engine/client, without changing evidence states.
+
+**BuildMap Guide** is proposed paid deeper code-level explanation, next-step coaching with acceptance criteria, change-impact previews, review of agent changes, guided verification and continuity. It is not built or billed. Its proposed loop is understand, prepare, build with the user's agent, review actual changes/evidence, continue. Pricing is undecided. Do not claim code execution/data flow from source references or agent assertions; no billing, orchestration platform or separate coding agent is authorized by this strategy alone.
+
+Browser checks are still pending under the documented restrictions. PR #1 stays open with no deployment/live claim. Historical review entries describing the earlier paid split record prior behavior and are superseded by this section.
 
 ## Audience and focused task briefs
 
 The user confirmed beginner-to-intermediate coder/builders as the primary audience: people intimidated by starting a project, without full-stack/architecture experience, or struggling to control agent drift/bloat. Experienced users can still inspect deeper detail. Keep this focus in setup, default language, and next-step guidance. It is positioning, not verified market-size research.
 
-The shared client explains findings in plain English and offers one useful next step plus a reviewable, manually copied task brief. Free-map briefs remain free. Paid briefs add the selected goal and first unresolved step. Context includes captured fingerprint/source and relevant files/assessment; the brief asks agents to inspect/re-scan, keep the change small, report observed results, and stop before widening scope. It never sends tasks, runs commands, updates evidence, or decides that an unassigned piece should be deleted. Scoped piece findings can be reviewed in the paid view and then inspected in the free map. Clipboard absence/rejection falls back to selectable text; these are DOM-double interaction checks, not real-browser observations. Two focused regressions bring the suite to 74.
+The shared client explains findings in plain English and offers one useful next step plus a reviewable, manually copied task brief. Free-map briefs remain free. Free goal-aware briefs add the selected goal and first unresolved step. Context includes captured fingerprint/source and relevant files/assessment; the brief asks agents to inspect/re-scan, keep the change small, report observed results, and stop before widening scope. It never sends tasks, runs commands, updates evidence, or decides that an unassigned piece should be deleted. Scoped piece findings can be reviewed in the free walkthrough and then inspected in the free map. Clipboard absence/rejection falls back to selectable text; these are DOM-double interaction checks, not real-browser observations. Two focused regressions bring the suite to 74.
 
 ## Finished product ending and guided local start
 
@@ -75,7 +80,7 @@ CLI installation/startup, piece grouping, existing-walkthrough editing and evide
 
 ## Business idea to revisit
 
-The user confirmed free mapping with paid walkthroughs as the product split, especially to help companies direct coding agents toward internal tools that fit their workflows (a real estate agency replacing some SaaS functionality was the example). The fee amounts and business model details remain hypotheses; this is not authorization to add billing, accounts, or a SaaS-builder platform to the MVP.
+The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/basic briefs plus proposed paid BuildMap Guide. The company-internal-tool use case remains relevant (a real estate agency replacing some SaaS functionality was the example). The fee amounts and business model details remain hypotheses; this is not authorization to add billing, accounts, or a SaaS-builder platform to the MVP.
 
 ## What landed
 
@@ -97,7 +102,7 @@ The user confirmed free mapping with paid walkthroughs as the product split, esp
 
 ## Current validation and proof state
 
-- **82/82 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **83/83 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
@@ -190,4 +195,11 @@ The shared client explains how to create the first walkthrough, including `--ini
 
 Four focused tests bring the suite to 82 on Node 20.20.2 and 24.19.0: actual CLI append with original fields/goals/source/evidence/piece states retained and orphan-id avoidance; cancellation/defaults/invalid choices/incomplete input/mode/path refusal; concurrent edits and new receipt collisions; and shared-client empty guidance/refresh/offline/free-map retention. The latter uses the DOM double, not browser proof. Receipts are refreshed only after passing checks. The partial backend example is re-observed; its browser step and the whole outcome stay unproved. No piece is live. PR #1 stays open; nothing is deployed or published.
 
-The next usability gaps are component grouping/planned-piece authoring and recorded-example capture. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.
+The next usability gaps are component grouping/planned-piece authoring and recorded-example capture. The proposed first Guide increment is deeper source-attributed code explanation from a concrete use case, not a claim that it already exists. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.
+
+
+## Updated strategy integration from 2a54023
+
+The uploaded strategy is adopted through the updated boundary above, README, gap report, UI labels and declared finished-product description. Current walkthroughs and goal-aware basic briefs remain free. Goals are directly accessible in the map; the wider reading view is retained for longer explanations. No new Guide capability or paid service was built.
+
+83 tests pass on Node 20.20.2 and 24.19.0. One focused scan-to-client regression covers map goal selection beside the graph, escaped wording, participant highlights through search, unchanged proof, basic goal-aware copy fallback, refresh/focus, clear focus with retained scale/search, piece inspection/return and removed goals. Existing live/offline/navigation/export checks now enforce the free labels and features. These remain DOM-double checks, not browser verification. Test receipts and partial backend intent/scan/HTTP observations are refreshed after successful checks; the browser step and the whole outcome remain unproved. No piece is live.

@@ -2,6 +2,8 @@
 
 Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_REVIEW_HANDOFF.md`, the manifest/evidence, source, and tests. The initial pass introduced no framework or npm runtime dependency; the later parser pass below adds Acorn.
 
+Current product direction: the strategy integration below supersedes the earlier paid-walkthrough split. Current walkthroughs and basic briefs are free; BuildMap Guide remains proposed. Historical entries retain the behavior and checks recorded at their checkpoints.
+
 ## Findings and changes
 
 | Finding | Result |
@@ -163,3 +165,12 @@ Builders previously had to author JSON to use the walkthrough layer. An explicit
 Invalid plans, incomplete answers, incompatible modes, linked manifest/configuration paths, plan edits during the interview and new receipt collisions refuse the save. A temporary-file rename avoids partial JSON during normal local authoring; no cross-process locking service is claimed. Mapping remains read-only. The empty shared-client walkthrough view now explains local setup and distinguishes fresh local polling from captured snapshots; it retains the finished-product ending and updates when plans arrive. Free features remain intact.
 
 Validation: **82/82 tests pass on Node v20.20.2 and v24.19.0**. Four focused regressions exercise actual CLI append and scan results, preservation and orphan-id avoidance; cancellation/unfinished answers/defaults/invalid choices/unsafe paths/modes; concurrent plan/evidence edits; and live/offline empty-state guidance, refresh and retained free-map features through the DOM double. Syntax/whitespace checks pass. Updated receipts cover backend/test checks only; a fresh partial intent/scan/HTTP observation still leaves the browser step and the whole outcome unproved. Browser restrictions were not retried or bypassed; no deployment or live claim was made and PR #1 remains open.
+
+
+## Strategy integration from 2a54023
+
+The user supplied the competitive strategy DOCX and asked Work to adopt it while preserving newer work. The matching strategy Markdown at `2a54023` and the guided-authoring implementation at `3363bce` are retained. The existing walkthrough and basic agent task briefs now belong to BuildMap Free. The proposed paid BuildMap Guide is documented separately, with deeper code explanation/coaching/impact/review/verification/continuity unbuilt and pricing undecided.
+
+Goals appear in the default map sidebar and can be inspected beside the graph, with participating/supporting highlights. Clearing goal focus preserves search and fit scale. The wider free walkthrough remains available, including scoped findings, samples, basic goal-aware copy briefs and piece-return navigation. Refresh retains current goal detail/focus and handles removed goals. Evidence data/states are unchanged by navigation. Live and exported clients share the same implementation; README, gap report, declared destination and next-chat handoff reflect the new boundary.
+
+Validation: **83/83 tests pass on Node v20.20.2 and v24.19.0**. One focused real-scan-to-client regression exercises goal selection beside the graph, escaping, highlights/search, copied-brief fallback, refresh/focus, clear-focus scale/search retention, piece inspection/return, removed goals, offline operation and unchanged proof. Existing shared-client/free-feature checks are retained; export checks enforce free labels. Syntax and whitespace checks pass. Receipts and partial backend intent/scan/HTTP observations are refreshed only after the checks; browser layout/integration remains unobserved and the whole outcome unproved. PR #1 stays open; nothing is deployed or marked live.

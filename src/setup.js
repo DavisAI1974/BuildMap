@@ -142,6 +142,6 @@ export async function createWalkthrough(target, { input = process.stdin, output 
     fs.writeFileSync(temp, JSON.stringify({ ...manifest, outcomes: [...(manifest.outcomes || []), outcome] }, null, 2) + '\n', { flag: 'wx', mode: originalStat.mode & 0o777 });
     fs.renameSync(temp, destination);
   } finally { fs.rmSync(temp, { force: true }); }
-  output.write(`Saved walkthrough "${outcome.name}" (${outcome.id}). Open Walkthrough · Paid in the map to review its steps.\nNo code, connections, or proof was created.\n`);
+  output.write(`Saved walkthrough "${outcome.name}" (${outcome.id}). Select it under Your goals in the free map or open Walkthrough · Free to review its steps.\nNo code, connections, or proof was created.\n`);
   return { root, outcome, path: destination };
 }

@@ -14,6 +14,7 @@ let showAllResults = false;
 let mapPositions = new Map();
 let mapScale = 1;
 let selectedOutcomeId = null;
+let mapShowsOutcome = false;
 let selectedGapId = null;
 let currentView = 'map';
 let walkthroughReturnId = null;
@@ -39,7 +40,10 @@ $('moreResults').addEventListener('click', () => { showAllResults = !showAllResu
 $('fitButton').addEventListener('click', () => { fit = true; scaleMap(); viewport.scrollTo({ left: 0, top: 0 }); });
 $('sizeButton').addEventListener('click', () => { fit = false; scaleMap(); });
 $('moreGaps').addEventListener('click', () => { showAllGaps = !showAllGaps; renderGaps(); });
-$('clearOutcome').addEventListener('click', () => { showView('map'); $('mapViewButton').focus({ preventScroll: true }); });
+$('clearOutcome').addEventListener('click', () => {
+  if (currentView === 'map') { selectedOutcomeId = null; mapShowsOutcome = false; }
+  showView('map'); $('mapViewButton').focus({ preventScroll: true });
+});
 $('mapViewButton').addEventListener('click', () => showView('map'));
 $('walkthroughViewButton').addEventListener('click', () => showView('walkthrough'));
 new ResizeObserver(() => { if (fit) scaleMap(); }).observe(viewport);
@@ -73,24 +77,26 @@ async function refresh() {
     renderHeader();
     renderLegend();
     const outcomeRemoved = selectedOutcomeId && !model.outcomes?.some(o => o.id === selectedOutcomeId);
+    const mapOutcomeRemoved = outcomeRemoved && mapShowsOutcome;
     if (outcomeRemoved) {
-      selectedOutcomeId = null;
-      if (currentView === 'walkthrough') $('detail').innerHTML = '<h2>Outcome removed</h2><p>The selected outcome is no longer in the current plan.</p>';
+      selectedOutcomeId = null; mapShowsOutcome = false;
+      if (currentView === 'walkthrough' || mapOutcomeRemoved) $('detail').innerHTML = '<h2>Outcome removed</h2><p>The selected outcome is no longer in the current plan.</p>';
     }
     renderOutcomes();
     renderGaps();
     renderMap();
     if (selectedId) {
-      if (model.nodes.some(n => n.id === selectedId)) { if (currentView === 'map') renderDetail(selectedId); }
+      if (model.nodes.some(n => n.id === selectedId)) { if (currentView === 'map' && !mapShowsOutcome && !mapOutcomeRemoved) renderDetail(selectedId); }
       else { selectedId = null; if (currentView === 'map') $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
     }
-    if (currentView === 'walkthrough' && !outcomeRemoved) renderPaidDetail();
+    if (currentView === 'walkthrough' && !outcomeRemoved) renderWalkthroughDetail();
+    if (currentView === 'map' && mapShowsOutcome) renderOutcomeDetail(selectedOutcomeId);
     if (currentView === 'map' && focusedId && (focusOnCard || focusInResults)) {
       const candidates = focusInResults ? [...$('searchResults').children] : [...document.querySelectorAll('.node')];
       const replacement = candidates.find(el => el.dataset.id === focusedId && el.tabIndex !== -1);
       (replacement || $('search')).focus({ preventScroll: true });
     }
-    if (focusedOutcome && currentView === 'walkthrough') ([...$('outcomes').children].find(el => el.dataset.outcomeId === focusedOutcome) || $('walkthroughViewButton')).focus({ preventScroll: true });
+    if (focusedOutcome) ([...$('outcomes').children].find(el => el.dataset.outcomeId === focusedOutcome) || $(currentView === 'map' ? 'mapViewButton' : 'walkthroughViewButton')).focus({ preventScroll: true });
   } catch (err) {
     $('refreshStatus').textContent = model ? 'Refresh failed · showing last snapshot' : 'Could not load map · retrying';
     $('refreshStatus').classList.add('stale');
@@ -224,6 +230,7 @@ function layout(nodes, edges) {
 
 function selectPiece(id, reveal = false, returnToOutcome = null) {
   if (!model.nodes.some(n => n.id === id)) return;
+  mapShowsOutcome = false;
   walkthroughReturnId = returnToOutcome;
   if (currentView !== 'map') showView('map');
   selectedGapId = null; renderGaps();
@@ -265,12 +272,12 @@ function renderGaps() {
       const view = currentView;
       if (gap.outcomeId) selectOutcome(gap.outcomeId);
       else if (view === 'walkthrough') {
-        selectedGapId = key; renderPaidDetail();
+        selectedGapId = key; renderWalkthroughDetail();
       } else selectPiece(gap.nodeId || '__mission__', true, view === 'walkthrough' ? selectedOutcomeId : null);
       selectedGapsByView[view] = key;
       if (currentView === view) selectedGapId = key;
       renderGaps();
-      if (currentView === 'walkthrough') renderPaidDetail();
+      if (currentView === 'walkthrough') renderWalkthroughDetail();
       else if (selectedId) renderDetail(selectedId);
     });
     $('gaps').appendChild(el);
@@ -324,14 +331,15 @@ function renderOutcomes() {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'outcome-choice'; button.dataset.outcomeId = outcome.id;
     button.setAttribute('aria-pressed', String(outcome.id === selectedOutcomeId));
     button.innerHTML = `<strong>${escapeHtml(outcome.name)}</strong><span>${outcomeLabel(outcome.status)} · ${outcome.steps.length} steps</span>`;
-    button.addEventListener('click', () => selectOutcome(outcome.id)); $('outcomes').appendChild(button);
+    button.addEventListener('click', () => selectOutcome(outcome.id, currentView === 'map')); $('outcomes').appendChild(button);
   }
-  $('clearOutcome').hidden = currentView !== 'walkthrough' || !selectedOutcomeId;
+  $('clearOutcome').hidden = !selectedOutcomeId || (currentView === 'map' && !mapShowsOutcome);
+  $('clearOutcome').textContent = currentView === 'map' ? 'Clear goal focus' : 'Back to map';
 }
-function selectOutcome(id) {
+function selectOutcome(id, inMap = false) {
   if (!model.outcomes?.some(o => o.id === id)) return;
-  selectedOutcomeId = id; walkthroughReturnId = null;
-  if (currentView !== 'walkthrough') showView('walkthrough');
+  selectedOutcomeId = id; walkthroughReturnId = null; mapShowsOutcome = inMap;
+  if (!inMap && currentView !== 'walkthrough') showView('walkthrough');
   selectedGapId = null; renderGaps();
   renderOutcomes(); applyFilter(); renderOutcomeDetail(id);
   [...$('outcomes').children].find(el => el.dataset.outcomeId === id)?.focus({ preventScroll: true });
@@ -384,7 +392,7 @@ function selectedWalkthroughFinding() {
   const gap = selectedFinding();
   return gap && isOutcomeGap(gap) && !gap.outcomeId ? gap : null;
 }
-function renderPaidDetail() {
+function renderWalkthroughDetail() {
   const finding = selectedWalkthroughFinding();
   if (finding) {
     $('detail').innerHTML = `<div class="eyebrow">WALKTHROUGH FINDING</div><h2>Review this finding</h2><p>${escapeHtml(finding.message)}</p>${guidanceHtml(finding)}
@@ -400,8 +408,8 @@ function renderPaidDetail() {
   else if (selectedOutcomeId) renderOutcomeDetail(selectedOutcomeId);
   else {
     $('detail').innerHTML = model.outcomes?.length
-      ? '<div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div><h2>Choose a goal</h2><p>Follow its steps, expected results, and recorded example to see where the journey needs work.</p>'
-      : `<div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div><h2>Describe your first walkthrough</h2>
+      ? '<div class="eyebrow">WALKTHROUGH · FREE</div><h2>Choose a goal</h2><p>Follow its steps, expected results, and recorded example to see where the journey needs work.</p>'
+      : `<div class="eyebrow">WALKTHROUGH · FREE</div><h2>Describe your first walkthrough</h2>
         <p>Choose one result someone should accomplish. The guided local setup lets you select mapped pieces in order and describe what each step should produce.</p>
         <p>From your BuildMap checkout, run <code>node src/cli.js PATH --walkthrough</code>, replacing PATH with your local project folder. If it has no project description yet, run <code>node src/cli.js PATH --init</code> first. Add source or planned pieces before choosing steps.</p>
         <p>${snapshot || model.project.source?.kind === 'github' ? 'This is a captured snapshot. Work on a local checkout, then open a fresh map or create a new export to see your saved plan.' : 'The local map picks up the saved plan on its next refresh.'}</p>
@@ -419,14 +427,16 @@ function showView(view) {
   $('walkthroughViewButton').setAttribute('aria-pressed', String(walkthrough));
   $('viewDescription').textContent = walkthrough ? 'Follow a goal, step by step.' : 'Explore the whole build.';
   for (const id of ['missionPanel', 'mapSidebar', 'mapShell', 'evidenceRule', 'fitButton', 'sizeButton']) $(id).hidden = walkthrough;
-  for (const id of ['walkthroughSummary', 'outcomesPanel']) $(id).hidden = !walkthrough;
+  $('walkthroughSummary').hidden = !walkthrough;
+  $('outcomesPanel').hidden = false;
   if (!model) return;
   renderOutcomes(); renderGaps(); applyFilter();
   if (walkthrough) {
-    renderPaidDetail();
+    renderWalkthroughDetail();
   } else {
     scaleMap();
-    if (selectedId) renderDetail(selectedId);
+    if (mapShowsOutcome && selectedOutcomeId) renderOutcomeDetail(selectedOutcomeId);
+    else if (selectedId) renderDetail(selectedId);
     else $('detail').innerHTML = '<div class="eyebrow">PIECE INSPECTOR</div><h2>Click a piece</h2><p>See what it does, how it connects, and how it moves the system toward its goal.</p>';
   }
 }
@@ -603,7 +613,7 @@ function fileList(node) {
 
 function applyFilter() {
   const q = filter;
-  const outcome = currentView === 'walkthrough' ? model?.outcomes?.find(o => o.id === selectedOutcomeId) : null;
+  const outcome = currentView === 'walkthrough' || mapShowsOutcome ? model?.outcomes?.find(o => o.id === selectedOutcomeId) : null;
   document.querySelectorAll('.node').forEach(el => {
     const n = model?.nodes.find(x => x.id === el.dataset.id);
     const participates = Boolean(outcome?.nodeIds.includes(n?.id));

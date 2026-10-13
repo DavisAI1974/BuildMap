@@ -412,7 +412,7 @@ test('outcome gaps open the walkthrough and shared offline navigation makes no r
   }
 });
 
-test('the full free map and paid walkthrough are separate views over unchanged evidence, with preserved navigation', async () => {
+test('the free map and free walkthrough are reading views over unchanged evidence, with preserved navigation', async () => {
   const input = model('views', [piece('a'), piece('b')]);
   input.outcomes = [{ id: 'goal', name: 'Useful result', goal: 'Produce a useful result.', status: 'unproved', nodeIds: ['b'], supports: [],
     steps: [{ id: 'first', nodeId: 'b', label: 'Do work', expected: 'Useful output.', pieceName: 'b', pieceStatus: 'coded', state: 'unobserved', observation: null }],
@@ -427,7 +427,7 @@ test('the full free map and paid walkthrough are separate views over unchanged e
     const ui = await client(input, offline);
     const card = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id);
     assert.equal(ui.get('mapViewButton').attributes['aria-pressed'], 'true');
-    assert.equal(ui.get('outcomesPanel').hidden, true);
+    assert.equal(ui.get('outcomesPanel').hidden, false);
     assert.equal(ui.get('mapShell').hidden, false);
     assert.equal(ui.get('gaps').children.length, 2);
     card('a').click(); ui.get('fitButton').click();
@@ -464,6 +464,60 @@ test('the full free map and paid walkthrough are separate views over unchanged e
     assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
     assert.equal(JSON.stringify(input), original);
     if (offline) assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+  }
+});
+
+test('map goals open a free walkthrough beside the graph with bounded briefs, refresh and clear-focus navigation', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-free-goals-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'main.js'), 'export const value = 7;');
+  fs.writeFileSync(path.join(root, 'other.js'), 'export const other = 3;');
+  const plan = { mission: 'Help this builder.', outcomes: [{ id: 'goal', name: '<Our goal>', goal: 'Produce useful output.',
+    steps: [{ id: 'first', nodeId: 'file:main.js', label: 'Read this build', expected: 'Useful output.' }] }] };
+  const save = () => fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan)); save();
+  for (const offline of [false, true]) {
+    const input = scanProject(root), original = JSON.stringify(input), ui = await client(input, offline);
+    const card = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id);
+    ui.get('fitButton').click(); ui.get('search').listeners.input({ target: { value: 'other.js' } });
+    ui.get('outcomes').children[0].click();
+    assert.equal(ui.get('mapViewButton').attributes['aria-pressed'], 'true');
+    for (const id of ['mapShell', 'missionPanel', 'mapSidebar', 'fitButton']) assert.equal(ui.get(id).hidden, false);
+    assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+    assert.match(ui.get('detail').innerHTML, /&lt;Our goal&gt;/);
+    assert.ok(card('file:main.js').classes.has('in-outcome')); assert.equal(card('file:main.js').tabIndex, 0);
+    assert.equal(ui.get('clearOutcome').textContent, 'Clear goal focus');
+    const brief = () => ui.get('detail').children.find(e => e.classes.has('task-brief'));
+    assert.equal(brief().children[0].textContent, 'Keep your agent focused');
+    assert.match(brief().children[2].children[1].value, /"goal": "Produce useful output."/);
+    assert.match(brief().children[2].children[1].value, /Avoid unrelated features, dependencies, and refactors/);
+    await brief().children[3].click(); assert.equal(brief().children[2].open, true);
+    if (!offline) {
+      const active = ui.get('outcomes').children[0]; active.focus();
+      plan.outcomes[0].steps[0].expected = 'Updated useful output.'; save();
+      ui.setModel(scanProject(root)); await ui.refresh();
+      assert.match(ui.get('detail').children[0].children[0].innerHTML, /Updated useful output/);
+      assert.equal(ui.context.document.activeElement, ui.get('outcomes').children[0]);
+    }
+    ui.get('clearOutcome').click();
+    assert.equal(card('file:main.js').classes.has('in-outcome'), false);
+    assert.equal(card('file:main.js').tabIndex, -1); // The original search still applies.
+    assert.equal(ui.get('fitButton').attributes['aria-pressed'], 'true');
+    ui.get('outcomes').children[0].click();
+    ui.get('detail').children[0].children[0].children[0].click();
+    assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
+    assert.equal(ui.get('mapShell').hidden, false);
+    ui.get('detail').children.find(e => e.classes.has('return-outcome')).click();
+    assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+    if (!offline) {
+      ui.get('mapViewButton').click(); ui.get('outcomes').children[0].click();
+      plan.outcomes = []; save(); ui.setModel(scanProject(root)); await ui.refresh();
+      assert.match(ui.get('detail').innerHTML, /Outcome removed/);
+      assert.equal(ui.context.document.activeElement, ui.get('mapViewButton'));
+      plan.outcomes = [{ id: 'goal', name: '<Our goal>', goal: 'Produce useful output.', steps: [{ id: 'first', nodeId: 'file:main.js', label: 'Read this build', expected: 'Useful output.' }] }]; save();
+    } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+    assert.equal(JSON.stringify(input), original); assert.equal(input.outcomes[0].status, 'unproved');
+    assert.equal(input.project.counts.verified, 0); assert.equal(input.project.counts.live, 0);
   }
 });
 

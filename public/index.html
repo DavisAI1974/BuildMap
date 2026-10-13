@@ -23,7 +23,7 @@
 
   <nav class="view-switch" aria-label="BuildMap views">
     <button id="mapViewButton" type="button" aria-pressed="true" aria-controls="workspace">Map <span>Free</span></button>
-    <button id="walkthroughViewButton" type="button" aria-pressed="false" aria-controls="workspace">Walkthrough <span>Paid</span></button>
+    <button id="walkthroughViewButton" type="button" aria-pressed="false" aria-controls="workspace">Walkthrough <span>Free</span></button>
     <span id="viewDescription">Explore the whole build.</span>
   </nav>
 
@@ -41,7 +41,7 @@
   </section>
 
   <section id="walkthroughSummary" class="walkthrough-summary" hidden>
-    <div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div>
+    <div class="eyebrow">WALKTHROUGH · FREE</div>
     <h1>Follow your goal through the build</h1>
     <p>See what each step should achieve, what happened in the recorded example, and where the journey still needs work.</p>
   </section>
@@ -59,11 +59,11 @@
       <div class="legend" id="legend"></div>
       <div class="edge-key"><span>Solid → observed source dependency</span><span>Dashed → declared dependency</span><span>Green → contribution to mission</span></div>
       </div>
-      <section id="outcomesPanel" class="outcomes-panel" aria-label="Outcome walkthroughs" hidden>
+      <section id="outcomesPanel" class="outcomes-panel" aria-label="Outcome walkthroughs">
         <h2>Your goals</h2>
         <p id="outcomeHint"></p>
         <div id="outcomes"></div>
-        <button id="clearOutcome" type="button" hidden>Back to free map</button>
+        <button id="clearOutcome" type="button" hidden>Back to map</button>
       </section>
       <section class="gaps-panel" aria-label="Build gaps"><h2 id="gapHeading">Next gaps</h2><div id="gaps"></div><button id="moreGaps" type="button" hidden>Show all gaps</button></section>
       <div id="evidenceRule" class="rail-note">

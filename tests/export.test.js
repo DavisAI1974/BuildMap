@@ -24,6 +24,8 @@ test('export embeds assets and safely round-trips untrusted project data', t => 
   const data = html.match(/<script id="buildmapSnapshot" type="application\/json">([\s\S]*?)<\/script>/)[1];
   assert.deepEqual(JSON.parse(data), map);
   assert.match(html, /<script type="module">/); assert.match(html, /<style>/);
+  assert.match(html, /Walkthrough <span>Free<\/span>/);
+  assert.doesNotMatch(html, /PAID PREVIEW|Walkthrough <span>Paid<\/span>/);
 });
 
 test('CLI HTML export exits, writes one file, and refuses to overwrite existing work', t => {

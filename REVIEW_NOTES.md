@@ -21,7 +21,7 @@ Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_
 ## Validation
 
 - Baseline: 7 tests passed; local HTTP map, health, HTML, and JS smoke passed before changes.
-- Final suite: 25 tests, covering model semantics, discovery, CLI/API, live edits, and real client logic against a DOM double.
+- First-pass suite: 25 tests, covering model semantics, discovery, CLI/API, live edits, and real client logic against a DOM double.
 - JS syntax checks and `git diff --check` passed; package dry-run inspected.
 - Public URL clone/JSON smoke succeeded with `octocat/Hello-World`, recovered `README` intent, and removed its temporary clone on exit. BuildMap's default branch was also cloned; it currently contains no app code.
 - Dogfood manifest includes the new import-discovery module and all test files. Test receipts are bound to the corresponding final source hashes. No piece is marked live.
@@ -36,3 +36,14 @@ Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_
 4. Add capability/subsystem navigation when real repository size justifies it. The current bounded dependency layering tolerates cycles but is not a full graph-layout engine.
 
 The next useful dogfood gap remains the server-to-visualizer HTTP connection. It is intentionally shown as declared but unobserved rather than “fixed” by treating the declaration as code evidence.
+
+## Continuation from c14340b
+
+The next pass adds two practical capabilities while preserving the same state contract:
+
+- **Portable HTML snapshots:** `--html OUTPUT` embeds the current map and real UI assets into one interactive file. It labels the capture time, makes no HTTP requests or polling calls, preserves all evidence states, safely encodes project descriptions, and refuses to overwrite an existing file. Exported metadata includes local paths and evidence notes, not full source.
+- **Git-aware brownfield inventory:** Git ignore rules and negation apply to untracked files; tracked source remains visible even in normally excluded directories. Mapping a subtree excludes siblings and deleted tracked files. Explicit manifest files can override ignores. Git fsmonitor hooks are disabled, filesystem fallback is reported, and project-root symlink aliases retain containment.
+
+Current validation: **32 tests pass on Node v24.19.0**. The new checks cover HTML safety/round-trip data, CLI export and overwrite refusal, request-free offline rendering, Git ignore behavior, tracked source, subtree boundaries, fsmonitor-hook avoidance, and root aliases. Syntax and whitespace checks pass. Dogfood receipts were refreshed only after the checks completed.
+
+An attempted browser review of the exported file was rejected by the browser URL security policy, which permits only HTTP(S), while the cloud browser still cannot reach the workspace's loopback server. No alternate route around that rejection was attempted. Browser layout and actual browser/server integration therefore remain unverified, and the visualizer retains no upper evidence claim.

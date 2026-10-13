@@ -25,7 +25,7 @@
         "src/scan.js",
         "src/imports.js"
       ],
-      "purpose": "Discover code files, planned components, imports, gaps, and current evidence states.",
+      "purpose": "Inventory Git-tracked and non-ignored source, discover code relationships, and distinguish current implementation from recorded evidence and gaps.",
       "contributes": "Turns source code into the living set of puzzle pieces.",
       "dependsOn": [
         "intent"
@@ -41,9 +41,10 @@
       "group": "Observe",
       "files": [
         "src/server.js",
-        "src/cli.js"
+        "src/cli.js",
+        "src/export.js"
       ],
-      "purpose": "Rescan a local folder or a read-only GitHub clone snapshot and expose the current map and actionable gaps.",
+      "purpose": "Serve current maps and actionable gaps, or export a self-contained HTML snapshot for offline review.",
       "contributes": "Makes progress visible while the software is being built instead of after the fact.",
       "dependsOn": [
         "scanner"
@@ -80,9 +81,11 @@
         "tests/scan.test.js",
         "tests/intent.test.js",
         "tests/server.test.js",
-        "tests/ui.test.js"
+        "tests/ui.test.js",
+        "tests/export.test.js",
+        "tests/inventory.test.js"
       ],
-      "purpose": "Check intent, discovery, evidence semantics, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
+      "purpose": "Check source/evidence semantics, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
       "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",
       "dependsOn": [
         "intent",

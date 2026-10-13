@@ -4,7 +4,7 @@
       "status": "verified",
       "command": "npm test",
       "note": "Intent extraction and unknown-intent fallback passed in npm test on Node v24.19.0.",
-      "recordedAt": "2026-10-13T10:37:24.265Z",
+      "recordedAt": "2026-10-13T10:49:15.208Z",
       "sourceHashes": {
         "src/intent.js": "40c6856c37329edb7cb4ad67b0e176f0adc175d9a7d1d938c3f0a3e1b678521c"
       }
@@ -12,33 +12,36 @@
     "scanner": {
       "status": "verified",
       "command": "npm test",
-      "note": "Implementation, source discovery, evidence/freshness, configuration, and gap semantics passed in npm test on Node v24.19.0.",
-      "recordedAt": "2026-10-13T10:37:24.265Z",
+      "note": "Source/evidence semantics, imports/assets, Git ignore/tracked-file inventory, subtree boundaries, root aliases, and fsmonitor-hook avoidance passed in npm test on Node v24.19.0.",
+      "recordedAt": "2026-10-13T10:49:15.208Z",
       "sourceHashes": {
-        "src/scan.js": "5b6eee4469b4d4bcb111c8ab1710d236925050b84dc8cd92b9a66dd8377fdfc4",
+        "src/scan.js": "6dd504fd8faa8ff79962adfa70668f8dca63786ff2c21e31b9ccc9fe4691eebc",
         "src/imports.js": "3f63c072d5afa010ca9aa6fddae8b24aead3dffd0f5539495a172c551fe2e739"
       }
     },
     "server": {
       "status": "verified",
       "command": "npm test",
-      "note": "CLI JSON, option parsing, HTTP assets/API, source edits, and repository-file exclusion passed in npm test on Node v24.19.0. Public clone/JSON smoke also completed with octocat/Hello-World and cleaned up.",
-      "recordedAt": "2026-10-13T10:37:24.265Z",
+      "note": "CLI arguments/JSON/HTML export, safe embedding and overwrite refusal, HTTP assets/API, and source edits passed in npm test on Node v24.19.0. The prior public clone/JSON smoke recovered octocat/Hello-World intent and cleaned up.",
+      "recordedAt": "2026-10-13T10:49:15.208Z",
       "sourceHashes": {
         "src/server.js": "544c2d0205d762b369d699f5ee0c33648b96ba6255a188fb32e5c72dcc36a846",
-        "src/cli.js": "c32c1f9b4b8039d156afe98a174d647ec29fe471291b9040c4d39ee5d1be0590"
+        "src/cli.js": "bca2d6fe3742a8e1f055ae4a5931973b971366f755439235b08e52be364bd34f",
+        "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a"
       }
     },
     "verification": {
       "status": "verified",
       "command": "npm test",
-      "note": "All 25 tests passed on Node v24.19.0. Client tests use a DOM double and do not verify browser layout or integration.",
-      "recordedAt": "2026-10-13T10:37:24.265Z",
+      "note": "All 32 tests passed on Node v24.19.0. Live/offline client tests use a DOM double; browser layout and browser/server integration remain unverified.",
+      "recordedAt": "2026-10-13T10:49:15.208Z",
       "sourceHashes": {
         "tests/scan.test.js": "fe6ed7c2b701ee003bd60616aeb839bdeb59011bd94a9b1fd337fb5284bf2ff9",
         "tests/intent.test.js": "79df747824bf4df657ca3148dd70129ad7462d5a67d2d2aa3ce95bf2541f2f36",
-        "tests/server.test.js": "fce1a769e8250075eccf91dda4a75ff973b198a255ea727028ca1b5afce4d4d7",
-        "tests/ui.test.js": "db01fedb6da16025dd1e35f74c632238bdf5e20a90630a14cdc679b2ec98f022"
+        "tests/server.test.js": "726532eec788cf47e8db6db24643052454f95b47be97bc6885f20c8de39b77d8",
+        "tests/ui.test.js": "a9f246f2d12a9a0795f6fab2d9c26fe7d8a48d37f81f05ecfaefb6fe196e79be",
+        "tests/export.test.js": "1cebac1ed3eed04c2fb35a55a94ad4ec44179bd2e3c1a51402d590dad8097cfc",
+        "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7"
       }
     }
   }

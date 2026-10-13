@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { readIntent } from './intent.js';
 import { importSpecs, resolveImport } from './imports.js';
 
@@ -16,7 +17,8 @@ export function scanProject(root) {
   const manifest = readJson(root, '.buildmap/project.json', diagnostics);
   const evidence = readJson(root, '.buildmap/evidence.json', diagnostics);
   const components = validComponents(manifest.components, diagnostics);
-  const files = walkFiles(root, diagnostics);
+  const inventory = inventoryFiles(root, diagnostics);
+  const files = inventory.files;
   const fileSet = new Set(files.map(f => f.path));
   // Declared implementation can include assets/configuration outside discovered
   // extensions. Never follow a manifest path or symlink out of the project.
@@ -97,7 +99,7 @@ export function scanProject(root) {
   const result = { project: { name: manifest.name || path.basename(root), root, mode, intent, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
     states: STATES, nodes, edges: uniqueEdges(edges), gaps, diagnostics,
-    scan: { fileCount: files.length, importCount: importEdges.length, dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], heuristic: true },
+    scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: importEdges.length, dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], heuristic: true },
     generatedAt: new Date().toISOString() };
   result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence });
   return result;
@@ -170,8 +172,34 @@ function safeFile(root, rel) {
   if (!rel || path.isAbsolute(rel) || rel === '..' || rel.startsWith('../')) return false;
   const full = path.join(root, rel);
   const real = fs.realpathSync(full);
-  const relative = path.relative(root, real);
+  const relative = path.relative(fs.realpathSync(root), real);
   return !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative) && fs.statSync(full).isFile();
+}
+
+function inventoryFiles(root, diagnostics) {
+  // Git's own ignore semantics handle negation, nested rules, and tracked files.
+  // Disable fsmonitor so reading an unfamiliar repository cannot run its hook.
+  const args = ['-c', 'core.fsmonitor=false', '-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z',
+    ...[...IGNORE_DIRS].filter(d => d !== '.git').map(d => `--exclude=${d}/`)];
+  const result = spawnSync('git', args, { encoding: 'utf8', timeout: 5000, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, LC_ALL: 'C' } });
+  if (result.status !== 0) {
+    if (result.error?.code !== 'ENOENT' && !result.stderr?.includes('not a git repository')) diagnostics.push({ code: 'git-inventory-unavailable', message: 'Git inventory failed; using filesystem discovery with default directory exclusions.' });
+    return { files: walkFiles(root, diagnostics), mode: 'filesystem' };
+  }
+  const files = [];
+  for (const rel of new Set(result.stdout.split('\0').filter(Boolean))) {
+    if (rel.startsWith('.buildmap/') || (!CODE_EXT.has(path.extname(rel).toLowerCase()) && !SPECIAL_CODE.has(path.basename(rel)))) continue;
+    try {
+      // Git can list deleted tracked files and symlinks; neither establishes a
+      // present implementation. Paths are relative to the requested subtree.
+      if (!fs.lstatSync(path.join(root, rel)).isFile() || !safeFile(root, rel)) continue;
+      const buffer = fs.readFileSync(path.join(root, rel));
+      files.push({ path: rel, size: buffer.length, hash: hash(buffer) });
+    } catch (err) {
+      if (err.code !== 'ENOENT') diagnostics.push({ code: 'unreadable-file', message: `Could not read ${rel}: ${err.code}.` });
+    }
+  }
+  return { files, mode: 'git' };
 }
 
 function walkFiles(root, diagnostics) {

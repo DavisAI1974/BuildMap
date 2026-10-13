@@ -8,7 +8,7 @@ The core contract is **existence, connection, computation, verification, and liv
 
 ## Quick start
 
-Requires Node.js 20+ and no npm dependencies. Git is required only for GitHub URL input.
+Requires Node.js 20+ and no npm dependencies. Git is required for GitHub URL input and Git-inventory tests. Local mapping falls back to filesystem discovery when Git is unavailable.
 
 v0.1 is currently on [PR #1](https://github.com/DavisAI1974/BuildMap/pull/1); the default branch does not contain the app yet.
 
@@ -28,6 +28,7 @@ Point it at another project, choose a port, or get a one-shot snapshot:
 node src/cli.js ../some-project
 node src/cli.js --port 5000 ../some-project
 node src/cli.js ../some-project --json
+node src/cli.js ../some-project --html ../buildmap.html
 node src/cli.js --help
 ```
 
@@ -41,7 +42,17 @@ node src/cli.js https://github.com/owner/repository
 
 This makes a shallow clone of the **default branch** into a temporary folder. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or another branch, clone with your usual credentials, check out the branch locally, and pass its path.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+
+## Share an interactive snapshot
+
+```bash
+node src/cli.js ../some-project --html ../buildmap.html
+```
+
+Open the single HTML file in a browser to inspect the captured map, select gaps, search pieces, and fit the map without running a server or fetching external assets. The same client renders both live maps and exports. The header shows **snapshot** and the capture time; exports do not poll, watch source changes, or grant new evidence states.
+
+Exports contain map metadata, file paths, the mapped root, and recorded evidence notes, rather than full repository source. The output must be a new file in an existing directory; existing files are never overwritten. Put it outside the mapped project to keep generated HTML from becoming another discovered piece. `--html` and `--json` are separate one-shot modes.
 
 ## Start from what exists
 
@@ -167,7 +178,13 @@ A missing source connection is a **review prompt**, not proof of dead code. Entr
 
 ### Discovery scope
 
-The scanner inventories common source extensions, HTML/CSS, Dockerfiles, Makefiles, and explicitly declared files. It skips dependency/build/cache directories and hidden directories. It does not apply `.gitignore`, inspect binaries, or follow directory symlinks. Manifest paths cannot establish implementation outside the mapped root.
+The scanner inventories common source extensions, HTML/CSS, Dockerfiles, Makefiles, and explicitly declared files.
+
+In a Git worktree, it uses Git's tracked/non-ignored inventory, including nested ignore rules and negation. Tracked source is retained even under normally excluded build/dependency directories. Default dependency/build/cache exclusions apply to untracked files. Mapping a subfolder stays inside that subtree, and deleted tracked files do not establish implementation. Repository fsmonitor hooks are disabled during inventory.
+
+Outside Git, or when Git is unavailable, filesystem discovery skips default dependency/build/cache directories and hidden directories; it does not interpret `.gitignore`. Git failures other than a non-repository or absent executable produce a fallback diagnostic. The API reports `scan.inventoryMode` as `git` or `filesystem`.
+
+Neither mode inspects binaries or follows directory symlinks; Git inventory does not recurse into submodules. Explicit manifest files may override ignores and can include configuration/assets, but cannot establish implementation outside the mapped root. A symlink alias for the project root is supported.
 
 Relationship discovery is heuristic:
 
@@ -191,18 +208,19 @@ No database, bundler, framework, or third-party runtime dependencies are require
 | `GET /api/gaps` | Project summary, prioritized gaps, diagnostics, fingerprint, timestamp. |
 | `GET /api/health` | Server availability and mapped root; not a scan/proof check. |
 | `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
+| `node src/cli.js PATH --html OUTPUT` | Self-contained interactive HTML snapshot to a new file, then exit. |
 
 Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
 
 ## Architecture and validation
 
-Intent recovery (`src/intent.js`) and source discovery (`src/imports.js`) feed the snapshot/evidence/gap model (`src/scan.js`). The CLI selects a target; the local server exposes snapshots and serves `public/`. The browser polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails.
+Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discovery (`src/imports.js`) feed the snapshot/evidence/gap model (`src/scan.js`). The CLI selects a target; the local server exposes snapshots and serves `public/`. The live browser client polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails. `src/export.js` embeds the captured map and those same assets into one HTML file; snapshot mode performs no requests or polling.
 
 ```bash
 npm test
 ```
 
-Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, imports/assets, malformed config, path containment, CLI arguments/JSON mode, HTTP endpoints/live edits, and client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for the v0.1 review findings and remaining limits.
+Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for the v0.1 review findings and remaining limits.
 
 BuildMap dogfoods its own manifest and source-bound test receipts. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 

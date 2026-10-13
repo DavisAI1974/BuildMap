@@ -58,6 +58,11 @@ async function refresh() {
 
 function renderHeader() {
   $('projectName').textContent = model.project.name;
+  const source = model.project.source;
+  $('projectSource').textContent = source?.kind === 'github'
+    ? `GitHub snapshot · ${source.url} · ${source.ref || 'default branch'} · ${source.revision?.slice(0, 12) || 'revision unknown'}`
+    : 'Local project · follows source edits';
+  if (snapshot && source?.kind !== 'github') $('projectSource').textContent = 'Captured local project · does not follow source edits';
   $('mode').textContent = `${model.project.mode}${snapshot ? ' snapshot' : ' mode'}`;
   $('mission').textContent = model.project.intent.text;
   $('intentSource').textContent = model.project.intent.source

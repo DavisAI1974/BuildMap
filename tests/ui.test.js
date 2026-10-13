@@ -109,3 +109,11 @@ test('project evidence findings open the mission inspector with safely escaped r
   assert.match(ui.get('detail').innerHTML, /&lt;img src=x/);
   assert.doesNotMatch(ui.get('detail').innerHTML, /<img src=x/);
 });
+
+test('GitHub provenance shows ref/revision and makes clone snapshot behavior explicit', async () => {
+  const input = model('github'); input.project.source = { kind: 'github', url: 'https://github.com/owner/repo', ref: 'feature/map', revision: 'a'.repeat(40), snapshot: true };
+  const ui = await client(input);
+  assert.match(ui.get('projectSource').textContent, /GitHub snapshot/);
+  assert.match(ui.get('projectSource').textContent, /feature\/map/);
+  assert.match(ui.get('projectSource').textContent, /aaaaaaaaaaaa/);
+});

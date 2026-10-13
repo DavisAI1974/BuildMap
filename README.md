@@ -38,11 +38,12 @@ Public GitHub repository URLs are also supported:
 
 ```bash
 node src/cli.js https://github.com/owner/repository
+node src/cli.js https://github.com/owner/repository --ref feature/map
 ```
 
-This makes a shallow clone of the **default branch** into a temporary folder. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or another branch, clone with your usual credentials, check out the branch locally, and pass its path.
+This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -216,7 +217,7 @@ No database, bundler, framework, or third-party runtime dependencies are require
 | `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
 | `node src/cli.js PATH --html OUTPUT` | Self-contained interactive HTML snapshot to a new file, then exit. |
 
-Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. Nodes expose `dependencyIntent` and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
+Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. GitHub maps expose origin/ref/revision metadata in `project.source`; local maps report local source mode. Nodes expose `dependencyIntent` and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
 
 ## Architecture and validation
 
@@ -226,7 +227,7 @@ Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discover
 npm test
 ```
 
-Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, unmapped/file-only claims, explicit-plan drift, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for the v0.1 review findings and remaining limits.
+Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, unmapped/file-only claims, explicit-plan drift, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, branch/tag selection and clone provenance, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for review findings and [BUILD_GAPS.md](BUILD_GAPS.md) for the current remaining work, with release checks separated from later capabilities.
 
 BuildMap dogfoods its own manifest and source-bound test receipts. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 

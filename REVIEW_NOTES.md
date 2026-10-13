@@ -55,3 +55,11 @@ The map now detects both directions of declared-versus-observed architecture dri
 Evidence-target accounting now prevents silent losses. Unknown/deleted targets become project findings with their raw claims. File receipts inside a manifest component are retained and assessed in its inspector but never grant component-level proof. Invalid collection shapes and falsy receipts are visible, and ordinary object-prototype names cannot be mistaken for evidence records. Project findings open the mission inspector; raw records are escaped for display and snapshot export.
 
 Current validation: **40 tests pass on Node v24.19.0**, including drift with preserved proof states, unspecified versus empty intent, unmapped claims, file-only scope, malformed/falsy records, prototype-named ids, and inspector rendering/escaping. Browser layout and integration remain pending under the already documented environment restrictions. No upper visualizer state was added.
+
+## Continuation from 705ff1f
+
+GitHub URL mode now accepts `--ref BRANCH_OR_TAG`. It validates ref syntax before creating a clone, rejects ref selection for local paths, and reports the requested/selected ref and exact cloned commit in `project.source`. The UI explicitly labels GitHub source as a snapshot. Repo names come from the URL when no manifest name exists. No new evidence state follows from clone provenance.
+
+Validation: **44 tests pass on Node v24.19.0**. Branch and tag selection, exact revision identity, missing-ref cleanup, local-path refusal, provenance-only state behavior, and UI metadata are covered. A real public branch/JSON smoke mapped the five-component BuildMap PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f` and removed its temporary clone. Syntax and whitespace checks pass.
+
+The remaining work is recorded in [BUILD_GAPS.md](BUILD_GAPS.md). Browser verification and a run on the advertised minimum Node 20 runtime remain release-confidence checks. Broader parsers, receipt provenance/freshness, scale/navigation, and deeper intent/mechanism modeling remain product improvements. These categories have separate completion criteria.

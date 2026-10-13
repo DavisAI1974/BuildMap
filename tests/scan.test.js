@@ -235,3 +235,12 @@ test('ordinary object prototype names are not mistaken for evidence records', ()
   assert.equal(node(map, 'constructor').evidence, null);
   assert.equal(map.gaps.some(g => g.kind === 'unsupported-evidence'), false);
 });
+
+test('clone provenance reports the selected revision without granting evidence states', () => {
+  const root = fixture(); write(root, 'src/a.js', 'export const a = 1;');
+  const source = { kind: 'github', repoName: 'DemoRepo', url: 'https://github.com/owner/DemoRepo', ref: 'feature/map', revision: 'a'.repeat(40), snapshot: true };
+  const map = scanProject(root, { source });
+  assert.equal(map.project.name, 'DemoRepo'); assert.deepEqual(map.project.source, source);
+  assert.equal(map.nodes.find(n => n.kind === 'file').status, 'coded');
+  assert.equal(scanProject(root).project.source.kind, 'local');
+});

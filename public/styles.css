@@ -117,3 +117,4 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .top-actions { flex-wrap: wrap; }
 }
 .detail pre { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font-size: 11px; }
+.project-source { color: var(--muted); font-size: 10px; margin-top: 2px; overflow-wrap: anywhere; }

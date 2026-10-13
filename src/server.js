@@ -7,7 +7,7 @@ import { scanProject } from './scan.js';
 const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
 const ASSETS = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'] };
 
-export function startServer({ root, host = '127.0.0.1', port = 4173 }) {
+export function startServer({ root, source = null, host = '127.0.0.1', port = 4173 }) {
   const server = http.createServer((req, res) => {
     try {
       if (!['GET', 'HEAD'].includes(req.method)) {
@@ -16,9 +16,9 @@ export function startServer({ root, host = '127.0.0.1', port = 4173 }) {
       }
       const url = new URL(req.url || '/', 'http://localhost');
       if (url.pathname === '/api/health') return json(res, { ok: true, root });
-      if (url.pathname === '/api/map') return json(res, scanProject(root));
+      if (url.pathname === '/api/map') return json(res, scanProject(root, { source }));
       if (url.pathname === '/api/gaps') {
-        const map = scanProject(root);
+        const map = scanProject(root, { source });
         return json(res, { project: map.project, gaps: map.gaps, diagnostics: map.diagnostics, fingerprint: map.fingerprint, generatedAt: map.generatedAt });
       }
       const asset = ASSETS[url.pathname];

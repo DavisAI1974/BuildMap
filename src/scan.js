@@ -11,7 +11,7 @@ const IGNORE_DIRS = new Set(['.git','node_modules','dist','build','coverage','.n
 const STATES = ['planned','coded','connected','computing','verified','live'];
 const WEIGHTS = { planned: 0, coded: 20, connected: 45, computing: 65, verified: 85, live: 100 };
 
-export function scanProject(root) {
+export function scanProject(root, { source = null } = {}) {
   root = path.resolve(root);
   const diagnostics = [];
   const manifest = readJson(root, '.buildmap/project.json', diagnostics);
@@ -95,11 +95,11 @@ export function scanProject(root) {
   const mode = ['greenfield', 'brownfield'].includes(manifest.mode) ? manifest.mode
     : (!files.length || missingPlanned > Math.max(1, Math.floor(nodes.length / 3)) ? 'greenfield' : 'brownfield');
   // The mission is an intent target, not an independently tested runtime piece.
-  nodes.push({ id: '__mission__', name: manifest.name || path.basename(root), kind: 'mission', group: 'Mission',
+  nodes.push({ id: '__mission__', name: manifest.name || source?.repoName || path.basename(root), kind: 'mission', group: 'Mission',
     files: [], presentFiles: [], missingFiles: [], status: 'planned', purpose: intent.text, contributes: '',
     visual: { kind: 'goal', label: 'Intended outcome' }, plannedDependencies: [], evidence: null, source: intent.source || 'interview-needed' });
   for (const node of nodes) if (node.contributes) edges.push({ from: node.id, to: '__mission__', type: 'contributes' });
-  const result = { project: { name: manifest.name || path.basename(root), root, mode, intent, progress,
+  const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
     states: STATES, nodes, edges: uniqueEdges(edges), gaps, diagnostics,
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: importEdges.length, dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], heuristic: true },

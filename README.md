@@ -6,6 +6,12 @@ BuildMap watches a repository by rescanning it every time its browser client pol
 
 The core contract is **existence, connection, computation, verification, and live use are different things**. BuildMap borrows the spatial language of workflow maps; it is a software map, not a workflow editor.
 
+## Who BuildMap is for
+
+BuildMap focuses on beginner-to-intermediate builders, especially people working with coding agents who need help understanding how a complete application fits together and keeping work aligned with its goal. Experienced developers can use the same source and evidence detail. The original map stays free; the paid walkthrough adds goal-specific behavior review.
+
+Setup still requires Node/Git commands, and plans/evidence are authored in files. An approachable setup flow is remaining product work, not an existing no-code capability.
+
 ## Quick start
 
 Requires Node.js 20+. Install the single pinned runtime parser dependency, [Acorn](https://github.com/acornjs/acorn), with `npm ci`. Git is required for GitHub URL input and Git-inventory tests. Local mapping falls back to filesystem discovery when Git is unavailable.
@@ -44,7 +50,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 72 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 74 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -76,6 +82,12 @@ Supported source files that are not assigned in `.buildmap/project.json` appear 
 Cards preview two paths and show how many more are in the inspector. All mapped files appear in their piece's full file list. This is a supported-source inventory plus explicit declarations, not an automatic list of every repository file. Other assets/configuration can be declared explicitly; see the discovery limits below. File presence does not establish that a piece works.
 
 The live app and HTML snapshots use the same product interface. A snapshot freezes the map data; it does not watch ongoing edits.
+
+## Turn a finding into a focused task
+
+Select a gap, or inspect a piece with findings, to see **What this means** and **One useful next step**. The advice suggests a bounded review: an unseen connection may be a scanner limitation, and an unassigned piece may be useful supporting work. It does not diagnose a root cause, delete code, or change evidence states. The exact finding remains inspectable.
+
+**Copy task brief** prepares one task for a coding agent with the project intent, captured fingerprint, relevant piece/files, finding, suggested review, and limits against unrelated features/dependencies/refactors. In the paid walkthrough, it also includes the selected goal and first unresolved step. Free-map guidance and briefs remain free. Review the brief before handing it to an agent; BuildMap does not send it or execute it. Re-scan the current repository before acting on captured context. If clipboard access is unavailable, the task panel opens with selectable text for manual copying; this works in the shared live/export client. Actual browser clipboard/layout behavior remains pending.
 
 ## Free map with a paid walkthrough on top
 

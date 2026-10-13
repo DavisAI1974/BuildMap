@@ -6,7 +6,7 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base for the free-map/paid-walkthrough separation: `8309e1351e19539ce514f0160be1faac923998eb`; use the current branch head, not the continuation base.
+Continuation base for the plain-English guidance/focused-task pass: `4ae99a3681e7848bdd57538f4fbbc7770c128222`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
@@ -57,6 +57,14 @@ The shared client now has separate Map · Free and Walkthrough · Paid buttons. 
 
 Both views are accessible in the current MVP preview. Actual prices, accounts, billing, and access enforcement are deferred. No subscriptions were created and no service was launched. Client checks are still DOM-double checks; the real browser constraint remains.
 
+## Audience and focused task briefs
+
+The user confirmed beginner-to-intermediate coder/builders as the primary audience: people intimidated by starting a project, without full-stack/architecture experience, or struggling to control agent drift/bloat. Experienced users can still inspect deeper detail. Keep this focus in setup, default language, and next-step guidance. It is positioning, not verified market-size research.
+
+The shared client explains findings in plain English and offers one useful next step plus a reviewable, manually copied task brief. Free-map briefs remain free. Paid briefs add the selected goal and first unresolved step. Context includes captured fingerprint/source and relevant files/assessment; the brief asks agents to inspect/re-scan, keep the change small, report observed results, and stop before widening scope. It never sends tasks, runs commands, updates evidence, or decides that an unassigned piece should be deleted. Scoped piece findings can be reviewed in the paid view and then inspected in the free map. Clipboard absence/rejection falls back to selectable text; these are DOM-double interaction checks, not real-browser observations. Two focused regressions bring the suite to 74.
+
+CLI setup and file-based plan/evidence authoring are still a usability gap for the primary audience. Do not claim a no-code onboarding flow or build accounts/billing/a broad editor without a scoped use case.
+
 ## Business idea to revisit
 
 The user confirmed free mapping with paid walkthroughs as the product split, especially to help companies direct coding agents toward internal tools that fit their workflows (a real estate agency replacing some SaaS functionality was the example). The fee amounts and business model details remain hypotheses; this is not authorization to add billing, accounts, or a SaaS-builder platform to the MVP.
@@ -81,7 +89,7 @@ The user confirmed free mapping with paid walkthroughs as the product split, esp
 
 ## Current validation and proof state
 
-- **72/72 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **74/74 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.

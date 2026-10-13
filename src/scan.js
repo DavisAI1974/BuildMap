@@ -15,7 +15,8 @@ export function scanProject(root) {
   root = path.resolve(root);
   const diagnostics = [];
   const manifest = readJson(root, '.buildmap/project.json', diagnostics);
-  const evidence = readJson(root, '.buildmap/evidence.json', diagnostics);
+  const rawEvidence = readJson(root, '.buildmap/evidence.json', diagnostics);
+  const evidence = evidenceCollections(rawEvidence, diagnostics);
   const components = validComponents(manifest.components, diagnostics);
   const inventory = inventoryFiles(root, diagnostics);
   const files = inventory.files;
@@ -73,17 +74,19 @@ export function scanProject(root) {
       group: component.group || inferGroup(componentFiles[0]), files: owned,
       purpose: component.purpose || component.description || inferPurpose(componentFiles),
       contributes: component.contributes || component.goal || '', visual: normalizeVisual(component.visual, component),
-      plannedDependencies: Array.isArray(component.dependsOn) ? component.dependsOn.filter(d => typeof d === 'string') : [], source: 'manifest'
-    }, evidence.components?.[id]));
+      plannedDependencies: Array.isArray(component.dependsOn) ? [...new Set(component.dependsOn)] : [],
+      dependencyIntent: Object.hasOwn(component, 'dependsOn') ? 'declared' : 'unspecified', source: 'manifest'
+    }, Object.hasOwn(evidence.components || {}, id) ? evidence.components[id] : undefined));
   }
 
   for (const file of files) {
     if (assignedFiles.has(file.path)) continue;
     nodes.push(makeNode({ id: `file:${file.path}`, name: titleFromFile(file.path), kind: 'file', group: inferGroup(file.path),
       files: [file.path], purpose: inferFilePurpose(root, file.path), contributes: '', visual: inferVisual(file.path),
-      plannedDependencies: [], source: 'discovered'
-    }, evidence.files?.[file.path]));
+      plannedDependencies: [], dependencyIntent: 'unspecified', source: 'discovered'
+    }, Object.hasOwn(evidence.files || {}, file.path) ? evidence.files[file.path] : undefined));
   }
+  auditEvidenceTargets(evidence, nodes, diagnostics);
   const edges = buildComponentEdges(nodes, importEdges);
   const counts = Object.fromEntries(STATES.map(s => [s, nodes.filter(n => n.status === s).length]));
   const progress = nodes.length ? Math.round(nodes.reduce((sum,n) => sum + WEIGHTS[n.status], 0) / nodes.length) : 0;
@@ -101,7 +104,7 @@ export function scanProject(root) {
     states: STATES, nodes, edges: uniqueEdges(edges), gaps, diagnostics,
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: importEdges.length, dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], heuristic: true },
     generatedAt: new Date().toISOString() };
-  result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence });
+  result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence: rawEvidence });
   return result;
 }
 
@@ -131,7 +134,7 @@ function assessEvidence(receipt, complete, hashes) {
 
 function findGaps(nodes, edges, diagnostics, intent) {
   const gaps = [];
-  const add = (kind, nodeId, message, priority = 'warning') => gaps.push({ id: `${kind}:${nodeId || 'project'}:${gaps.length}`, kind, nodeId, message, priority });
+  const add = (kind, nodeId, message, priority = 'warning', detail = {}) => gaps.push({ id: `${kind}:${nodeId || 'project'}:${gaps.length}`, kind, nodeId, message, priority, ...detail });
   if (intent.confidence === 'unknown') add('missing-intent', null, 'Add a mission or README to explain what the build should achieve.');
   for (const n of nodes) {
     if (n.implementation !== 'complete') add('missing-implementation', n.id, n.missingFiles.length ? `Missing implementation: ${n.missingFiles.join(', ')}.` : 'Declare implementation files for this planned piece.', 'blocker');
@@ -139,14 +142,57 @@ function findGaps(nodes, edges, diagnostics, intent) {
     if (n.evidenceAssessment.accepted && n.evidenceAssessment.binding === 'unbound' && STATES.indexOf(n.status) >= 3) add('unbound-evidence', n.id, 'Evidence is recorded but its freshness is unknown. Bind it to the current source hashes.', 'info');
     if (n.implementation === 'complete' && !edges.some(e => e.type === 'code' && (e.from === n.id || e.to === n.id))) add('no-observed-connection', n.id, 'No cross-piece source connection found. This may be an entry point or use wiring the scanner cannot see.');
     if (n.implementation === 'complete' && STATES.indexOf(n.status) < 3) add('unproved', n.id, 'Observe useful work or record a behavior check before claiming computing or verified.');
+    for (const edge of edges.filter(e => e.type === 'code' && e.to === n.id && e.planStatus === 'undeclared')) {
+      add('unexpected-dependency', n.id, `Observed dependency on ${edge.from} is outside this piece’s explicit dependsOn plan. Review the plan or the wiring.`, 'warning', { dependencyId: edge.from, observations: edge.observations });
+    }
     for (const dep of n.plannedDependencies) {
       if (!nodes.some(x => x.id === dep)) add('unknown-dependency', n.id, `Declared dependency ${dep} has no piece on the map.`, 'blocker');
       else if (!edges.some(e => e.type === 'code' && e.from === dep && e.to === n.id)) add('unobserved-dependency', n.id, `Declared dependency on ${dep} has no matching source connection. Confirm its wiring; discovery is heuristic.`);
     }
   }
-  for (const d of diagnostics) add(d.code, d.nodeId || null, d.message, d.code === 'invalid-config' ? 'blocker' : 'warning');
+  for (const d of diagnostics) add(d.code, d.nodeId || null, d.message, d.priority || (d.code === 'invalid-config' ? 'blocker' : 'warning'), Object.hasOwn(d, 'evidence') ? { evidence: d.evidence } : {});
   const order = { blocker: 0, warning: 1, info: 2 };
   return gaps.sort((a,b) => order[a.priority] - order[b.priority]);
+}
+
+function evidenceCollections(raw, diagnostics) {
+  const result = {};
+  for (const scope of ['components', 'files']) {
+    const collection = raw[scope];
+    if (collection === undefined) continue;
+    if (!collection || typeof collection !== 'object' || Array.isArray(collection)) {
+      diagnostics.push({ code: 'invalid-config', evidence: collection, message: `.buildmap/evidence.json ${scope} must be an object keyed by target ids/paths.` });
+      continue;
+    }
+    result[scope] = collection;
+  }
+  return result;
+}
+
+function auditEvidenceTargets(evidence, nodes, diagnostics) {
+  const componentById = new Map(nodes.filter(n => n.kind === 'component').map(n => [n.id, n]));
+  const ownerByFile = new Map(nodes.flatMap(n => n.files.map(f => [f, n])));
+  for (const scope of ['components', 'files']) for (const [target, receipt] of Object.entries(evidence[scope] || {})) {
+    const owner = scope === 'components' ? componentById.get(target) : ownerByFile.get(target);
+    if (!owner) {
+      diagnostics.push({ code: 'unmapped-evidence', priority: 'blocker', evidence: receipt,
+        message: `Evidence ${scope}.${target} has no mapped target; it cannot advance any piece.` });
+      continue;
+    }
+    if (scope === 'files' && owner.kind === 'component') {
+      const present = owner.presentFiles.includes(target);
+      const assessment = assessEvidence(receipt, present, present ? { [target]: owner.sourceHashes[target] } : {});
+      owner.fileEvidence ??= [];
+      owner.fileEvidence.push({ file: target, evidence: receipt, assessment });
+      diagnostics.push({ code: 'file-evidence-in-component', nodeId: owner.id,
+        priority: assessment.accepted ? 'info' : 'blocker', evidence: receipt,
+        message: `File claim for ${target} is retained in ${owner.id}'s inspector. It does not establish component behavior; use a component-level receipt for that claim.${assessment.accepted ? '' : ` File claim rejected: ${assessment.reason}`}` });
+    } else if (!receipt) {
+      // Falsy records would otherwise look like absent evidence on the node.
+      diagnostics.push({ code: 'invalid-evidence-record', nodeId: owner.id, priority: 'blocker', evidence: receipt,
+        message: `Evidence ${scope}.${target} is not a valid record. Describe the observation or check in an object.` });
+    }
+  }
 }
 
 function validComponents(value, diagnostics) {
@@ -252,6 +298,10 @@ function buildComponentEdges(nodes, importEdges) {
     let edge = edges.find(x => x.from === from && x.to === to && x.type === 'code');
     if (!edge) { edge = { from, to, type: 'code', observations: [] }; edges.push(edge); }
     edge.observations.push({ importer: e.from, imported: e.to });
+  }
+  for (const edge of edges) {
+    const dependent = nodes.find(n => n.id === edge.to);
+    edge.planStatus = dependent.dependencyIntent === 'declared' ? (dependent.plannedDependencies.includes(edge.from) ? 'matched' : 'undeclared') : 'unspecified';
   }
   for (const node of nodes) for (const dep of node.plannedDependencies) {
     if (nodes.some(n => n.id === dep)) edges.push({ from: dep, to: node.id, type: 'planned', observed: edges.some(e => e.from === dep && e.to === node.id && e.type === 'code') });

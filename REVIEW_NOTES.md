@@ -47,3 +47,11 @@ The next pass adds two practical capabilities while preserving the same state co
 Current validation: **32 tests pass on Node v24.19.0**. The new checks cover HTML safety/round-trip data, CLI export and overwrite refusal, request-free offline rendering, Git ignore behavior, tracked source, subtree boundaries, fsmonitor-hook avoidance, and root aliases. Syntax and whitespace checks pass. Dogfood receipts were refreshed only after the checks completed.
 
 An attempted browser review of the exported file was rejected by the browser URL security policy, which permits only HTTP(S), while the cloud browser still cannot reach the workspace's loopback server. No alternate route around that rejection was attempted. Browser layout and actual browser/server integration therefore remain unverified, and the visualizer retains no upper evidence claim.
+
+## Continuation from 3825faa
+
+The map now detects both directions of declared-versus-observed architecture drift. A manifest piece with explicit `dependsOn` reports incoming source dependencies outside its plan, with file provenance; an omitted dependency list stays unspecified. An explicit empty list is a meaningful no-dependency plan. These findings do not alter proof states or mutate the manifest.
+
+Evidence-target accounting now prevents silent losses. Unknown/deleted targets become project findings with their raw claims. File receipts inside a manifest component are retained and assessed in its inspector but never grant component-level proof. Invalid collection shapes and falsy receipts are visible, and ordinary object-prototype names cannot be mistaken for evidence records. Project findings open the mission inspector; raw records are escaped for display and snapshot export.
+
+Current validation: **40 tests pass on Node v24.19.0**, including drift with preserved proof states, unspecified versus empty intent, unmapped claims, file-only scope, malformed/falsy records, prototype-named ids, and inspector rendering/escaping. Browser layout and integration remain pending under the already documented environment restrictions. No upper visualizer state was added.

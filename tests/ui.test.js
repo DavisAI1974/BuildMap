@@ -89,3 +89,23 @@ test('offline snapshot renders the same client without HTTP requests or polling'
   assert.match(ui.get('mode').textContent, /snapshot/);
   assert.ok(ui.get('nodeLayer').children.find(e => e.dataset.id === 'a'));
 });
+
+test('inspector labels architecture drift and shows file claims without granting component proof', async () => {
+  const input = model('drift', [piece('a'), piece('b', { fileEvidence: [{ file: 'b.js', evidence: { status: 'verified', note: 'Only one file was checked.' }, assessment: { accepted: true, reason: 'Freshness unknown.' } }] })]);
+  input.edges = [{ from: 'a', to: 'b', type: 'code', planStatus: 'undeclared', observations: [{ importer: 'b.js', imported: 'a.js' }] }];
+  input.gaps = [{ kind: 'unexpected-dependency', nodeId: 'b', priority: 'warning', message: 'Outside declared plan.' }];
+  const ui = await client(input); ui.get('gaps').children[0].click();
+  assert.match(ui.get('detail').innerHTML, /Observed · outside declared plan/);
+  assert.match(ui.get('detail').innerHTML, /File-only claim: b.js/);
+  assert.match(ui.get('detail').innerHTML, /does not grant the component a higher state/);
+  assert.match(ui.get('detail').innerHTML, /File claim: verified · accepted/);
+});
+
+test('project evidence findings open the mission inspector with safely escaped raw claims', async () => {
+  const input = model('orphan');
+  input.gaps = [{ kind: 'unmapped-evidence', nodeId: null, priority: 'blocker', message: 'Unknown evidence target.', evidence: { status: 'live', note: '<img src=x onerror=evil()>' } }];
+  const ui = await client(input); ui.get('gaps').children[0].click();
+  assert.match(ui.get('detail').innerHTML, /Unknown evidence target/);
+  assert.match(ui.get('detail').innerHTML, /&lt;img src=x/);
+  assert.doesNotMatch(ui.get('detail').innerHTML, /<img src=x/);
+});

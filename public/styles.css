@@ -116,3 +116,4 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .topbar { height: auto; min-height: 66px; gap: 12px; flex-wrap: wrap; padding: 12px; }
   .top-actions { flex-wrap: wrap; }
 }
+.detail pre { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font-size: 11px; }

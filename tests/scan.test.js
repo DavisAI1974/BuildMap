@@ -167,3 +167,71 @@ test('invalid component field types are diagnosed rather than reaching the UI', 
   assert.equal(map.diagnostics.length, 3);
   assert.equal(new Set(map.gaps.map(g => g.id)).size, map.gaps.length);
 });
+
+test('observed dependencies outside an explicit plan become drift gaps without changing proof states', () => {
+  const root = fixture();
+  write(root, 'src/feed.js', 'export const feed = 1;'); write(root, 'src/extra.js', 'export const extra = 1;');
+  write(root, 'src/engine.js', "import './feed.js'; import './extra.js';");
+  planned(root, [{ id: 'feed', files: ['src/feed.js'] }, { id: 'extra', files: ['src/extra.js'] }, { id: 'engine', files: ['src/engine.js'], dependsOn: ['feed'] }]);
+  write(root, '.buildmap/evidence.json', { components: { engine: { status: 'verified', note: 'Behavior check passed.' } } });
+  const map = scanProject(root);
+  assert.equal(node(map, 'engine').status, 'verified');
+  assert.equal(map.edges.find(e => e.type === 'code' && e.from === 'feed').planStatus, 'matched');
+  assert.equal(map.edges.find(e => e.type === 'code' && e.from === 'extra').planStatus, 'undeclared');
+  const drift = map.gaps.filter(g => g.kind === 'unexpected-dependency'); assert.equal(drift.length, 1);
+  assert.equal(drift[0].nodeId, 'engine'); assert.equal(drift[0].dependencyId, 'extra');
+  assert.deepEqual(drift[0].observations, [{ importer: 'src/engine.js', imported: 'src/extra.js' }]);
+});
+
+test('omitted dependency intent remains unspecified; explicit empty intent detects extra wiring', () => {
+  const root = fixture(); write(root, 'src/a.js', 'export const a = 1;'); write(root, 'src/b.js', "import './a.js';");
+  const components = [{ id: 'a', files: ['src/a.js'] }, { id: 'b', files: ['src/b.js'] }];
+  planned(root, components); const unspecified = scanProject(root);
+  assert.equal(node(unspecified, 'b').dependencyIntent, 'unspecified');
+  assert.equal(unspecified.gaps.some(g => g.kind === 'unexpected-dependency'), false);
+  components[1].dependsOn = []; planned(root, components); const explicit = scanProject(root);
+  assert.equal(node(explicit, 'b').dependencyIntent, 'declared');
+  assert.equal(explicit.gaps.filter(g => g.kind === 'unexpected-dependency').length, 1);
+  assert.equal(node(explicit, 'b').status, node(unspecified, 'b').status);
+});
+
+test('unmapped evidence targets remain visible with their recorded claims', () => {
+  const root = fixture();
+  const receipt = { status: 'live', note: 'Prior deployment claim.' };
+  write(root, '.buildmap/evidence.json', { components: { typo: receipt }, files: { 'src/deleted.js': receipt } });
+  const map = scanProject(root); const gaps = map.gaps.filter(g => g.kind === 'unmapped-evidence');
+  assert.equal(gaps.length, 2);
+  for (const gap of gaps) { assert.equal(gap.priority, 'blocker'); assert.equal(gap.nodeId, null); assert.deepEqual(gap.evidence, receipt); }
+  assert.equal(map.project.counts.live, 0);
+});
+
+test('file-only evidence is inspected without granting proof to its containing component', () => {
+  const root = fixture(); write(root, 'src/a.js', 'export const a = 1;'); write(root, 'src/b.js', 'export const b = 1;');
+  planned(root, [{ id: 'bundle', files: ['src/a.js', 'src/b.js'] }]);
+  const receipt = { status: 'verified', note: 'Only file a was checked.' };
+  write(root, '.buildmap/evidence.json', { files: { 'src/a.js': receipt } });
+  const map = scanProject(root); const bundle = node(map, 'bundle');
+  assert.equal(bundle.status, 'coded'); assert.equal(bundle.fileEvidence[0].assessment.accepted, true);
+  assert.deepEqual(bundle.fileEvidence[0].evidence, receipt);
+  assert.equal(map.gaps.find(g => g.kind === 'file-evidence-in-component').nodeId, 'bundle');
+});
+
+test('malformed evidence collections and falsy mapped receipts cannot disappear or promote state', () => {
+  const root = fixture(); write(root, 'src/a.js', 'export const a = 1;');
+  planned(root, [{ id: '0', files: ['src/a.js'] }]);
+  write(root, '.buildmap/evidence.json', { components: [{ status: 'live', note: 'Bad collection.' }] });
+  let map = scanProject(root); assert.equal(node(map, '0').status, 'coded');
+  assert.ok(map.gaps.some(g => g.kind === 'invalid-config'));
+  write(root, '.buildmap/evidence.json', { components: { 0: null } });
+  map = scanProject(root); assert.equal(node(map, '0').status, 'coded');
+  assert.ok(map.gaps.some(g => g.kind === 'invalid-evidence-record' && g.nodeId === '0'));
+});
+
+test('ordinary object prototype names are not mistaken for evidence records', () => {
+  const root = fixture(); write(root, 'src/a.js', 'export const a = 1;');
+  planned(root, [{ id: 'constructor', files: ['src/a.js'] }]);
+  write(root, '.buildmap/evidence.json', { components: {} });
+  const map = scanProject(root);
+  assert.equal(node(map, 'constructor').evidence, null);
+  assert.equal(map.gaps.some(g => g.kind === 'unsupported-evidence'), false);
+});

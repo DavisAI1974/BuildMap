@@ -106,6 +106,10 @@ Within one snapshot, weaker receipts cannot downgrade source-discovered state. A
 }
 ```
 
+Evidence targets use the exact ids and file paths reported by the map. Unknown/deleted targets and malformed collections become visible project findings rather than disappearing. Click a project finding to inspect its raw recorded claim on the mission card.
+
+A file receipt grants a state only to a discovered file piece. If the file belongs to a manifest component, its receipt is retained as an assessed **file-only claim** in that component's inspector; it cannot verify the behavior of the whole component. Use a component-level receipt for that claim. Missing or stale file-only claims remain visible too.
+
 Upper states require a recognized status plus a nonempty `note`, `command`, or `proof`. **These are user-recorded claims. BuildMap does not run commands, authenticate receipts, or prove that a named command passed.** Do not grant `verified` merely because a test file exists, or `live` merely because a deploy script exists.
 
 For freshness, add an optional `sourceHashes` object containing the current SHA-256 of **every implementation file in that piece**. Copy the entire object from `/api/map`, `--json`, or the piece inspector after the observation/check passes:
@@ -157,7 +161,7 @@ A minimal `.buildmap/project.json`:
 }
 ```
 
-Files are exact project-relative paths, not glob patterns. `file` is accepted for a single path; leading `./` and duplicate paths are normalized. Explicitly declared assets/configuration also count as implementation. A file belongs to one component: overlapping assignments and duplicate/reserved ids produce diagnostics. `__mission__` and the `file:` prefix are reserved. Component descriptions must be strings, and `dependsOn` must be an array of component ids.
+Files are exact project-relative paths, not glob patterns. `file` is accepted for a single path; leading `./` and duplicate paths are normalized. Explicitly declared assets/configuration also count as implementation. A file belongs to one component: overlapping assignments and duplicate/reserved ids produce diagnostics. `__mission__` and the `file:` prefix are reserved. Component descriptions must be strings, and `dependsOn` must be an array of piece ids. Omitting `dependsOn` leaves dependency intent unspecified. An explicit empty array declares that the piece should have no cross-piece dependencies.
 
 Mini-visuals include `flow`, `scanner`, `graph`, `proof`, `lens`, `goal`, `gate`, and `queue`; unknown kinds use a simple arrow. They are illustrative mechanisms chosen by the manifest or inferred from filenames, not execution traces or behavior extracted from a program. The inspector labels that distinction.
 
@@ -165,14 +169,16 @@ Mini-visuals include `flow`, `scanner`, `graph`, `proof`, `lens`, `goal`, `gate`
 
 Solid arrows run **dependency → dependent**. For a source import, the inspector shows the importer and imported file. Dashed arrows are declared dependencies; a matching source connection replaces their dashed rendering while both records remain available in the API. Green lines indicate a declared contribution to the mission. None of these lines establishes runtime data flow.
 
+When a manifest piece explicitly supplies `dependsOn`, BuildMap also compares its incoming observed dependencies with that plan. An observed dependency outside the list becomes an **unexpected-dependency** review gap, with importer/imported provenance. Edges expose `planStatus` (`matched`, `undeclared`, or `unspecified`) and the inspector labels connections outside the plan. Omitting the list does not invent a zero-dependency requirement. Drift findings do not rewrite the plan or change proof states.
+
 The prioritized gap list includes:
 
 - missing or partial implementation;
 - rejected or stale evidence claims;
-- unknown dependency ids and declared dependencies with no observed match;
+- unknown dependency ids, declared dependencies with no observed match, and observed dependencies outside an explicit plan;
 - pieces without cross-piece source connections;
 - existing pieces with no computation/verification evidence;
-- unbound receipts, malformed configuration, unresolved relative JS/TS references, and scan limitations.
+- unbound receipts, unmapped targets, file-only claims inside components, malformed configuration, unresolved relative JS/TS references, and scan limitations.
 
 A missing source connection is a **review prompt**, not proof of dead code. Entry points, HTTP calls, dependency injection, generated code, and unsupported languages can be connected at runtime without visible imports. BuildMap deliberately shows its own server-to-browser dependency as unobserved because its HTTP wiring is outside import discovery.
 
@@ -210,7 +216,7 @@ No database, bundler, framework, or third-party runtime dependencies are require
 | `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
 | `node src/cli.js PATH --html OUTPUT` | Self-contained interactive HTML snapshot to a new file, then exit. |
 
-Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
+Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). Drift gaps also carry `dependencyId` and source `observations`; evidence diagnostics can carry the original `evidence` record. Nodes expose `dependencyIntent` and, when applicable, assessed `fileEvidence` entries. They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
 
 ## Architecture and validation
 
@@ -220,7 +226,7 @@ Intent recovery (`src/intent.js`), Git/filesystem inventory, and source discover
 npm test
 ```
 
-Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for the v0.1 review findings and remaining limits.
+Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, unmapped/file-only claims, explicit-plan drift, imports/assets, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for the v0.1 review findings and remaining limits.
 
 BuildMap dogfoods its own manifest and source-bound test receipts. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 

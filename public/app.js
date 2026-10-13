@@ -177,19 +177,20 @@ function selectPiece(id) {
 function signalText(gap) {
   return ({ 'missing-implementation': 'Implementation missing', 'unsupported-evidence': 'Evidence claim rejected',
     'unbound-evidence': 'Evidence freshness unknown', 'no-observed-connection': 'No source wiring observed',
-    'unproved': 'Behavior unproved', 'unobserved-dependency': 'Declared wiring unobserved' })[gap.kind] || 'Review finding';
+    'unproved': 'Behavior unproved', 'unobserved-dependency': 'Declared wiring unobserved',
+    'unexpected-dependency': 'Connection outside declared plan' })[gap.kind] || 'Review finding';
 }
 function renderGaps() {
   const gaps = model.gaps || [];
   $('gapHeading').textContent = `Next gaps (${gaps.length})`;
   $('gaps').innerHTML = gaps.length ? '' : '<p>No detected gaps within the scanner’s supported scope.</p>';
   for (const gap of (showAllGaps ? gaps : gaps.slice(0, 12))) {
-    const el = document.createElement(gap.nodeId ? 'button' : 'div');
+    const el = document.createElement('button');
     el.className = `gap ${gap.priority}`;
-    if (gap.nodeId) el.type = 'button';
+    el.type = 'button';
     const name = model.nodes.find(n => n.id === gap.nodeId)?.name || 'Project';
     el.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(gap.message)}</span>`;
-    if (gap.nodeId) el.addEventListener('click', () => selectPiece(gap.nodeId));
+    el.addEventListener('click', () => selectPiece(gap.nodeId || '__mission__'));
     $('gaps').appendChild(el);
   }
   $('moreGaps').hidden = gaps.length <= 12;
@@ -219,7 +220,7 @@ function renderDetail(id) {
     ${node.contributes ? `<div class="detail-section"><h3>Why it matters</h3><p>${escapeHtml(node.contributes)}</p></div>` : ''}
     <div class="detail-section"><h3>Files</h3>${fileList(node)}</div>
     <div class="detail-section"><h3>Source connections</h3>${connectionList(id)}</div>
-    <div class="detail-section"><h3>Gaps to review</h3>${(model.gaps || []).filter(g => g.nodeId === id).map(g => `<p>${escapeHtml(g.message)}</p>`).join('') || '<p>No detected gaps.</p>'}</div>
+    <div class="detail-section"><h3>Gaps to review</h3>${(model.gaps || []).filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId)).map(g => `<p>${escapeHtml(g.message)}</p>${Object.hasOwn(g, 'evidence') ? `<details><summary>Recorded claim</summary><pre>${escapeHtml(JSON.stringify(g.evidence, null, 2))}</pre></details>` : ''}`).join('') || '<p>No detected gaps.</p>'}</div>
     <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>
   `;
 }
@@ -228,18 +229,23 @@ function connectionList(id) {
   const edges = model.edges.filter(e => e.type !== 'contributes' && (e.from === id || e.to === id));
   return edges.length ? edges.map(e => {
     const other = model.nodes.find(n => n.id === (e.from === id ? e.to : e.from));
-    const label = e.type === 'code' ? 'Observed source' : e.observed ? 'Declared · also observed' : 'Declared · unobserved';
+    const label = e.type === 'code' ? (e.planStatus === 'undeclared' ? 'Observed · outside declared plan' : 'Observed source') : e.observed ? 'Declared · also observed' : 'Declared · unobserved';
     const direction = e.to === id ? 'Depends on' : 'Dependency of';
     return `<p><strong>${label}:</strong> ${direction} ${escapeHtml(other?.name || 'unknown')}${(e.observations || []).map(o => `<br><small>${escapeHtml(o.importer)} references ${escapeHtml(o.imported)}</small>`).join('')}</p>`;
   }).join('') : '<p>No cross-piece source connections discovered. Runtime wiring may exist outside scanner support.</p>';
+}
+function receiptText(receipt, assessment, label = 'Recorded claim') {
+  if (!receipt || typeof receipt !== 'object') return `<p>${label}: ${escapeHtml(JSON.stringify(receipt))} · rejected</p>`;
+  return `<p>${label}: ${escapeHtml(receipt.status || 'invalid')} · ${assessment?.accepted ? 'accepted' : 'rejected'}</p>${['note','command','proof'].filter(k => receipt[k]).map(k => `<p><strong>${k}:</strong> ${escapeHtml(receipt[k])}</p>`).join('')}`;
 }
 function evidenceText(node) {
   if (node.kind === 'mission') return 'This is the intended outcome. Piece states do not independently prove the mission.';
   const assessment = node.evidenceAssessment;
   const receipt = node.evidence;
-  const claim = receipt ? `<p>Recorded claim: ${escapeHtml(receipt.status || 'invalid')} · ${assessment?.accepted ? 'accepted' : 'rejected'}</p>${['note','command','proof'].filter(k => receipt[k]).map(k => `<p><strong>${k}:</strong> ${escapeHtml(receipt[k])}</p>`).join('')}` : '';
+  const claim = receipt ? receiptText(receipt, assessment) : '';
+  const fileClaims = (node.fileEvidence || []).map(f => `<details><summary>File-only claim: ${escapeHtml(f.file)}</summary><p>This does not grant the component a higher state. ${escapeHtml(f.assessment.reason)}</p>${receiptText(f.evidence, f.assessment, 'File claim')}</details>`).join('');
   const hashes = Object.entries(node.sourceHashes || {});
-  return `${escapeHtml(assessment?.reason || 'Source structure only; higher states require evidence.')}${claim}${hashes.length ? `<details><summary>Current source hashes (SHA-256)</summary>${hashes.map(([f,h]) => `<p>${escapeHtml(f)}<br><code>${escapeHtml(h)}</code></p>`).join('')}</details>` : ''}`;
+  return `${escapeHtml(assessment?.reason || 'Source structure only; higher states require evidence.')}${claim}${fileClaims}${hashes.length ? `<details><summary>Current source hashes (SHA-256)</summary>${hashes.map(([f,h]) => `<p>${escapeHtml(f)}<br><code>${escapeHtml(h)}</code></p>`).join('')}</details>` : ''}`;
 }
 
 function fileList(node) {

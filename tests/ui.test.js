@@ -321,6 +321,7 @@ test('scanned outcome walkthroughs show real sample data, navigate pieces, and s
     ] } };
   fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), JSON.stringify({ outcomes: { demo: proof } }));
   const ui = await client(scanProject(root));
+  ui.get('walkthroughViewButton').click();
   assert.match(ui.get('outcomes').children[0].innerHTML, /&lt;img/);
   ui.get('search').listeners.input({ target: { value: 'extra.js' } });
   ui.get('outcomes').children[0].click();
@@ -347,7 +348,7 @@ test('scanned outcome walkthroughs show real sample data, navigate pieces, and s
   assert.equal(ui.context.document.activeElement, ui.get('outcomes').children[0]);
   plan.outcomes = []; save(); ui.setModel(scanProject(root)); await ui.refresh();
   assert.match(ui.get('detail').innerHTML, /Outcome removed/);
-  assert.equal(ui.context.document.activeElement, ui.get('search'));
+  assert.equal(ui.context.document.activeElement, ui.get('walkthroughViewButton'));
 });
 
 test('outcome gaps open the walkthrough and shared offline navigation makes no requests', async () => {
@@ -358,22 +359,79 @@ test('outcome gaps open the walkthrough and shared offline navigation makes no r
   input.gaps = [{ id: 'outcome-gap', kind: 'unproved-outcome', outcomeId: 'goal', nodeId: null, priority: 'info', message: 'Record an example.' },
     { id: 'piece-gap', kind: 'unproved', nodeId: 'b', priority: 'warning', message: 'Observe this piece.' }];
   for (const offline of [false, true]) {
-    const ui = await client(input, offline); ui.get('gaps').children[0].click();
+    const ui = await client(input, offline);
+    assert.equal(ui.get('gaps').children.length, 1);
+    ui.get('gaps').children[0].click();
+    assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
+    assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'true');
+    if (!offline) { ui.setModel({ ...input, fingerprint: 'refreshed' }); await ui.refresh();
+      assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'true'); }
+    ui.get('walkthroughViewButton').click();
+    assert.equal(ui.get('gaps').children.length, 1);
+    ui.get('gaps').children[0].click();
     assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
     assert.match(ui.get('detail').innerHTML, /Do work · No observation recorded/);
     assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'true');
-    assert.equal(ui.get('gaps').children[1].attributes['aria-pressed'], 'false');
-    ui.get('gaps').children[1].click();
-    assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'false');
-    assert.equal(ui.get('gaps').children[1].attributes['aria-pressed'], 'true');
-    if (!offline) { ui.setModel({ ...input, fingerprint: 'refreshed' }); await ui.refresh();
-      assert.equal(ui.get('gaps').children[1].attributes['aria-pressed'], 'true'); }
-    ui.get('gaps').children[0].click();
     assert.equal(ui.get('clearOutcome').hidden, false);
     ui.get('clearOutcome').click();
     assert.equal(ui.get('clearOutcome').hidden, true);
-    assert.ok(ui.get('gaps').children.every(g => g.attributes['aria-pressed'] === 'false'));
+    assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'true'); // Free-map selection is retained.
     assert.ok(ui.get('nodeLayer').children.filter(n => n.dataset.id).every(n => !n.classes.has('outside-outcome')));
+    if (offline) assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+  }
+});
+
+test('the full free map and paid walkthrough are separate views over unchanged evidence, with preserved navigation', async () => {
+  const input = model('views', [piece('a'), piece('b')]);
+  input.outcomes = [{ id: 'goal', name: 'Useful result', goal: 'Produce a useful result.', status: 'unproved', nodeIds: ['b'], supports: [],
+    steps: [{ id: 'first', nodeId: 'b', label: 'Do work', expected: 'Useful output.', pieceName: 'b', pieceStatus: 'coded', state: 'unobserved', observation: null }],
+    firstGap: { label: 'Do work', state: 'unobserved' }, evidence: null, evidenceAssessment: { accepted: false, reason: 'No recorded example.' }, sourceHashes: {}, definitionHash: 'a'.repeat(64) }];
+  input.gaps = [{ id: 'source-a', kind: 'unproved', nodeId: 'a', priority: 'warning', message: 'Observe a.' },
+    { id: 'source-b', kind: 'no-observed-connection', nodeId: 'b', priority: 'warning', message: 'Review b wiring.' },
+    { id: 'goal-gap', kind: 'unproved-outcome', outcomeId: 'goal', nodeId: null, scope: 'outcome', priority: 'info', message: 'Record this journey.' },
+    { id: 'scope-gap', kind: 'unassigned-outcome', nodeId: 'a', scope: 'outcome', priority: 'info', message: 'Review outcome assignment.' },
+    { id: 'orphan', kind: 'unmapped-outcome-evidence', nodeId: null, scope: 'outcome', priority: 'warning', message: 'Unknown outcome receipt.', evidence: { note: '<script>old claim</script>' } }];
+  const original = JSON.stringify(input);
+  for (const offline of [false, true]) {
+    const ui = await client(input, offline);
+    const card = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id);
+    assert.equal(ui.get('mapViewButton').attributes['aria-pressed'], 'true');
+    assert.equal(ui.get('outcomesPanel').hidden, true);
+    assert.equal(ui.get('mapShell').hidden, false);
+    assert.equal(ui.get('gaps').children.length, 2);
+    card('a').click(); ui.get('fitButton').click();
+    ui.get('search').listeners.input({ target: { value: 'a.js' } });
+    const index = ui.get('progressText').textContent;
+    ui.get('walkthroughViewButton').click();
+    assert.equal(ui.get('mapShell').hidden, true);
+    assert.equal(ui.get('missionPanel').hidden, true);
+    assert.equal(ui.get('outcomesPanel').hidden, false);
+    assert.equal(ui.get('fitButton').hidden, true);
+    assert.equal(ui.get('gaps').children.length, 3);
+    assert.match(ui.get('detail').innerHTML, /Choose a goal/);
+    ui.get('gaps').children[2].click();
+    assert.match(ui.get('detail').innerHTML, /Unknown outcome receipt/);
+    assert.match(ui.get('detail').innerHTML, /&lt;script&gt;old claim/);
+    ui.get('outcomes').children[0].click();
+    assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+    ui.get('clearOutcome').click();
+    assert.equal(ui.get('mapShell').hidden, false);
+    assert.equal(ui.get('missionPanel').hidden, false);
+    assert.equal(ui.get('progressText').textContent, index);
+    assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
+    assert.ok(card('a').classes.has('selected'));
+    assert.ok(card('b').classes.has('filtered'));
+    assert.equal(ui.get('fitButton').attributes['aria-pressed'], 'true');
+    assert.equal(ui.get('gaps').children.length, 2);
+    ui.get('walkthroughViewButton').click();
+    assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+    ui.get('detail').children[0].children[0].children[0].click();
+    assert.equal(ui.get('mapShell').hidden, false);
+    assert.match(ui.get('detail').innerHTML, /<h2>b<\/h2>/);
+    assert.equal(card('b').tabIndex, 0);
+    ui.get('detail').children.at(-1).click();
+    assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
+    assert.equal(JSON.stringify(input), original);
     if (offline) assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
   }
 });

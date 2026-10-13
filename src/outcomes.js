@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 // receipts never establish that the whole journey ran.
 export function buildOutcomes(definitions, receipts, nodes, assessEvidence) {
   const diagnostics = [];
-  const add = (code, message, detail = {}) => diagnostics.push({ code, message, ...detail });
+  const add = (code, message, detail = {}) => diagnostics.push({ code, message, scope: 'outcome', ...detail });
   const plans = validPlans(definitions, add);
   const collection = receipts && typeof receipts === 'object' && !Array.isArray(receipts) ? receipts : {};
   if (receipts !== undefined && collection !== receipts) add('invalid-outcome-evidence', 'Evidence outcomes must be an object keyed by outcome id.', { priority: 'blocker', evidence: receipts });

@@ -216,6 +216,7 @@ function findGaps(nodes, edges, diagnostics, intent) {
     }
   }
   for (const d of diagnostics) add(d.code, d.nodeId || null, d.message, d.priority || (d.code === 'invalid-config' ? 'blocker' : 'warning'), {
+    ...(d.scope ? { scope: d.scope } : {}),
     ...(d.outcomeId ? { outcomeId: d.outcomeId } : {}), ...(Object.hasOwn(d, 'evidence') ? { evidence: d.evidence } : {}) });
   const order = { blocker: 0, warning: 1, info: 2 };
   return gaps.sort((a,b) => order[a.priority] - order[b.priority]);

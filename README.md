@@ -44,7 +44,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 71 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 72 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Share an interactive snapshot
 
@@ -77,9 +77,19 @@ Cards preview two paths and show how many more are in the inspector. All mapped 
 
 The live app and HTML snapshots use the same product interface. A snapshot freezes the map data; it does not watch ongoing edits.
 
+## Free map with a paid walkthrough on top
+
+**Map · Free** is the original BuildMap: the complete graph, mission/intent, file inventory, source connections, inspector, evidence states/index, original source/evidence gap list, search, fit/actual size, local refresh, read-only APIs, and standalone snapshots. Nothing from this original experience is moved behind the walkthrough tier.
+
+**Walkthrough · Paid** is the additional goal-first view: ordered steps, project-specific plain-English explanations, expected results, recorded inputs/outputs and handoff claims, first unresolved-point review, and outcome/scope findings. Inspecting a step opens its piece in the free map; return to the walkthrough to continue. The views preserve the map's selection/search/scale and the selected walkthrough. Both use the same source/evidence engine and live/export client; no second prototype or duplicate scanner exists.
+
+The Map is the default view. Outcome findings are scoped separately so they do not replace or clutter the original free gap list or card warnings. `/api/map` and `/api/gaps` retain their combined findings for compatibility; outcome findings carry `scope: "outcome"` (and `outcomeId` when applicable). A scoped orphan/malformed outcome claim remains inspectable in the paid walkthrough view. Switching views does not change proof states, evidence counts, or the piece evidence index.
+
+These labels express the agreed product boundary. This MVP makes both views available for review; prices, subscriptions, payment processing, and access enforcement are not implemented. No paid service has launched.
+
 ## Walk through an intended outcome
 
-Choose an **Outcome walkthrough** in the sidebar to highlight its participating and supporting pieces. The inspector shows the goal, ordered steps, expected results, recorded inputs/outputs, handoff notes, and the first missing, failed, or unobserved point. Inspect a step's piece and return to the walkthrough. The same interface works in live mode and exports; local edits update the selected outcome.
+Open **Walkthrough · Paid** and choose a goal in its sidebar to highlight its participating and supporting pieces. The main walkthrough view shows the goal, ordered steps, expected results, recorded inputs/outputs, handoff notes, and the first missing, failed, or unobserved point. Inspect a step's piece and return to the walkthrough. The same interface works in live mode and exports; local edits update the selected outcome.
 
 Define outcomes alongside `components` in `.buildmap/project.json`:
 

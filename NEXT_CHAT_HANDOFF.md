@@ -6,7 +6,7 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base for this selection/explanation polish: `262f19841ca7e049ceda5ee9c48cffeeaaa9abb0`; use the current branch head, not the continuation base.
+Continuation base for the free-map/paid-walkthrough separation: `8309e1351e19539ce514f0160be1faac923998eb`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
@@ -49,9 +49,17 @@ Selected boxes should clearly light up. Gap choices now keep one pressed/selecte
 
 The user clarified twice that the earlier customer-order table was an example of plain wording, not a workflow or analogy to apply to every project. Explain each job's own goal and actual steps in simple language. BuildMap's walkthrough now reads "Agree on the goal", "Check what's built", "Make the results available", and "Review what works", with BuildMap-specific explanations. Optional per-step `explanation` and `example` strings support tailored wording; illustrations stay separate from recorded results. The full normalized definition, including these fields, is bound by the definition hash.
 
+## Confirmed free/paid boundary
+
+The user confirmed: the original idea is the free Map, and the walkthrough is the paid layer on top. **Nothing is taken away from the original free experience.** Do not redefine the free product as a stripped-down teaser or make plain-English piece explanations, original evidence/gaps, file inventory, search/fit, APIs or exports paid-only.
+
+The shared client now has separate Map · Free and Walkthrough · Paid buttons. Map is the default and retains the original mission/evidence index, graph, source/evidence gaps, search, files, and inspector. Walkthrough leads with the selected goal and ordered steps in a wider reading view; outcome/scope findings live there. Step inspection opens the free map and supports returning to the journey. Search, scale, map selection, gap selections, and goal selection remain available when navigating views. Orphan outcome claims remain inspectable. Underlying source/evidence data, original APIs, and the live/export engine are shared; no duplicate build was introduced.
+
+Both views are accessible in the current MVP preview. Actual prices, accounts, billing, and access enforcement are deferred. No subscriptions were created and no service was launched. Client checks are still DOM-double checks; the real browser constraint remains.
+
 ## Business idea to revisit
 
-The user suggested free mapping with paid walkthroughs as a possible tier, especially to help companies direct coding agents toward internal tools that fit their workflows (a real estate agency replacing some SaaS functionality was the example). This is a pricing/product hypothesis, not a decided pricing model or authorization to add billing, accounts, or a SaaS-builder platform to the MVP.
+The user confirmed free mapping with paid walkthroughs as the product split, especially to help companies direct coding agents toward internal tools that fit their workflows (a real estate agency replacing some SaaS functionality was the example). The fee amounts and business model details remain hypotheses; this is not authorization to add billing, accounts, or a SaaS-builder platform to the MVP.
 
 ## What landed
 
@@ -73,9 +81,10 @@ The user suggested free mapping with paid walkthroughs as a possible tier, espec
 
 ## Current validation and proof state
 
-- **71/71 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **72/72 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
+- The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
 - The outcome pass adds six focused scanner/receipt/export checks and two DOM-harness interactions; the HTTP test now covers outcome plan edits through map/gaps APIs. An authored fixture example actually executes its two functions and records their I/O; accepted journey proof does not promote pieces.
 - Three earlier DOM-harness regressions cover safe searchable paths, result expansion/live edits/offline mode, scaled navigation to distant cards, and focus continuity. They do not establish real scrolling/layout/accessibility behavior.
 - JS syntax and whitespace checks passed.

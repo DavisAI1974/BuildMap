@@ -47,7 +47,7 @@
         "src/export.js",
         "src/setup.js"
       ],
-      "purpose": "Serve current maps and actionable gaps, export an offline HTML snapshot, or collect an initial owner description through explicit local setup.",
+      "purpose": "Serve current maps and actionable gaps, export an offline HTML snapshot, or guide explicitly requested local project descriptions, piece grouping and walkthrough plans.",
       "contributes": "Makes progress visible while the software is being built instead of after the fact.",
       "dependsOn": [
         "scanner"

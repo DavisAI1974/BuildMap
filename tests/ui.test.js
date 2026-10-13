@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import os from 'node:os';
 import path from 'node:path';
 import { scanProject } from '../src/scan.js';
+import { spawnSync } from 'node:child_process';
 
 // Executes the real client against a small DOM double. This covers rendering
 // logic and interactions, not CSS layout or browser integration.
@@ -253,6 +254,36 @@ test('live scanned files appear separately, move into declared components, and r
   assert.match(card('engine').innerHTML, /3 files · 1 present · 2 missing/);
   assert.match(ui.get('detail').innerHTML, /src\/engine.js · missing/);
   assert.ok(card('engine').classes.has('planned'));
+});
+
+test('guided free builder flow creates a piece, follows file arrival and makes its declared walkthrough available without proof', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-piece-flow-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'main.js'), 'export const main = true;');
+  const run = (flag, input) => {
+    const r = spawnSync(process.execPath, ['src/cli.js', root, flag], { input, encoding: 'utf8', timeout: 5000 });
+    assert.equal(r.status, 0, r.stderr); return r;
+  };
+  run('--init', 'Our build\nHelp builders inspect their project.\nA clear map.\n\n');
+  const ui = await client(scanProject(root));
+  const card = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id);
+  card('file:main.js').click(); assert.match(ui.get('detail').innerHTML, /--piece/);
+  run('--piece', 'Core\nMake useful output.\nSupports the project.\n1\nfuture.js\n\nyes\n');
+  ui.setModel(scanProject(root)); await ui.refresh();
+  assert.equal(card('file:main.js'), undefined); assert.match(ui.get('detail').innerHTML, /Piece removed/);
+  card('core').click(); assert.match(card('core').innerHTML, /2 files · 1 present · 1 missing/);
+  assert.match(ui.get('detail').innerHTML, /future.js · missing/);
+  fs.writeFileSync(path.join(root, 'future.js'), "import { main } from './main.js'; export const future = main;");
+  ui.setModel(scanProject(root)); await ui.refresh();
+  assert.match(card('core').innerHTML, /2 files · 2 present/);
+  assert.ok(card('core').classes.has('connected'));
+  run('--walkthrough', 'Inspect build\nUnderstand the output.\n1\nRead the core\nUseful output is available.\n\n\n\nyes\n');
+  const final = scanProject(root); ui.setModel(final); await ui.refresh();
+  ui.get('outcomes').children[0].click();
+  assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/); assert.equal(ui.get('mapShell').hidden, false);
+  assert.ok(ui.get('detail').children.some(e => e.classes.has('task-brief')));
+  assert.equal(final.project.counts.verified, 0); assert.equal(final.project.counts.live, 0);
+  assert.equal(final.outcomes[0].status, 'unproved'); assert.equal(final.outcomes[0].steps[0].state, 'unobserved');
 });
 
 test('search locates a piece by any assigned file, safely renders results, and supports Enter/Escape', async () => {

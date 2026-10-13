@@ -10,7 +10,7 @@ The core contract is **existence, connection, computation, verification, and liv
 
 BuildMap focuses on beginner-to-intermediate builders, especially people working with coding agents who need help understanding how a complete application fits together and keeping work aligned with its goal. Experienced developers can use the same source and evidence detail. The complete map, current goal walkthroughs, and basic focused task briefs are free. BuildMap Guide is the proposed paid direction for deeper building and review help; it is not implemented.
 
-Setup still requires Node/Git commands. An optional local `--init` interview writes your initial goal and finished-product description without hand-editing JSON. An optional local `--walkthrough` interview also adds a goal and its ordered steps using existing mapped pieces. Piece grouping and evidence still require file authoring; this is not an existing no-code application builder.
+Setup still requires Node/Git commands. An optional local `--init` interview writes your initial goal and finished-product description without hand-editing JSON. An optional local `--walkthrough` interview also adds a goal and its ordered steps using existing mapped pieces. Guided `--piece` setup groups available files or declares planned pieces. Editing existing pieces and recording evidence still require file authoring; this is not an existing no-code application builder.
 
 ## Quick start
 
@@ -50,7 +50,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 83 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 87 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Describe a new project with four questions
 
@@ -101,11 +101,24 @@ Intent is labeled **declared**, **inferred**, or **unknown**. README extraction 
 
 ## How files join the map
 
-Supported source files that are not assigned in `.buildmap/project.json` appear as their own pieces. They are not automatically assigned to an existing component. Add their exact paths to a component's `files` list to group them; local polling then reflects that assignment. Declared paths remain visible as missing before creation or after deletion.
+Supported source files that are not assigned in `.buildmap/project.json` appear as their own pieces. They are not automatically assigned to an existing component. Use guided `--piece` setup to group available files into a new component, or add their exact paths to a component's `files` list; local polling then reflects that assignment. Declared paths remain visible as missing before creation or after deletion.
 
 Cards preview two paths and show how many more are in the inspector. All mapped files appear in their piece's full file list. This is a supported-source inventory plus explicit declarations, not an automatic list of every repository file. Other assets/configuration can be declared explicitly; see the discovery limits below. File presence does not establish that a piece works.
 
 The live app and HTML snapshots use the same product interface. A snapshot freezes the map data; it does not watch ongoing edits.
+
+## Group files or describe a planned piece
+
+```bash
+node src/cli.js ../my-project --piece
+node src/cli.js ../my-project
+```
+
+Run `--init` first if the project has no description. Piece setup lists ungrouped mapped files, asks for a name, its job and optional contribution, and lets you choose existing files by number. Add exact project-relative paths for other assets or future implementation, one per answer. It shows the complete file list as present or planned/missing and saves only when you type `yes`; other answers cancel. A piece with no files stays planned. No source files or directories are created.
+
+The command appends one new piece, preserving existing project fields, components, walkthroughs and evidence. It avoids ids already used by pieces or orphan component receipts. Duplicate file choices are deduplicated. Grouping does not prove component behavior: an existing file receipt remains a file-only claim, and missing implementation stays visible. New source is not assigned to an existing piece automatically.
+
+Paths must be exact and local: no absolute/traversal/backslash/wildcard paths or linked file/directory paths. Existing component ownership is never changed. Files already used directly by a walkthrough cannot be grouped by this command because grouping changes their piece id; review those references through file authoring before regrouping. Editing an existing piece, moving its files and migrating walkthrough references are outside this append-only flow. Invalid plans, incomplete answers, linked configuration paths, concurrent plan edits and new receipt-id collisions refuse the save. Source/evidence remain untouched; selected manifest-bound receipts can become stale after a plan edit. Mapping remains read-only, separate from these explicitly requested local setup commands.
 
 ## Turn a finding into a focused task
 
@@ -138,7 +151,7 @@ node src/cli.js ../my-project
 
 Start with `--init` if the project has no description yet, and add source or planned pieces before choosing steps. The interview lists current mapped pieces, asks for one goal, ordered steps, each expected result, optional plain-English explanations, and supporting pieces such as tests. Review the complete plan and type `yes` to save; any other answer cancels. It appends one walkthrough and retains all existing project fields and goals. Unique ids avoid both existing goals and orphan evidence claims. Planned pieces can be selected, and one piece can appear in multiple steps.
 
-No code, source connections, recorded examples, or proof are created. The walkthrough starts unproved; existing evidence files stay untouched, and plan-bound receipts may become stale when the manifest changes. Default mapping remains read-only. This is explicit local authoring, separate from `--init`, remote snapshots, and exports. Unfinished input, invalid plans, linked configuration paths, or a plan changed while answering are refused. Piece grouping, edits to existing walkthroughs, and evidence capture remain file-based. A GitHub or HTML snapshot needs a local checkout and a fresh map/export after saving.
+No code, source connections, recorded examples, or proof are created. The walkthrough starts unproved; existing evidence files stay untouched, and plan-bound receipts may become stale when the manifest changes. Default mapping remains read-only. This is explicit local authoring, separate from `--init`, remote snapshots, and exports. Unfinished input, invalid plans, linked configuration paths, or a plan changed while answering are refused. Edits to existing pieces/walkthroughs and evidence capture remain file-based. New pieces can be authored with `--piece`. A GitHub or HTML snapshot needs a local checkout and a fresh map/export after saving.
 
 You can also define outcomes alongside `components` in `.buildmap/project.json`:
 

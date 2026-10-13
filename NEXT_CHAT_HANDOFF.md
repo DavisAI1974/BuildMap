@@ -14,9 +14,9 @@ Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469
 
 Finish the free tier's usable builder flow before expanding paid Guide work. Do not create or update HTML preview artifacts unless the user explicitly asks; this does not remove the product's existing export command. Continue source changes and appropriate checks without generating a preview each pass.
 
-A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which retains its 83-test implementation. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
+A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which now has 87 passing free-tier tests. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
 
-The next free-tier usability increment is grouping existing mapped files and describing a planned piece without hand-writing JSON. Preserve existing project fields, exact file scope, source/evidence distinctions and current walkthrough authoring. Follow that with a clear review of recorded evidence and the permitted real-browser check. The free tier should let a beginner describe a project, map it, organize its pieces, follow a goal, find an unfinished point and prepare a bounded task; the wider paid roadmap can wait.
+Guided grouping of available mapped files and planned-piece descriptions is now implemented with `--piece`; existing-piece edits and ownership/reference migration remain file-authored. Preserve existing project fields, exact file scope, source/evidence distinctions and current walkthrough authoring. Follow that with a clear review of recorded evidence and the permitted real-browser check. The free tier should let a beginner describe a project, map it, organize its pieces, follow a goal, find an unfinished point and prepare a bounded task; the wider paid roadmap can wait.
 
 ## Active request and boundaries
 
@@ -84,7 +84,7 @@ The next scoped usability gap was starting without manual JSON authoring. `node 
 
 Four focused checks bring the suite to 78: attributed/malformed/unknown destination handling; real scan-to-live/offline ending placement, escaping, refresh and unchanged proof; actual CLI setup/defaults; preservation/refusal/cancellation/incompatible target behavior. Both Node 20 and 24 pass. Backend partial observations are refreshed; the browser step is still unobserved and no piece is live.
 
-CLI installation/startup, piece grouping, existing-walkthrough editing and evidence authoring remain usability gaps. New walkthroughs now have a guided local command, described below. Browser onboarding is not built. Do not claim a no-code application builder or add accounts/billing/a broad editor without a scoped use case. The next useful work should come from review feedback or a concrete repository need; the real-browser release check remains blocked by the documented environment restrictions.
+CLI installation/startup, existing-piece/walkthrough editing and evidence authoring remain usability gaps. New pieces now have guided local `--piece` setup. New walkthroughs now have a guided local command, described below. Browser onboarding is not built. Do not claim a no-code application builder or add accounts/billing/a broad editor without a scoped use case. The next useful work should come from review feedback or a concrete repository need; the real-browser release check remains blocked by the documented environment restrictions.
 
 ## Business idea to revisit
 
@@ -110,7 +110,7 @@ The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/ba
 
 ## Current validation and proof state
 
-- **83/83 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **87/87 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
@@ -203,7 +203,7 @@ The shared client explains how to create the first walkthrough, including `--ini
 
 Four focused tests bring the suite to 82 on Node 20.20.2 and 24.19.0: actual CLI append with original fields/goals/source/evidence/piece states retained and orphan-id avoidance; cancellation/defaults/invalid choices/incomplete input/mode/path refusal; concurrent edits and new receipt collisions; and shared-client empty guidance/refresh/offline/free-map retention. The latter uses the DOM double, not browser proof. Receipts are refreshed only after passing checks. The partial backend example is re-observed; its browser step and the whole outcome stay unproved. No piece is live. PR #1 stays open; nothing is deployed or published.
 
-The next usability gaps are component grouping/planned-piece authoring and recorded-example capture. The proposed first Guide increment is deeper source-attributed code explanation from a concrete use case, not a claim that it already exists. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.
+New groups/planned pieces now have guided local `--piece` setup. The next usability gaps are existing-piece editing/reference migration and recorded-example comprehension/capture. The proposed first Guide increment is deeper source-attributed code explanation from a concrete use case, not a claim that it already exists. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.
 
 
 ## Updated strategy integration from 2a54023
@@ -211,3 +211,14 @@ The next usability gaps are component grouping/planned-piece authoring and recor
 The uploaded strategy is adopted through the updated boundary above, README, gap report, UI labels and declared finished-product description. Current walkthroughs and goal-aware basic briefs remain free. Goals are directly accessible in the map; the wider reading view is retained for longer explanations. No new Guide capability or paid service was built.
 
 83 tests pass on Node 20.20.2 and 24.19.0. One focused scan-to-client regression covers map goal selection beside the graph, escaped wording, participant highlights through search, unchanged proof, basic goal-aware copy fallback, refresh/focus, clear focus with retained scale/search, piece inspection/return and removed goals. Existing live/offline/navigation/export checks now enforce the free labels and features. These remain DOM-double checks, not browser verification. Test receipts and partial backend intent/scan/HTTP observations are refreshed after successful checks; the browser step and the whole outcome remain unproved. No piece is live.
+
+
+## Free piece authoring from 591452e
+
+`node src/cli.js LOCAL_PATH --piece` now asks for a piece name/job/contribution, existing ungrouped file numbers and additional exact paths, including future implementation. The builder reviews every file as present or planned/missing and types `yes` to append one declaration. Empty file sets stay planned. Existing components, fields, walkthroughs, source and evidence are retained; duplicate choices are deduplicated and ids avoid existing pieces/orphan component receipts. Grouping never promotes file-only claims into component proof. No implementation or dependency plan is invented.
+
+Authoring rejects unsafe/non-file/linked paths and existing ownership. Direct walkthrough file references block regrouping so current goals are not silently broken or rewritten. This flow does not edit existing pieces, move owned files or migrate references. Shared plan loading/save logic is reused by walkthrough and piece authoring, retaining regular-config checks, current-plan comparison, receipt-collision checks and temporary-file rename. Incomplete input/cancellation writes nothing. Default mapping remains read-only. The free inspector and empty-map help explain the local command.
+
+87/87 tests pass on Node 20.20.2 and 24.19.0. Four focused regressions cover reviewed grouping/planned/empty pieces with preserved fields/source/evidence and file-only/orphan claims; ownership/direct-goal/unsafe-path/mode/cancellation refusals; concurrent plan edits/new receipts; and the actual CLI init→piece→file-arrival→walkthrough path rendered through the shared DOM double with unchanged proof. Existing walkthrough and export checks remain. Syntax/whitespace checks pass. Test receipts and partial backend observations are refreshed after checks; the browser step and whole outcome remain unproved, with no live states.
+
+Guide work stays parked on `guide/source-code-preview-20261013`; it has not been merged into this free branch. No user-facing HTML preview was generated. Next free work should clarify how beginners review recorded examples/evidence without mistaking file presence, agent claims or source connections for behavior proof. A real-browser observation still needs a permitted environment; do not retry or bypass the documented restrictions.

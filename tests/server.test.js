@@ -9,7 +9,7 @@ import { startServer } from '../src/server.js';
 import { parseArgs, prepareTarget } from '../src/cli.js';
 import { spawnSync } from 'node:child_process';
 import { Readable } from 'node:stream';
-import { createWalkthrough } from '../src/setup.js';
+import { createWalkthrough, createPiece } from '../src/setup.js';
 import { scanProject } from '../src/scan.js';
 
 function fixture(t) {
@@ -19,7 +19,7 @@ function fixture(t) {
 }
 
 test('CLI consumes flag values independently of project position and rejects mistakes', () => {
-  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, walkthrough: false, help: false });
+  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, walkthrough: false, piece: false, help: false });
   for (const args of [['--port'], ['--port', 'NaN'], ['--port', '65536'], ['--unknown'], ['a', 'b'], ['--html'], ['--html', 'out.html', '--json'], ['--ref'], ['--ref', 'main', '.'], ['https://github.com/owner/repo', '--ref', '-bad']]) assert.throws(() => parseArgs(args));
 });
 
@@ -265,5 +265,66 @@ test('walkthrough authoring refuses concurrent plan edits and newly colliding ev
     assert.equal(fs.readFileSync(planPath, 'utf8'), change === 'plan' ? concurrent : original);
     if (change === 'evidence') assert.equal(fs.readFileSync(evidencePath, 'utf8'), claim);
     assert.deepEqual(fs.readdirSync(path.dirname(planPath)).filter(f => f.endsWith('.tmp')), []);
+  }
+});
+
+test('piece CLI groups exact files and plans missing implementation without promoting file-only or orphan claims', t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'a.js'), 'export const a = 1;'); fs.writeFileSync(path.join(root, 'b.js'), 'export const b = 2;');
+  fs.writeFileSync(path.join(root, 'owned.js'), 'export const existing = true;');
+  const manifest = { mission: 'Help our users.', custom: { preserve: true }, components: [{ id: 'existing', files: ['owned.js'], purpose: 'Original piece.' }],
+    outcomes: [{ id: 'old', goal: 'Keep the original goal.', steps: [{ id: 'step', nodeId: 'existing', label: 'Original', expected: 'Original result.' }] }] };
+  const planPath = path.join(root, '.buildmap/project.json'); fs.writeFileSync(planPath, JSON.stringify(manifest));
+  const evidence = JSON.stringify({ components: { bundle: { status: 'verified', note: 'Orphan claim.' } }, files: { 'a.js': { status: 'verified', note: 'Only this file was checked.' } } });
+  fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), evidence);
+  const run = (input, flags = []) => spawnSync(process.execPath, ['src/cli.js', root, '--piece', ...flags], { input, encoding: 'utf8', timeout: 5000 });
+  const result = run('Bundle\nServe useful output.\nSupports the goal.\n1,2,1\nsrc/future.js\n\nyes\n');
+  assert.equal(result.status, 0, result.stderr); assert.match(result.stdout, /Review before saving/); assert.match(result.stdout, /File-only receipts stay file-only/);
+  const saved = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+  assert.deepEqual({ ...saved, components: manifest.components }, manifest);
+  assert.deepEqual(saved.components[1], { id: 'bundle-2', name: 'Bundle', purpose: 'Serve useful output.', contributes: 'Supports the goal.', files: ['a.js', 'b.js', 'src/future.js'] });
+  const map = scanProject(root), n = map.nodes.find(n => n.id === 'bundle-2');
+  assert.equal(n.status, 'planned'); assert.deepEqual(n.presentFiles, ['a.js', 'b.js']); assert.deepEqual(n.missingFiles, ['src/future.js']);
+  assert.equal(n.fileEvidence[0].assessment.accepted, true); assert.equal(n.evidence, null);
+  assert.ok(map.gaps.some(g => g.kind === 'unmapped-evidence' && g.message.includes('bundle')));
+  assert.equal(fs.readFileSync(path.join(root, '.buildmap/evidence.json'), 'utf8'), evidence);
+  assert.equal(fs.readFileSync(path.join(root, 'a.js'), 'utf8'), 'export const a = 1;'); assert.equal(fs.existsSync(path.join(root, 'src')), false);
+  const empty = run('Future piece\nDo a future job.\n\n\n\nyes\n'); assert.equal(empty.status, 0, empty.stderr);
+  const planned = scanProject(root).nodes.find(n => n.id === 'future-piece'); assert.deepEqual(planned.files, []); assert.equal(planned.status, 'planned');
+  assert.equal(run('Interrupted\n').status, 1);
+});
+
+test('piece setup refuses ownership and goal-reference changes, invalid modes and unsafe paths, with cancellable review', t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'used.js'), 'export const used = true;'); fs.writeFileSync(path.join(root, 'owned.js'), 'export const owned = true;');
+  const planPath = path.join(root, '.buildmap/project.json'), original = JSON.stringify({ components: [{ id: 'owner', files: ['owned.js'] }],
+    outcomes: [{ id: 'goal', goal: 'Use this file.', steps: [{ id: 'step', nodeId: 'file:used.js', label: 'Use it', expected: 'Useful result.' }] }] });
+  fs.writeFileSync(planPath, original);
+  const outside = path.join(root, 'outside'); fs.mkdirSync(outside); fs.symlinkSync(outside, path.join(root, 'linked'));
+  const invoke = (input = '', flags = [], target = root) => spawnSync(process.execPath, ['src/cli.js', target, '--piece', ...flags], { input, encoding: 'utf8', timeout: 5000 });
+  const result = invoke('New piece\nA useful job.\n\n1\n\nowned.js\n../escape.js\n/a.js\nC:/a.js\nlinked/new.js\nused.js\nsrc/*.js\n\nno\n');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /used by an existing walkthrough/); assert.match(result.stdout, /already belongs/);
+  assert.match(result.stdout, /project-relative file path/); assert.match(result.stdout, /linked files\/directories/); assert.match(result.stdout, /Cancelled/);
+  assert.equal(fs.readFileSync(planPath, 'utf8'), original); assert.deepEqual(fs.readdirSync(outside), []);
+  for (const flags of [['--init'], ['--walkthrough'], ['--json'], ['--html', path.join(root, 'preview.html')]]) {
+    assert.equal(invoke('', flags).status, 1); assert.equal(fs.readFileSync(planPath, 'utf8'), original);
+  }
+  assert.equal(invoke('', [], 'https://github.com/owner/repo').status, 1);
+  assert.equal(invoke('Stop here\n').status, 1); assert.equal(fs.readFileSync(planPath, 'utf8'), original);
+});
+
+test('piece setup preserves edits and new receipt collisions made during its interview', async t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap'));
+  const planPath = path.join(root, '.buildmap/project.json'), evidencePath = path.join(root, '.buildmap/evidence.json');
+  const answers = 'New piece\nDo a useful job.\n\n\nfuture.js\n\nyes\n';
+  for (const change of ['plan', 'evidence']) {
+    fs.writeFileSync(planPath, '{}'); fs.rmSync(evidencePath, { force: true });
+    const newer = '{"mission":"A newer goal."}', claim = '{"components":{"new-piece":{"status":"verified","note":"New claim."}}}';
+    const output = { write(text) { if (text.startsWith('Save this piece?')) fs.writeFileSync(change === 'plan' ? planPath : evidencePath, change === 'plan' ? newer : claim); } };
+    await assert.rejects(createPiece(root, { input: Readable.from([answers]), output }), change === 'plan' ? /plan changed/ : /evidence claim now uses/);
+    assert.equal(fs.readFileSync(planPath, 'utf8'), change === 'plan' ? newer : '{}');
+    if (change === 'evidence') assert.equal(fs.readFileSync(evidencePath, 'utf8'), claim);
+    assert.equal(fs.existsSync(path.join(root, 'future.js')), false);
   }
 });

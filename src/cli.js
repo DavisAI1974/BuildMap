@@ -7,16 +7,17 @@ import { spawnSync } from 'node:child_process';
 import { startServer } from './server.js';
 import { scanProject } from './scan.js';
 import { snapshotHtml } from './export.js';
-import { initializeProject, createWalkthrough } from './setup.js';
+import { initializeProject, createWalkthrough, createPiece } from './setup.js';
 
 export function parseArgs(args) {
-  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, html: null, ref: null, init: false, walkthrough: false, help: false };
+  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, html: null, ref: null, init: false, walkthrough: false, piece: false, help: false };
   let targetSeen = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') options.help = true;
     else if (arg === '--init') options.init = true;
     else if (arg === '--walkthrough') options.walkthrough = true;
+    else if (arg === '--piece') options.piece = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--port' || arg === '--host' || arg === '--html' || arg === '--ref') {
       const value = args[++i];
@@ -31,6 +32,7 @@ export function parseArgs(args) {
   if (options.json && options.html) throw new Error('Choose --json or --html, not both.');
   if (options.init && !options.help && (options.json || options.html || options.ref || /^https?:\/\//i.test(options.target))) throw new Error('--init is local setup only. Run mapping or exports separately after setup.');
   if (options.walkthrough && !options.help && (options.init || options.json || options.html || options.ref || /^https?:\/\//i.test(options.target))) throw new Error('--walkthrough is local plan authoring only. Run initial setup, mapping or exports separately.');
+  if (options.piece && !options.help && (options.init || options.walkthrough || options.json || options.html || options.ref || /^https?:\/\//i.test(options.target))) throw new Error('--piece is local plan authoring only. Run setup, walkthroughs, mapping or exports separately.');
   if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535) throw new Error('--port must be an integer from 0 to 65535.');
   return options;
 }
@@ -66,11 +68,11 @@ async function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (options.help) {
-      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--ref branch-or-tag] [--json | --html output.html]\n  buildmap [local-project-path] --init\n  buildmap [local-project-path] --walkthrough\n\n--walkthrough guides you through one goal, ordered existing pieces, expected results, and support assignments. Review before saving; existing plans are retained and no proof is recorded.\n--init asks four plain-English questions and saves an initial project description, then exits. Existing plans are never overwritten; code and evidence are untouched.\n--json prints one map snapshot, including gaps and source hashes, then exits.\n--html writes a self-contained interactive snapshot to a new file, then exits.\n--ref selects a branch or tag for GitHub URL input; omitted uses the default branch.\n\nExamples:\n  buildmap ../my-project --init\n  buildmap ../my-project --walkthrough\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap https://github.com/owner/repo --ref feature/map\n  buildmap . --json\n  buildmap . --html ../buildmap.html\n`);
+      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--ref branch-or-tag] [--json | --html output.html]\n  buildmap [local-project-path] --init\n  buildmap [local-project-path] --walkthrough\n  buildmap [local-project-path] --piece\n\n--piece groups unassigned files or declares a planned piece through a reviewed local interview. It preserves source/evidence and never grants proof.\n--walkthrough guides you through one goal, ordered existing pieces, expected results, and support assignments. Review before saving; existing plans are retained and no proof is recorded.\n--init asks four plain-English questions and saves an initial project description, then exits. Existing plans are never overwritten; code and evidence are untouched.\n--json prints one map snapshot, including gaps and source hashes, then exits.\n--html writes a self-contained interactive snapshot to a new file, then exits.\n--ref selects a branch or tag for GitHub URL input; omitted uses the default branch.\n\nExamples:\n  buildmap ../my-project --init\n  buildmap ../my-project --piece\n  buildmap ../my-project --walkthrough\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap https://github.com/owner/repo --ref feature/map\n  buildmap . --json\n  buildmap . --html ../buildmap.html\n`);
       return;
     }
-    if (options.init || options.walkthrough) {
-      const result = options.init ? await initializeProject(options.target) : await createWalkthrough(options.target);
+    if (options.init || options.walkthrough || options.piece) {
+      const result = options.init ? await initializeProject(options.target) : options.piece ? await createPiece(options.target) : await createWalkthrough(options.target);
       if (!result) return;
       const { root } = result;
       const quotedRoot = "'" + root.replaceAll("'", "'\\''") + "'";

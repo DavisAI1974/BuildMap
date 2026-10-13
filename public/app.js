@@ -310,7 +310,7 @@ function renderDetail(id) {
     <p>${escapeHtml(node.purpose)}</p>
     ${finding ? guidanceHtml(finding) : ''}
     ${node.contributes ? `<div class="detail-section"><h3>Why it matters</h3><p>${escapeHtml(node.contributes)}</p></div>` : ''}
-    <div class="detail-section"><h3>Files</h3>${node.kind !== 'mission' ? `<p>${escapeHtml(fileSummary(node))}. ${node.source === 'discovered' ? 'Discovered source file; assign its exact path in .buildmap/project.json to group it into a component.' : 'Assigned by .buildmap/project.json; new source files appear separately until explicitly grouped.'}</p>` : ''}${fileList(node)}</div>
+    <div class="detail-section"><h3>Files</h3>${node.kind !== 'mission' ? `<p>${escapeHtml(fileSummary(node))}. ${node.source === 'discovered' ? 'Discovered source file; use the guided local --piece command to group available files into a new piece, or assign its exact path in .buildmap/project.json.' : 'Assigned by .buildmap/project.json; new source files appear separately until explicitly grouped.'}</p>` : ''}${fileList(node)}</div>
     <div class="detail-section"><h3>Source connections</h3>${connectionList(id)}</div>
     <div class="detail-section"><h3>Gaps to review</h3>${pieceGaps().filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId)).map(g => `<p>${escapeHtml(g.message)}</p>${Object.hasOwn(g, 'evidence') ? `<details><summary>Recorded claim</summary><pre>${escapeHtml(JSON.stringify(g.evidence, null, 2))}</pre></details>` : ''}`).join('') || '<p>No detected gaps.</p>'}</div>
     <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>

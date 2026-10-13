@@ -6,15 +6,16 @@ import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { startServer } from './server.js';
 import { scanProject } from './scan.js';
+import { snapshotHtml } from './export.js';
 
 export function parseArgs(args) {
-  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, help: false };
+  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, html: null, help: false };
   let targetSeen = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--help' || arg === '-h') options.help = true;
     else if (arg === '--json') options.json = true;
-    else if (arg === '--port' || arg === '--host') {
+    else if (arg === '--port' || arg === '--host' || arg === '--html') {
       const value = args[++i];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}.`);
       options[arg.slice(2)] = arg === '--port' ? Number(value) : value;
@@ -22,6 +23,7 @@ export function parseArgs(args) {
     else if (targetSeen) throw new Error('Pass one project path or GitHub URL.');
     else { options.target = arg; targetSeen = true; }
   }
+  if (options.json && options.html) throw new Error('Choose --json or --html, not both.');
   if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535) throw new Error('--port must be an integer from 0 to 65535.');
   return options;
 }
@@ -49,12 +51,18 @@ function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (options.help) {
-      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--json]\n\n--json prints one map snapshot, including gaps and source hashes, then exits.\n\nExamples:\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap . --json\n`);
+      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--json | --html output.html]\n\n--json prints one map snapshot, including gaps and source hashes, then exits.\n--html writes a self-contained interactive snapshot to a new file, then exits.\n\nExamples:\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap . --json\n  buildmap . --html ../buildmap.html\n`);
       return;
     }
     const { root, cleanup } = prepareTarget(options.target, options.json ? console.error : console.log);
     process.once('exit', cleanup);
     if (options.json) { console.log(JSON.stringify(scanProject(root), null, 2)); return; }
+    if (options.html) {
+      const output = path.resolve(options.html);
+      fs.writeFileSync(output, snapshotHtml(scanProject(root)), { flag: 'wx' });
+      console.log(`Snapshot saved: ${output}`);
+      return;
+    }
     const server = startServer({ root, host: options.host, port: options.port });
     server.once('error', err => { console.error(`BuildMap could not start: ${err.message}`); process.exitCode = 1; });
     for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close());

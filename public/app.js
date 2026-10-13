@@ -12,6 +12,8 @@ let showAllGaps = false;
 let refreshing = false;
 
 const $ = id => document.getElementById(id);
+const snapshotElement = $('buildmapSnapshot');
+const snapshot = snapshotElement ? JSON.parse(snapshotElement.textContent) : null;
 const nodeLayer = $('nodeLayer');
 const edgeLayer = $('edgeLayer');
 const viewport = $('mapViewport');
@@ -22,16 +24,19 @@ $('moreGaps').addEventListener('click', () => { showAllGaps = !showAllGaps; rend
 new ResizeObserver(() => { if (fit) scaleMap(); }).observe(viewport);
 
 await refresh();
-setInterval(refresh, 1600);
+if (!snapshot) setInterval(refresh, 1600);
 
 async function refresh() {
   if (refreshing) return;
   refreshing = true;
   try {
-    const response = await fetch('/api/map', { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Server returned ${response.status}`);
-    const next = await response.json();
-    $('refreshStatus').textContent = 'Updated just now';
+    let next = snapshot;
+    if (!next) {
+      const response = await fetch('/api/map', { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
+      next = await response.json();
+    }
+    $('refreshStatus').textContent = snapshot ? `Snapshot · ${new Date(snapshot.generatedAt).toLocaleString()}` : 'Updated just now';
     $('refreshStatus').classList.remove('stale');
     if (next.fingerprint === currentFingerprint) return;
     currentFingerprint = next.fingerprint;
@@ -53,7 +58,7 @@ async function refresh() {
 
 function renderHeader() {
   $('projectName').textContent = model.project.name;
-  $('mode').textContent = `${model.project.mode} mode`;
+  $('mode').textContent = `${model.project.mode}${snapshot ? ' snapshot' : ' mode'}`;
   $('mission').textContent = model.project.intent.text;
   $('intentSource').textContent = model.project.intent.source
     ? `Intent source: ${model.project.intent.source} · ${model.project.intent.confidence}`

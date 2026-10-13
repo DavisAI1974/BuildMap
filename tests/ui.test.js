@@ -32,16 +32,17 @@ function model(fingerprint, nodes = [piece('a'), piece('__mission__', { kind: 'm
   return { fingerprint, project: { name: 'Fixture', mode: 'brownfield', intent: { text: 'Build useful software', confidence: 'declared' }, progress: 20, counts: { coded: 1 } },
     states: ['planned', 'coded', 'connected', 'computing', 'verified', 'live'], nodes, edges: [], gaps: [] };
 }
-async function client(initial) {
+async function client(initial, offline = false) {
   const elements = new Map(); let current = initial; let failed = false;
-  const get = id => { if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); };
+  const get = id => { if (id === 'buildmapSnapshot') return offline ? { textContent: JSON.stringify(initial) } : null; if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); };
+  let requests = 0, polls = 0;
   const context = vm.createContext({ document: { getElementById: get, createElement: tag => new Element(tag), createElementNS: (_,tag) => new Element(tag),
     querySelectorAll: () => get('nodeLayer').children.filter(e => e.classes.has('node')) },
-    fetch: async () => ({ ok: !failed, status: failed ? 500 : 200, json: async () => current }),
-    ResizeObserver: class { observe() {} }, setInterval: () => {}, console: { error() {} } });
+    fetch: async () => { requests++; return { ok: !failed, status: failed ? 500 : 200, json: async () => current }; },
+    ResizeObserver: class { observe() {} }, setInterval: () => { polls++; }, console: { error() {} } });
   const source = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
   const api = await vm.runInContext(`(async () => { ${source}\nreturn { refresh }; })()`, context);
-  return { get, context, setModel: m => { current = m; }, fail: value => { failed = value; },
+  return { get, context, counts: () => ({ requests, polls }), setModel: m => { current = m; }, fail: value => { failed = value; },
     refresh: () => api.refresh() };
 }
 
@@ -78,4 +79,13 @@ test('fit actually scales the map and search can find evidence states', async ()
   ui.get('search').listeners.input({ target: { value: 'verified' } });
   assert.equal(ui.get('nodeLayer').children.find(e => e.dataset.id === 'a').classes.has('filtered'), false);
   assert.equal(ui.get('nodeLayer').children.find(e => e.dataset.id === 'b').classes.has('filtered'), true);
+});
+
+test('offline snapshot renders the same client without HTTP requests or polling', async () => {
+  const input = model('captured'); input.generatedAt = '2026-10-13T10:00:00Z';
+  const ui = await client(input, true);
+  assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+  assert.match(ui.get('refreshStatus').textContent, /^Snapshot · /);
+  assert.match(ui.get('mode').textContent, /snapshot/);
+  assert.ok(ui.get('nodeLayer').children.find(e => e.dataset.id === 'a'));
 });

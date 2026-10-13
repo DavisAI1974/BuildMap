@@ -56,6 +56,36 @@ async function client(initial, offline = false, navigator = undefined) {
     refresh: () => api.refresh() };
 }
 
+test('empty walkthrough guidance explains local authoring, snapshot refresh and keeps the free map intact', async () => {
+  for (const offline of [false, true]) {
+    const input = model('empty-journey'); input.outcomes = [];
+    const ui = await client(input, offline);
+    assert.equal(ui.get('mapViewButton').attributes['aria-pressed'], 'true');
+    ui.get('walkthroughViewButton').click();
+    assert.match(ui.get('detail').innerHTML, /Describe your first walkthrough/);
+    assert.match(ui.get('detail').innerHTML, /PATH --walkthrough/);
+    assert.match(ui.get('detail').innerHTML, /PATH --init/);
+    assert.match(ui.get('detail').innerHTML, /starts unproved/);
+    assert.match(ui.get('detail').innerHTML, offline ? /create a new export/ : /next refresh/);
+    assert.equal(ui.get('detail').children.at(-1).classes.has('finished-product'), true);
+    if (!offline) {
+      const next = model('plan-arrived');
+      next.outcomes = [{ id: 'new', name: 'Our goal', status: 'unproved', steps: [] }];
+      ui.setModel(next); await ui.refresh();
+      assert.match(ui.get('detail').innerHTML, /Choose a goal/);
+      assert.doesNotMatch(ui.get('detail').innerHTML, /PATH --walkthrough/);
+      assert.equal(ui.get('outcomes').children[0].dataset.outcomeId, 'new');
+    } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+    ui.get('mapViewButton').click();
+    assert.equal(ui.get('mapShell').hidden, false); assert.equal(ui.get('fitButton').hidden, false);
+    assert.ok(ui.get('nodeLayer').children.some(n => n.dataset.id === 'a'));
+    assert.equal(input.project.counts.coded, 1); assert.deepEqual(input.edges, []);
+  }
+  const remote = model('remote'); remote.project.source = { kind: 'github', url: 'https://github.com/owner/repo', revision: 'abc', snapshot: true };
+  const ui = await client(remote); ui.get('walkthroughViewButton').click();
+  assert.match(ui.get('detail').innerHTML, /Work on a local checkout/);
+});
+
 test('client renders escaped claims and separate source/declared connection provenance', async () => {
   const input = model('one', [piece('a', { name: '<img onerror=evil()>', evidence: { status: 'verified', note: '<script>evil</script>' }, evidenceAssessment: { accepted: false, reason: 'Claim rejected.' } }), piece('b')]);
   input.edges = [{ from: 'a', to: 'b', type: 'code', observations: [{ importer: 'b.js', imported: 'a.js' }] }, { from: 'a', to: 'b', type: 'planned', observed: true }];

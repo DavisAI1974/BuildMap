@@ -41,7 +41,7 @@ A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside 
 - Individual piece receipts do not prove an outcome, and outcome receipts do not promote pieces or the mission. Outcomes are excluded from the piece evidence index. Plan/source/selected-input changes invalidate earlier examples; raw values remain inspectable.
 - Sidebar outcome selection highlights participating/supporting pieces, opens the ordered walkthrough, shows its first unresolved point and input/output samples, and links to piece inspection and back. Live edits and offline exports use this same client. Pieces without outcome assignments produce informational scope-review findings; useful support work is not labeled unnecessary.
 - BuildMap declares "Understand the current build." A real Node 24 readIntent/scan/local-HTTP observation records selected input/output fields for its first three steps. This is explicitly a partial backend example, not a full payload or instrumented trace. Its browser step remains unobserved, so its outcome stays unproved. No browser restriction was retried or bypassed.
-- Manual plan/example authoring is the current boundary. No automatic runtime instrumentation, receipt authentication, interpretation of natural-language expected results, branching paths, or graphical outcome editor was added.
+- New walkthrough plans can be authored with the explicit local `--walkthrough` interview; existing-plan editing and examples remain file-authored. No automatic runtime instrumentation, receipt authentication, interpretation of natural-language expected results, branching paths, or graphical outcome editor was added.
 
 ## Latest user feedback incorporated
 
@@ -71,7 +71,7 @@ The next scoped usability gap was starting without manual JSON authoring. `node 
 
 Four focused checks bring the suite to 78: attributed/malformed/unknown destination handling; real scan-to-live/offline ending placement, escaping, refresh and unchanged proof; actual CLI setup/defaults; preservation/refusal/cancellation/incompatible target behavior. Both Node 20 and 24 pass. Backend partial observations are refreshed; the browser step is still unobserved and no piece is live.
 
-CLI installation/startup and component/walkthrough/evidence authoring remain usability gaps. Browser onboarding is not built. Do not claim a no-code application builder or add accounts/billing/a broad editor without a scoped use case. The next useful work should come from review feedback or a concrete repository need; the real-browser release check remains blocked by the documented environment restrictions.
+CLI installation/startup, piece grouping, existing-walkthrough editing and evidence authoring remain usability gaps. New walkthroughs now have a guided local command, described below. Browser onboarding is not built. Do not claim a no-code application builder or add accounts/billing/a broad editor without a scoped use case. The next useful work should come from review feedback or a concrete repository need; the real-browser release check remains blocked by the documented environment restrictions.
 
 ## Business idea to revisit
 
@@ -97,7 +97,7 @@ The user confirmed free mapping with paid walkthroughs as the product split, esp
 
 ## Current validation and proof state
 
-- **78/78 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **82/82 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
@@ -175,6 +175,19 @@ The output must be a new file; put it outside the mapped repo.
 
 Shell clones/fetches work, but shell push failed because GitHub username credentials are unavailable. The connected GitHub API successfully published tested trees in focused commits and updated the branch with an expected-head lease and `force:false`. Published tree hashes were compared against the tested local tree. Do not repeatedly try unauthenticated shell push or force-overwrite newer work; use the connector when needed and verify the final PR head.
 
-The current checkout is `/workspace/scratch/a6ddd169062c/BuildMap`; scratch may not persist into the next chat, so Git is authoritative. Equivalent local commits were preserved in `review/local-*` backup branches before aligning to API-created commits. There are no active subagents and no intentional smoke server left running. Temporary JSON/HTML review files are reproducible intermediates, not remaining deliverables.
+The current checkout is `/workspace/scratch/77e2d3a3bcf7/BuildMap`; scratch may not persist into the next chat, so Git is authoritative. Equivalent local commits were preserved in `review/local-*` backup branches before aligning to API-created commits. There are no active subagents and no intentional smoke server left running. Temporary JSON/HTML review files are reproducible intermediates, not remaining deliverables.
 
 Refresh receipts only after relevant checks pass. Avoid framework churn and gratuitous tests/validators. Keep commentary brief and continue within the user's authorized scope.
+
+
+## Guided walkthrough authoring from bb39f5c
+
+The next beginner usability gap was writing walkthrough JSON. `node src/cli.js LOCAL_PATH --walkthrough` now lists existing mapped pieces and asks for a name, goal, ordered piece selections, expected results, optional explanations, and support assignments. The builder reviews the full plan and explicitly types `yes` to append it. Other answers cancel; unfinished input writes nothing. It permits planned pieces and repeated piece use, generates unique ids avoiding existing outcomes and orphan receipt ids, preserves all existing manifest fields/goals, and leaves source/evidence untouched. No implementation, source edges, observed examples, or proof are invented. Plan-bound receipts can become stale when the manifest changes.
+
+This is explicit local authoring in retained `src/setup.js`, separate from `--init`, mapping, exports and remote snapshots. Existing project descriptions are required. Invalid plans, symlinked/hardlinked manifest files, linked configuration directories, edits during the interview and newly colliding receipt ids are refused. Saving uses a temporary file and rename to avoid partial JSON. Normal single-user CLI edits are covered; there is no cross-process locking service or graphical editor.
+
+The shared client explains how to create the first walkthrough, including `--init` when needed. It distinguishes live local refresh from a captured snapshot requiring a local checkout and fresh map/export, retains the finished-product ending, and updates its empty guidance when a plan arrives. Existing free-map features remain available. Browser restrictions were neither retried nor bypassed.
+
+Four focused tests bring the suite to 82 on Node 20.20.2 and 24.19.0: actual CLI append with original fields/goals/source/evidence/piece states retained and orphan-id avoidance; cancellation/defaults/invalid choices/incomplete input/mode/path refusal; concurrent edits and new receipt collisions; and shared-client empty guidance/refresh/offline/free-map retention. The latter uses the DOM double, not browser proof. Receipts are refreshed only after passing checks. The partial backend example is re-observed; its browser step and the whole outcome stay unproved. No piece is live. PR #1 stays open; nothing is deployed or published.
+
+The next usability gaps are component grouping/planned-piece authoring and recorded-example capture. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.

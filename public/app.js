@@ -72,7 +72,8 @@ async function refresh() {
     if (selectedGapId && !visibleGaps.some((g, i) => (g.id || `gap:${i}`) === selectedGapId)) selectedGapId = null;
     renderHeader();
     renderLegend();
-    if (selectedOutcomeId && !model.outcomes?.some(o => o.id === selectedOutcomeId)) {
+    const outcomeRemoved = selectedOutcomeId && !model.outcomes?.some(o => o.id === selectedOutcomeId);
+    if (outcomeRemoved) {
       selectedOutcomeId = null;
       if (currentView === 'walkthrough') $('detail').innerHTML = '<h2>Outcome removed</h2><p>The selected outcome is no longer in the current plan.</p>';
     }
@@ -83,7 +84,7 @@ async function refresh() {
       if (model.nodes.some(n => n.id === selectedId)) { if (currentView === 'map') renderDetail(selectedId); }
       else { selectedId = null; if (currentView === 'map') $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
     }
-    if (currentView === 'walkthrough' && (selectedOutcomeId || selectedWalkthroughFinding())) renderPaidDetail();
+    if (currentView === 'walkthrough' && !outcomeRemoved) renderPaidDetail();
     if (currentView === 'map' && focusedId && (focusOnCard || focusInResults)) {
       const candidates = focusInResults ? [...$('searchResults').children] : [...document.querySelectorAll('.node')];
       const replacement = candidates.find(el => el.dataset.id === focusedId && el.tabIndex !== -1);
@@ -317,7 +318,7 @@ function renderDetail(id) {
 
 function renderOutcomes() {
   const outcomes = model.outcomes || [];
-  $('outcomeHint').textContent = outcomes.length ? 'Choose an intended result to inspect its steps and recorded example.' : 'Declare an outcome in .buildmap/project.json to connect the build to a concrete goal.';
+  $('outcomeHint').textContent = outcomes.length ? 'Choose an intended result to inspect its steps and recorded example.' : 'Start with one result you want the project to deliver, then choose the pieces that should build toward it.';
   $('outcomes').innerHTML = '';
   for (const outcome of outcomes) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'outcome-choice'; button.dataset.outcomeId = outcome.id;
@@ -397,7 +398,16 @@ function renderPaidDetail() {
     appendFinishedProduct();
   }
   else if (selectedOutcomeId) renderOutcomeDetail(selectedOutcomeId);
-  else $('detail').innerHTML = '<div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div><h2>Choose a goal</h2><p>Follow its steps, expected results, and recorded example to see where the journey needs work.</p>';
+  else {
+    $('detail').innerHTML = model.outcomes?.length
+      ? '<div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div><h2>Choose a goal</h2><p>Follow its steps, expected results, and recorded example to see where the journey needs work.</p>'
+      : `<div class="eyebrow">WALKTHROUGH · PAID PREVIEW</div><h2>Describe your first walkthrough</h2>
+        <p>Choose one result someone should accomplish. The guided local setup lets you select mapped pieces in order and describe what each step should produce.</p>
+        <p>From your BuildMap checkout, run <code>node src/cli.js PATH --walkthrough</code>, replacing PATH with your local project folder. If it has no project description yet, run <code>node src/cli.js PATH --init</code> first. Add source or planned pieces before choosing steps.</p>
+        <p>${snapshot || model.project.source?.kind === 'github' ? 'This is a captured snapshot. Work on a local checkout, then open a fresh map or create a new export to see your saved plan.' : 'The local map picks up the saved plan on its next refresh.'}</p>
+        <p>Review before saving. A walkthrough describes intended behavior; it starts unproved. You can also author outcomes in .buildmap/project.json using the README format.</p>`;
+    appendFinishedProduct();
+  }
 }
 function showView(view) {
   selectedGapsByView[currentView] = selectedGapId;

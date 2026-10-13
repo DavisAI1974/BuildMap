@@ -10,7 +10,7 @@ The core contract is **existence, connection, computation, verification, and liv
 
 BuildMap focuses on beginner-to-intermediate builders, especially people working with coding agents who need help understanding how a complete application fits together and keeping work aligned with its goal. Experienced developers can use the same source and evidence detail. The original map stays free; the paid walkthrough adds goal-specific behavior review.
 
-Setup still requires Node/Git commands. An optional local `--init` interview writes your initial goal and finished-product description without hand-editing JSON. Piece/walkthrough plans and evidence are still authored in files; this is not an existing no-code application builder.
+Setup still requires Node/Git commands. An optional local `--init` interview writes your initial goal and finished-product description without hand-editing JSON. An optional local `--walkthrough` interview also adds a goal and its ordered steps using existing mapped pieces. Piece grouping and evidence still require file authoring; this is not an existing no-code application builder.
 
 ## Quick start
 
@@ -50,7 +50,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 78 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 82 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test. The browser also blocks local HTML-file navigation, so the snapshot export has not been visually verified here.
 
 ## Describe a new project with four questions
 
@@ -127,7 +127,18 @@ These labels express the agreed product boundary. This MVP makes both views avai
 
 Open **Walkthrough · Paid** and choose a goal in its sidebar to highlight its participating and supporting pieces. The main walkthrough view shows the goal, ordered steps, expected results, recorded inputs/outputs, handoff notes, and the first missing, failed, or unobserved point. Inspect a step's piece and return to the walkthrough. The same interface works in live mode and exports; local edits update the selected outcome.
 
-Define outcomes alongside `components` in `.buildmap/project.json`:
+To add your first walkthrough without hand-writing JSON, run:
+
+```bash
+node src/cli.js ../my-project --walkthrough
+node src/cli.js ../my-project
+```
+
+Start with `--init` if the project has no description yet, and add source or planned pieces before choosing steps. The interview lists current mapped pieces, asks for one goal, ordered steps, each expected result, optional plain-English explanations, and supporting pieces such as tests. Review the complete plan and type `yes` to save; any other answer cancels. It appends one walkthrough and retains all existing project fields and goals. Unique ids avoid both existing goals and orphan evidence claims. Planned pieces can be selected, and one piece can appear in multiple steps.
+
+No code, source connections, recorded examples, or proof are created. The walkthrough starts unproved; existing evidence files stay untouched, and plan-bound receipts may become stale when the manifest changes. Default mapping remains read-only. This is explicit local authoring, separate from `--init`, remote snapshots, and exports. Unfinished input, invalid plans, linked configuration paths, or a plan changed while answering are refused. Piece grouping, edits to existing walkthroughs, and evidence capture remain file-based. A GitHub or HTML snapshot needs a local checkout and a fresh map/export after saving.
+
+You can also define outcomes alongside `components` in `.buildmap/project.json`:
 
 ```json
 {

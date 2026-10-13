@@ -1,0 +1,56 @@
+{
+  "name": "BuildMap",
+  "mode": "greenfield",
+  "mission": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome.",
+  "components": [
+    {
+      "id": "intent",
+      "name": "Intent recovery",
+      "group": "Understand",
+      "files": ["src/intent.js"],
+      "purpose": "Start from whatever intent evidence exists — README, docs, manifest, or eventually an interview — without blocking the map.",
+      "contributes": "Keeps the build focused on what the project is actually trying to accomplish.",
+      "visual": { "kind": "lens", "label": "Understand" }
+    },
+    {
+      "id": "scanner",
+      "name": "Repository scanner",
+      "group": "Discover",
+      "files": ["src/scan.js"],
+      "purpose": "Discover code files, planned components, imports, gaps, and current evidence states.",
+      "contributes": "Turns source code into the living set of puzzle pieces.",
+      "dependsOn": ["intent"],
+      "visual": { "kind": "scanner", "label": "Discover" }
+    },
+    {
+      "id": "server",
+      "name": "Live map server",
+      "group": "Observe",
+      "files": ["src/server.js", "src/cli.js"],
+      "purpose": "Continuously rescan a local folder or GitHub clone and expose its current map state.",
+      "contributes": "Makes progress visible while the software is being built instead of after the fact.",
+      "dependsOn": ["scanner"],
+      "visual": { "kind": "flow", "label": "Refresh" }
+    },
+    {
+      "id": "visualizer",
+      "name": "Interactive visualizer",
+      "group": "Explain",
+      "files": ["public/index.html", "public/app.js", "public/styles.css"],
+      "purpose": "Render the project as a navigable machine with connections, proof states, and small visuals that explain each piece.",
+      "contributes": "Lets a human spot gaps, understand progress, and see why a file matters at a glance.",
+      "dependsOn": ["server"],
+      "visual": { "kind": "graph", "label": "Explain" }
+    },
+    {
+      "id": "verification",
+      "name": "Verification evidence",
+      "group": "Prove",
+      "files": ["tests/scan.test.js", "tests/intent.test.js"],
+      "purpose": "Verify the scanner and intent recovery behavior so higher proof states are earned rather than decorative.",
+      "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",
+      "dependsOn": ["scanner"],
+      "visual": { "kind": "proof", "label": "Prove" }
+    }
+  ]
+}

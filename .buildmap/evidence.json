@@ -1,0 +1,27 @@
+{
+  "components": {
+    "intent": {
+      "status": "verified",
+      "command": "node --test",
+      "note": "Intent extraction and unknown-intent fallback are covered by tests."
+    },
+    "scanner": {
+      "status": "verified",
+      "command": "node --test",
+      "note": "Planned, coded, connected, and explicit evidence-state behavior are covered by tests."
+    },
+    "server": {
+      "status": "computing",
+      "note": "The local server is exercised by the v0.1 smoke test before commit."
+    },
+    "visualizer": {
+      "status": "computing",
+      "note": "The browser UI consumes the live /api/map state and updates when the project fingerprint changes."
+    },
+    "verification": {
+      "status": "verified",
+      "command": "node --test",
+      "note": "The current v0.1 suite passes on Node 20+."
+    }
+  }
+}

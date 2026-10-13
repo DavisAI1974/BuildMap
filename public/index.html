@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BuildMap</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">BuildMap <span>v0.1</span></div>
+      <div id="projectName" class="project-name">Loading project…</div>
+    </div>
+    <div class="top-actions">
+      <span id="mode" class="mode"></span>
+      <button id="fitButton" type="button">Fit map</button>
+    </div>
+  </header>
+
+  <section class="mission-panel">
+    <div class="mission-copy">
+      <div class="eyebrow">WHY THIS SYSTEM EXISTS</div>
+      <p id="mission">Reading available intent…</p>
+      <div id="intentSource" class="intent-source"></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>System proof</span><strong id="progressText">0%</strong></div>
+      <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+      <div id="stateCounts" class="state-counts"></div>
+    </div>
+  </section>
+
+  <main class="workspace">
+    <aside class="rail">
+      <label class="search-label" for="search">Find a piece</label>
+      <input id="search" type="search" placeholder="scanner, API, queue…" autocomplete="off" />
+      <div class="legend" id="legend"></div>
+      <div class="rail-note">
+        <strong>Evidence rule</strong>
+        <p>A file can light up as coded or connected automatically. Computing, verified, and live require explicit evidence.</p>
+      </div>
+    </aside>
+
+    <section class="map-shell" aria-label="Living software map">
+      <div id="mapViewport" class="map-viewport">
+        <div id="mapCanvas" class="map-canvas">
+          <svg id="edgeLayer" class="edge-layer" aria-hidden="true"></svg>
+          <div id="nodeLayer" class="node-layer"></div>
+        </div>
+      </div>
+      <div id="emptyState" class="empty-state" hidden>
+        <strong>No code yet — that’s okay.</strong>
+        <p>Add a README, a <code>.buildmap/project.json</code>, or just start creating files. BuildMap will grow with the project.</p>
+      </div>
+    </section>
+
+    <aside id="detail" class="detail" aria-live="polite">
+      <div class="detail-placeholder">
+        <div class="eyebrow">PIECE INSPECTOR</div>
+        <h2>Click a piece</h2>
+        <p>See what it does, how it connects, and how it moves the system toward its goal.</p>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

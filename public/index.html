@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BuildMap</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <header class="topbar">
@@ -14,7 +14,9 @@
     </div>
     <div class="top-actions">
       <span id="mode" class="mode"></span>
+      <span id="refreshStatus" role="status">Connecting…</span>
       <button id="fitButton" type="button">Fit map</button>
+      <button id="sizeButton" type="button">Actual size</button>
     </div>
   </header>
 
@@ -25,7 +27,7 @@
       <div id="intentSource" class="intent-source"></div>
     </div>
     <div class="progress-wrap">
-      <div class="progress-label"><span>System proof</span><strong id="progressText">0%</strong></div>
+      <div class="progress-label"><span title="Weighted state index; not percent complete or a probability of correctness">Evidence index</span><strong id="progressText">0%</strong></div>
       <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
       <div id="stateCounts" class="state-counts"></div>
     </div>
@@ -36,6 +38,8 @@
       <label class="search-label" for="search">Find a piece</label>
       <input id="search" type="search" placeholder="scanner, API, queue…" autocomplete="off" />
       <div class="legend" id="legend"></div>
+      <div class="edge-key"><span>Solid → observed source dependency</span><span>Dashed → declared dependency</span><span>Green → contribution to mission</span></div>
+      <section class="gaps-panel" aria-label="Build gaps"><h2 id="gapHeading">Next gaps</h2><div id="gaps"></div><button id="moreGaps" type="button" hidden>Show all gaps</button></section>
       <div class="rail-note">
         <strong>Evidence rule</strong>
         <p>A file can light up as coded or connected automatically. Computing, verified, and live require explicit evidence.</p>
@@ -44,10 +48,10 @@
 
     <section class="map-shell" aria-label="Living software map">
       <div id="mapViewport" class="map-viewport">
-        <div id="mapCanvas" class="map-canvas">
+        <div id="mapSizer"><div id="mapCanvas" class="map-canvas">
           <svg id="edgeLayer" class="edge-layer" aria-hidden="true"></svg>
           <div id="nodeLayer" class="node-layer"></div>
-        </div>
+        </div></div>
       </div>
       <div id="emptyState" class="empty-state" hidden>
         <strong>No code yet — that’s okay.</strong>
@@ -64,6 +68,6 @@
     </aside>
   </main>
 
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

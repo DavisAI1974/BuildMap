@@ -6,30 +6,49 @@ let model = null;
 let selectedId = null;
 let currentFingerprint = null;
 let filter = '';
+let mapSize = { width: 1000, height: 680 };
+let fit = false;
+let showAllGaps = false;
+let refreshing = false;
 
 const $ = id => document.getElementById(id);
 const nodeLayer = $('nodeLayer');
 const edgeLayer = $('edgeLayer');
 const viewport = $('mapViewport');
 $('search').addEventListener('input', e => { filter = e.target.value.trim().toLowerCase(); applyFilter(); });
-$('fitButton').addEventListener('click', () => { viewport.scrollTo({ left: 0, top: 0, behavior: 'smooth' }); });
+$('fitButton').addEventListener('click', () => { fit = true; scaleMap(); viewport.scrollTo({ left: 0, top: 0 }); });
+$('sizeButton').addEventListener('click', () => { fit = false; scaleMap(); });
+$('moreGaps').addEventListener('click', () => { showAllGaps = !showAllGaps; renderGaps(); });
+new ResizeObserver(() => { if (fit) scaleMap(); }).observe(viewport);
 
 await refresh();
 setInterval(refresh, 1600);
 
 async function refresh() {
+  if (refreshing) return;
+  refreshing = true;
   try {
-    const next = await fetch('/api/map', { cache: 'no-store' }).then(r => r.json());
+    const response = await fetch('/api/map', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+    const next = await response.json();
+    $('refreshStatus').textContent = 'Updated just now';
+    $('refreshStatus').classList.remove('stale');
     if (next.fingerprint === currentFingerprint) return;
     currentFingerprint = next.fingerprint;
     model = next;
     renderHeader();
     renderLegend();
+    renderGaps();
     renderMap();
-    if (selectedId && model.nodes.some(n => n.id === selectedId)) renderDetail(selectedId);
+    if (selectedId) {
+      if (model.nodes.some(n => n.id === selectedId)) renderDetail(selectedId);
+      else { selectedId = null; $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
+    }
   } catch (err) {
+    $('refreshStatus').textContent = model ? 'Refresh failed · showing last snapshot' : 'Could not load map · retrying';
+    $('refreshStatus').classList.add('stale');
     console.error('BuildMap refresh failed', err);
-  }
+  } finally { refreshing = false; }
 }
 
 function renderHeader() {
@@ -63,7 +82,10 @@ function renderMap() {
   const canvas = $('mapCanvas');
   canvas.style.width = `${maxX}px`;
   canvas.style.height = `${maxY}px`;
+  mapSize = { width: maxX, height: maxY };
   edgeLayer.setAttribute('viewBox', `0 0 ${maxX} ${maxY}`);
+  edgeLayer.innerHTML = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#71849b"/></marker></defs>';
+  scaleMap();
 
   const depthGroups = new Map();
   for (const [id,p] of positions) {
@@ -74,13 +96,14 @@ function renderMap() {
     const label = document.createElement('div');
     label.className = 'group-label';
     label.style.left = `${x}px`; label.style.top = '18px'; label.style.width = '194px';
-    label.textContent = depth === 0 ? 'Foundations' : `Capability layer ${depth + 1}`;
+    label.textContent = depth === 0 ? 'Source roots / standalone' : `Dependency layer ${depth + 1}`;
     nodeLayer.appendChild(label);
   }
 
   for (const edge of model.edges) {
     const a = positions.get(edge.from), b = positions.get(edge.to);
     if (!a || !b) continue;
+    if (edge.type === 'planned' && edge.observed) continue;
     edgeLayer.appendChild(edgePath(a, b, edge.type));
   }
 
@@ -91,44 +114,81 @@ function renderMap() {
     el.type = 'button';
     el.className = `node ${node.status} ${node.kind === 'mission' ? 'mission' : ''}`;
     el.dataset.id = node.id;
+    el.classList.toggle('selected', node.id === selectedId);
+    const findings = model.gaps.filter(g => g.nodeId === node.id);
+    el.classList.toggle('has-gap', findings.some(g => g.priority !== 'info'));
+    el.setAttribute('aria-label', `${node.name}, ${node.status}${findings.length ? `, ${findings.length} findings` : ''}`);
     el.style.cssText += `left:${p.x}px;top:${p.y}px;--state:${stateColors[node.status]}`;
     el.innerHTML = `
       <div class="node-top"><div class="node-title">${escapeHtml(node.name)}</div><div class="status-chip">${node.status}</div></div>
       <div class="node-purpose">${escapeHtml(node.purpose)}</div>
+      ${node.kind === 'mission' ? '<div class="node-signal">Intent target · outcome unproved</div>' : findings.length ? `<div class="node-signal">${escapeHtml(signalText(findings[0]))}</div>` : '<div class="node-signal">No detected gaps</div>'}
       <div class="mini-viz">${miniViz(node.visual?.kind)}<span>${escapeHtml(node.visual?.label || 'work')}</span></div>`;
-    el.addEventListener('click', () => { selectedId = node.id; document.querySelectorAll('.node').forEach(n => n.classList.toggle('selected', n.dataset.id === selectedId)); renderDetail(node.id); });
+    el.addEventListener('click', () => selectPiece(node.id));
     nodeLayer.appendChild(el);
   }
   applyFilter();
 }
 
+function scaleMap() {
+  const scale = fit ? Math.min(1, viewport.clientWidth / mapSize.width, viewport.clientHeight / mapSize.height) : 1;
+  $('mapCanvas').style.transform = `scale(${scale})`;
+  $('mapSizer').style.width = `${mapSize.width * scale}px`;
+  $('mapSizer').style.height = `${mapSize.height * scale}px`;
+}
+
 function layout(nodes, edges) {
-  const ids = nodes.map(n => n.id);
-  const incoming = new Map(ids.map(id => [id, []]));
-  for (const e of edges) if (incoming.has(e.to) && incoming.has(e.from)) incoming.get(e.to).push(e.from);
-  const memo = new Map();
-  function depth(id, trail = new Set()) {
-    if (id === '__mission__') return 99;
-    if (memo.has(id)) return memo.get(id);
-    if (trail.has(id)) return 0;
-    trail.add(id);
-    const parents = incoming.get(id) || [];
-    const d = parents.length ? Math.min(5, 1 + Math.max(...parents.map(p => depth(p, new Set(trail))))) : 0;
-    memo.set(id, d); return d;
+  const work = nodes.filter(n => n.kind !== 'mission');
+  let depths = new Map(work.map(n => [n.id, 0]));
+  // Bounded iterative layering tolerates cycles and long chains without recursive
+  // stack growth. These are source dependency layers, not runtime stages.
+  const links = edges.filter(e => e.type !== 'contributes');
+  for (let pass = 0; pass < 5; pass++) {
+    const next = new Map(depths);
+    for (const e of links) if (depths.has(e.from) && depths.has(e.to)) next.set(e.to, Math.max(next.get(e.to), Math.min(5, depths.get(e.from) + 1)));
+    depths = next;
   }
   const byDepth = new Map();
-  for (const n of nodes) {
-    const d = n.id === '__mission__' ? 6 : depth(n.id);
+  for (const n of work) {
+    const d = depths.get(n.id);
     if (!byDepth.has(d)) byDepth.set(d, []);
     byDepth.get(d).push(n);
   }
   const pos = new Map();
-  for (const [d, list] of [...byDepth.entries()].sort((a,b) => a[0]-b[0])) {
-    list.sort((a,b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
-    const x = 40 + d * 245;
-    list.forEach((n,i) => pos.set(n.id, { x, y: 62 + i * 152, depth: d, w: n.kind === 'mission' ? 220 : 194, h: 116 }));
+  const columns = [...byDepth.keys()].sort((a,b) => a-b);
+  for (const [column,d] of columns.entries()) {
+    const list = byDepth.get(d).sort((a,b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
+    list.forEach((n,i) => pos.set(n.id, { x: 40 + column * 245, y: 62 + i * 168, depth: d, w: 194, h: 138 }));
   }
+  pos.set('__mission__', { x: 40 + columns.length * 245, y: 62, depth: 99, w: 220, h: 138 });
   return pos;
+}
+
+function selectPiece(id) {
+  selectedId = id;
+  document.querySelectorAll('.node').forEach(n => n.classList.toggle('selected', n.dataset.id === id));
+  renderDetail(id);
+}
+function signalText(gap) {
+  return ({ 'missing-implementation': 'Implementation missing', 'unsupported-evidence': 'Evidence claim rejected',
+    'unbound-evidence': 'Evidence freshness unknown', 'no-observed-connection': 'No source wiring observed',
+    'unproved': 'Behavior unproved', 'unobserved-dependency': 'Declared wiring unobserved' })[gap.kind] || 'Review finding';
+}
+function renderGaps() {
+  const gaps = model.gaps || [];
+  $('gapHeading').textContent = `Next gaps (${gaps.length})`;
+  $('gaps').innerHTML = gaps.length ? '' : '<p>No detected gaps within the scanner’s supported scope.</p>';
+  for (const gap of (showAllGaps ? gaps : gaps.slice(0, 12))) {
+    const el = document.createElement(gap.nodeId ? 'button' : 'div');
+    el.className = `gap ${gap.priority}`;
+    if (gap.nodeId) el.type = 'button';
+    const name = model.nodes.find(n => n.id === gap.nodeId)?.name || 'Project';
+    el.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(gap.message)}</span>`;
+    if (gap.nodeId) el.addEventListener('click', () => selectPiece(gap.nodeId));
+    $('gaps').appendChild(el);
+  }
+  $('moreGaps').hidden = gaps.length <= 12;
+  $('moreGaps').textContent = showAllGaps ? 'Show fewer gaps' : `Show all ${gaps.length} gaps`;
 }
 
 function edgePath(a,b,type) {
@@ -138,49 +198,55 @@ function edgePath(a,b,type) {
   const c = Math.max(45, (x2-x1)*.45);
   path.setAttribute('d', `M ${x1} ${y1} C ${x1+c} ${y1}, ${x2-c} ${y2}, ${x2} ${y2}`);
   path.setAttribute('class', `edge ${type}`);
+  path.setAttribute('marker-end', 'url(#arrow)');
   return path;
 }
 
 function renderDetail(id) {
   const node = model.nodes.find(n => n.id === id);
   if (!node) return;
-  const inbound = model.edges.filter(e => e.to === id).map(e => model.nodes.find(n => n.id === e.from)?.name).filter(Boolean);
-  const outbound = model.edges.filter(e => e.from === id).map(e => model.nodes.find(n => n.id === e.to)?.name).filter(Boolean);
   $('detail').innerHTML = `
     <div class="eyebrow">PIECE INSPECTOR</div>
     <h2>${escapeHtml(node.name)}</h2>
-    <div class="detail-status" style="--state:${stateColors[node.status]};color:${stateColors[node.status]}">${node.status}</div>
+    <div class="detail-status" style="--state:${stateColors[node.status]};color:${stateColors[node.status]}">${node.kind === 'mission' ? 'Intent target · outcome unproved' : node.status}</div>
+    ${node.baseStatus ? `<p>Source state: ${escapeHtml(node.baseStatus)} · implementation ${escapeHtml(node.implementation)}<br>Purpose and mini-visual: ${node.source === 'discovered' ? 'inferred illustrations' : 'manifest descriptions or inferred illustrations'}</p>` : ''}
     <p>${escapeHtml(node.purpose)}</p>
     ${node.contributes ? `<div class="detail-section"><h3>Why it matters</h3><p>${escapeHtml(node.contributes)}</p></div>` : ''}
     <div class="detail-section"><h3>Files</h3>${fileList(node)}</div>
-    <div class="detail-section"><h3>Connections</h3><p><strong>Feeds from:</strong> ${escapeHtml(inbound.join(', ') || 'none discovered yet')}</p><p><strong>Feeds to:</strong> ${escapeHtml(outbound.join(', ') || 'none discovered yet')}</p></div>
+    <div class="detail-section"><h3>Source connections</h3>${connectionList(id)}</div>
+    <div class="detail-section"><h3>Gaps to review</h3>${(model.gaps || []).filter(g => g.nodeId === id).map(g => `<p>${escapeHtml(g.message)}</p>`).join('') || '<p>No detected gaps.</p>'}</div>
     <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>
   `;
 }
 
+function connectionList(id) {
+  const edges = model.edges.filter(e => e.type !== 'contributes' && (e.from === id || e.to === id));
+  return edges.length ? edges.map(e => {
+    const other = model.nodes.find(n => n.id === (e.from === id ? e.to : e.from));
+    const label = e.type === 'code' ? 'Observed source' : e.observed ? 'Declared · also observed' : 'Declared · unobserved';
+    const direction = e.to === id ? 'Depends on' : 'Dependency of';
+    return `<p><strong>${label}:</strong> ${direction} ${escapeHtml(other?.name || 'unknown')}${(e.observations || []).map(o => `<br><small>${escapeHtml(o.importer)} references ${escapeHtml(o.imported)}</small>`).join('')}</p>`;
+  }).join('') : '<p>No cross-piece source connections discovered. Runtime wiring may exist outside scanner support.</p>';
+}
 function evidenceText(node) {
-  if (node.evidence) {
-    const detail = node.evidence.note || node.evidence.command || node.evidence.proof || 'Explicit evidence recorded.';
-    return `${escapeHtml(detail)}<br><small>Status claimed: ${escapeHtml(node.evidence.status || node.status)}</small>`;
-  }
-  if (['planned','coded','connected'].includes(node.status)) {
-    return node.status === 'connected'
-      ? 'Connection was discovered from code imports or declared dependencies. Higher states require explicit evidence.'
-      : 'This state comes from repository structure. Higher states require explicit evidence.';
-  }
-  return 'No evidence note was provided.';
+  if (node.kind === 'mission') return 'This is the intended outcome. Piece states do not independently prove the mission.';
+  const assessment = node.evidenceAssessment;
+  const receipt = node.evidence;
+  const claim = receipt ? `<p>Recorded claim: ${escapeHtml(receipt.status || 'invalid')} · ${assessment?.accepted ? 'accepted' : 'rejected'}</p>${['note','command','proof'].filter(k => receipt[k]).map(k => `<p><strong>${k}:</strong> ${escapeHtml(receipt[k])}</p>`).join('')}` : '';
+  const hashes = Object.entries(node.sourceHashes || {});
+  return `${escapeHtml(assessment?.reason || 'Source structure only; higher states require evidence.')}${claim}${hashes.length ? `<details><summary>Current source hashes (SHA-256)</summary>${hashes.map(([f,h]) => `<p>${escapeHtml(f)}<br><code>${escapeHtml(h)}</code></p>`).join('')}</details>` : ''}`;
 }
 
 function fileList(node) {
   if (!node.files?.length) return '<p>No files — this is the mission/outcome node.</p>';
-  return `<ul class="file-list">${node.files.map(f => `<li class="${node.presentFiles.includes(f) ? '' : 'missing'}">${escapeHtml(f)}${node.presentFiles.includes(f) ? '' : ' · planned'}</li>`).join('')}</ul>`;
+  return `<ul class="file-list">${node.files.map(f => `<li class="${node.presentFiles.includes(f) ? '' : 'missing'}">${escapeHtml(f)}${node.presentFiles.includes(f) ? '' : ' · missing'}</li>`).join('')}</ul>`;
 }
 
 function applyFilter() {
   const q = filter;
   document.querySelectorAll('.node').forEach(el => {
     const n = model?.nodes.find(x => x.id === el.dataset.id);
-    const hay = n ? `${n.name} ${n.purpose} ${n.files.join(' ')} ${n.group}`.toLowerCase() : '';
+    const hay = n ? `${n.name} ${n.purpose} ${n.files.join(' ')} ${n.group} ${n.status} ${(model.gaps || []).filter(g => g.nodeId === n.id).map(g => g.message).join(' ')}`.toLowerCase() : '';
     el.classList.toggle('filtered', Boolean(q && !hay.includes(q)));
   });
 }

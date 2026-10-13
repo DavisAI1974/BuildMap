@@ -1,105 +1,81 @@
 # BuildMap
 
-**A living visual map of what your software is, what each piece does, what is actually connected, and how close you are to the finished system.**
+**A living map of software being built: what each piece does, what exists, what is connected, what has evidence, and what is missing next.**
 
-BuildMap is not a static architecture diagrammer. It watches the real repository and turns software construction into a visible machine: planned pieces can exist before their files do, new files light up as they are created, connections appear when code is wired together, and higher proof states only appear when evidence exists.
+BuildMap watches a repository by rescanning it every time its browser client polls. Planned pieces appear before their implementation exists. Source references add observed connections. Recorded observations and checks can advance a piece beyond source existence. A gap list keeps missing implementation, unobserved wiring, and unsupported claims in view.
 
-The goal is simple: make it hard to confuse **"we created the file"** with **"the system actually uses it."**
-
-## What v0.1 proves
-
-BuildMap can already:
-
-- start from a **greenfield** folder, even if it is nearly empty;
-- start from a **brownfield** repository and map what is already there;
-- accept a local path, with an optional public GitHub repository URL mode when network access is available;
-- recover project intent from `.buildmap/project.json`, README, architecture/design docs, or `SPEC.md`;
-- continue when intent is missing and clearly mark that an interview would help;
-- render planned components as ghosted pieces before the implementation exists;
-- discover code files and relative JavaScript/TypeScript/Python relationships;
-- distinguish `planned → coded → connected → computing → verified → live`;
-- refuse to infer the higher three states from file existence alone;
-- show a small visual mechanism on every piece so the map explains function, not just topology;
-- refresh continuously while files are being added or changed;
-- explain how a piece contributes to the final mission.
-
-BuildMap **dogfoods itself**: this repository contains a `.buildmap/project.json`, so when you point BuildMap at BuildMap you can watch its own pieces and proof states.
+The core contract is **existence, connection, computation, verification, and live use are different things**. BuildMap borrows the spatial language of workflow maps; it is a software map, not a workflow editor.
 
 ## Quick start
 
-Requires Node.js 20+ and no npm dependencies.
+Requires Node.js 20+ and no npm dependencies. Git is required only for GitHub URL input.
+
+v0.1 is currently on [PR #1](https://github.com/DavisAI1974/BuildMap/pull/1); the default branch does not contain the app yet.
 
 ```bash
 git clone https://github.com/DavisAI1974/BuildMap.git
 cd BuildMap
+git switch feat/buildmap-v1-living-map
+npm test
 node src/cli.js .
 ```
 
-Then open:
+Open **http://127.0.0.1:4173**. Click a piece or a gap to inspect its files, purpose, contribution, connections, evidence assessment, and source hashes. Search includes names, paths, states, and gap descriptions. **Fit map** scales the full map into the viewport; **Actual size** restores readable cards and scrolling.
 
-```text
-http://127.0.0.1:4173
-```
-
-You can also point it at another local project:
+Point it at another project, choose a port, or get a one-shot snapshot:
 
 ```bash
 node src/cli.js ../some-project
+node src/cli.js --port 5000 ../some-project
+node src/cli.js ../some-project --json
+node src/cli.js --help
 ```
 
-Or a public GitHub repository:
+A nonexistent local target becomes an empty project folder. Mapping otherwise reads the project without modifying it. The HTTP server binds to loopback by default and exposes map metadata, including local paths and recorded evidence; choose a broader `--host` only when you intend that information to be accessible.
+
+Public GitHub repository URLs are also supported:
 
 ```bash
 node src/cli.js https://github.com/owner/repository
 ```
 
-BuildMap performs a shallow clone into a temporary folder and maps it read-only. For a private repository in v0.1, clone it normally with your existing Git credentials and pass the local path.
+This makes a shallow clone of the **default branch** into a temporary folder. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or another branch, clone with your usual credentials, check out the branch locally, and pass its path.
 
-> **Verification note:** local-folder mode is runtime-smoke-tested in v0.1. The build sandbox used for this release blocks outbound DNS, so the public GitHub URL clone path could not be exercised end-to-end here. The path is included, but BuildMap does not claim it as verified evidence yet.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. Local HTTP serving and live source edits are covered by tests. Browser integration and visual layout remain pending: the available browser could not reach the workspace server. Client rendering/refresh logic has a DOM harness; that is not a browser test.
 
-## Greenfield vs. brownfield
+## Start from what exists
 
-The modes share one rule: **start with whatever evidence exists; do not require ceremony before the map can begin.**
+Greenfield can begin with a manifest, README, both, or neither. Planned pieces can exist before any code. Missing intent does not block mapping.
 
-### Greenfield
+Brownfield uses this intent ladder:
 
-BuildMap can start with any of these:
+1. Explicit mission in `.buildmap/project.json`.
+2. First usable prose in README, architecture/design docs, or `SPEC.md`.
+3. Discovered implementation and source relationships.
+4. Comparison of declared dependencies with observed connections.
 
-1. a README describing what you want to build;
-2. a `.buildmap/project.json` describing planned pieces;
-3. both;
-4. neither — start coding and let BuildMap discover reality first, then add intent later or use an interview process.
+Intent is labeled **declared**, **inferred**, or **unknown**. README extraction is a heuristic, not a semantic understanding of the repository. A gap recommends documenting intent or interviewing the owner when it is missing. There is no built-in interview agent in v0.1.
 
-A planned component can exist on the map before its file exists. That gives you the "ghosted puzzle" view: the intended machine is visible from day one and illuminates as implementation lands.
+## Evidence states
 
-### Brownfield
-
-BuildMap follows an intent ladder instead of immediately interrogating the owner:
-
-1. read `.buildmap/project.json` if one exists;
-2. read README and obvious architecture/design/spec docs;
-3. map the actual repository and code relationships;
-4. compare stated intent with code reality;
-5. interview only where intent is missing, ambiguous, or contradictory.
-
-That keeps adoption lightweight and lets old repositories become useful immediately.
-
-## The proof-state model
-
-A visual map becomes misleading if every existing file is painted green. BuildMap therefore uses monotonic evidence states:
-
-| State | Meaning | Can BuildMap infer it automatically? |
+| State | Meaning in the current snapshot | Basis |
 | --- | --- | --- |
-| `planned` | The piece is intended but implementation is missing. | Yes, from the manifest. |
-| `coded` | The implementation file exists. | Yes. |
-| `connected` | Code or a declared dependency connects the piece to another piece. | Yes. |
-| `computing` | The piece has been observed doing useful work. | **No — evidence required.** |
-| `verified` | A test/check proves the intended behavior. | **No — evidence required.** |
-| `live` | The piece is proven active in the real deployed/runtime system. | **No — evidence required.** |
+| `planned` | Some or all declared implementation is missing, or no files are declared. | Manifest and current file inventory. |
+| `coded` | All implementation files exist. | Current file inventory. |
+| `connected` | Complete implementation has at least one resolved source reference, including internal references. | Heuristic source discovery. |
+| `computing` | Useful work has been observed. | Explicit evidence record. |
+| `verified` | A behavior check has been recorded as passing. | Explicit evidence record. |
+| `live` | Active use in a deployed/runtime system has been recorded. | Explicit evidence record. |
 
-BuildMap never lets weaker evidence downgrade a stronger discovered state.
+**Declaring a dependency draws a dashed line; it does not earn `connected`.** A manifest `status` is descriptive only and cannot grant proof. A receipt cannot hide missing implementation. Partial pieces stay `planned`, with present and missing files listed separately.
 
-Explicit evidence lives in `.buildmap/evidence.json`:
+Each piece exposes `baseStatus` independently of its evidence-driven `status`. A tested standalone piece may be `verified` while its source state remains `coded`. The gap list still flags missing cross-piece connections, even for pieces with upper evidence states.
+
+Within one snapshot, weaker receipts cannot downgrade source-discovered state. Across snapshots, deletion or changed source can invalidate earlier claims. The mission card is an **intent target**, not an inferred verified/live outcome.
+
+### Recording evidence
+
+`.buildmap/evidence.json` accepts component ids and discovered file paths:
 
 ```json
 {
@@ -107,29 +83,54 @@ Explicit evidence lives in `.buildmap/evidence.json`:
     "queue-engine": {
       "status": "verified",
       "command": "npm test -- queue-engine",
-      "note": "FIFO behavior and edge cases pass."
+      "note": "FIFO behavior and edge cases passed."
+    }
+  },
+  "files": {
+    "src/worker.js": {
+      "status": "computing",
+      "note": "Observed processing an input and emitting the expected output."
     }
   }
 }
 ```
 
-This is intentionally boring in v0.1. Later versions can ingest CI receipts, runtime traces, deployment metadata, coverage, and domain-specific proofs directly.
+Upper states require a recognized status plus a nonempty `note`, `command`, or `proof`. **These are user-recorded claims. BuildMap does not run commands, authenticate receipts, or prove that a named command passed.** Do not grant `verified` merely because a test file exists, or `live` merely because a deploy script exists.
 
-## Describing planned pieces
+For freshness, add an optional `sourceHashes` object containing the current SHA-256 of **every implementation file in that piece**. Copy the entire object from `/api/map`, `--json`, or the piece inspector after the observation/check passes:
+
+```json
+{
+  "status": "verified",
+  "command": "npm test -- queue-engine",
+  "note": "Check passed against the recorded source.",
+  "sourceHashes": {
+    "src/queue.js": "<actual 64-character SHA-256 from the map>"
+  }
+}
+```
+
+The placeholder is illustrative and will not match real source. A mismatch, missing hash, extra bound file, or missing implementation rejects the claim for the current snapshot. Unbound receipts remain supported but display **freshness unknown**. Matching hashes establish source identity only; they do not authenticate the observation, track transitive dependencies, or establish that a deployment is still running.
+
+### Evidence index
+
+The header's **Evidence index** is a weighted summary of piece states: planned 0, coded 20, connected 45, computing 65, verified 85, live 100, averaged across mapped pieces. It is **not** percentage complete, test coverage, a probability of correctness, or mission proof. The mission card is excluded. Undocumented future requirements are absent from the denominator, so even an index of 100 cannot prove completeness.
+
+## Describing pieces
 
 A minimal `.buildmap/project.json`:
 
 ```json
 {
   "name": "Order Intelligence",
-  "mission": "Understand the true state of the order queue before making a decision.",
+  "mission": "Understand the current order queue before making a decision.",
   "components": [
     {
       "id": "feed",
       "name": "Market feed",
       "files": ["src/feed.ts"],
-      "purpose": "Normalize incoming exchange events.",
-      "contributes": "Gives the rest of the system trustworthy raw events.",
+      "purpose": "Read incoming exchange events.",
+      "contributes": "Gives the system raw events to reconstruct.",
       "visual": { "kind": "flow", "label": "Ingest" }
     },
     {
@@ -138,87 +139,72 @@ A minimal `.buildmap/project.json`:
       "files": ["src/fifo.ts"],
       "dependsOn": ["feed"],
       "purpose": "Reconstruct queue position and volume ahead.",
-      "contributes": "Shows how much liquidity is really in front of an order.",
+      "contributes": "Shows how much liquidity is in front of an order.",
       "visual": { "kind": "queue", "label": "Reconstruct" }
     }
   ]
 }
 ```
 
-Supported v0.1 mini-visuals include `flow`, `scanner`, `graph`, `proof`, `lens`, `goal`, `gate`, and `queue`. Unknown values fall back to a simple transformation arrow.
+Files are exact project-relative paths, not glob patterns. `file` is accepted for a single path; leading `./` and duplicate paths are normalized. Explicitly declared assets/configuration also count as implementation. A file belongs to one component: overlapping assignments and duplicate/reserved ids produce diagnostics. `__mission__` and the `file:` prefix are reserved. Component descriptions must be strings, and `dependsOn` must be an array of component ids.
 
-## How the map is different from a workflow diagram
+Mini-visuals include `flow`, `scanner`, `graph`, `proof`, `lens`, `goal`, `gate`, and `queue`; unknown kinds use a simple arrow. They are illustrative mechanisms chosen by the manifest or inferred from filenames, not execution traces or behavior extracted from a program. The inspector labels that distinction.
 
-Workflow tools generally draw static objects and arrows. BuildMap borrows only the spatial language.
+## Connections and gaps
 
-A BuildMap piece carries four separate ideas:
+Solid arrows run **dependency → dependent**. For a source import, the inspector shows the importer and imported file. Dashed arrows are declared dependencies; a matching source connection replaces their dashed rendering while both records remain available in the API. Green lines indicate a declared contribution to the mission. None of these lines establishes runtime data flow.
 
-**Reality** — does the implementation actually exist?
+The prioritized gap list includes:
 
-**Connectivity** — does it participate in the software graph?
+- missing or partial implementation;
+- rejected or stale evidence claims;
+- unknown dependency ids and declared dependencies with no observed match;
+- pieces without cross-piece source connections;
+- existing pieces with no computation/verification evidence;
+- unbound receipts, malformed configuration, unresolved relative JS/TS references, and scan limitations.
 
-**Function** — what does this piece do, shown both in words and a small visual mechanism?
+A missing source connection is a **review prompt**, not proof of dead code. Entry points, HTTP calls, dependency injection, generated code, and unsupported languages can be connected at runtime without visible imports. BuildMap deliberately shows its own server-to-browser dependency as unobserved because its HTTP wiring is outside import discovery.
 
-**Contribution** — why does this piece make the project closer to the intended outcome?
+### Discovery scope
 
-That lets the map answer a much more useful question than "what talk to what?":
+The scanner inventories common source extensions, HTML/CSS, Dockerfiles, Makefiles, and explicitly declared files. It skips dependency/build/cache directories and hidden directories. It does not apply `.gitignore`, inspect binaries, or follow directory symlinks. Manifest paths cannot establish implementation outside the mapped root.
 
-> **What did this file buy us, is it really part of the machine yet, and what gap remains between here and the goal?**
+Relationship discovery is heuristic:
 
-## Current architecture
+| Source | Relationships discovered |
+| --- | --- |
+| JavaScript/TypeScript | Local static imports, literal `require`/dynamic imports, re-exports, extensionless and index modules, `.js` references to `.ts`/`.tsx` sources. Comments and ordinary string examples are skipped. |
+| Python | Repository-root modules, packages, sibling/parent relative imports, named submodules. |
+| HTML | Local script/link references; leading `/` is interpreted relative to the project root. |
+| CSS | Quoted `@import` references. |
+| Other inventoried languages | Files only; no relationship parser yet. |
 
-v0.1 deliberately stays small and dependency-free:
+JS regular-expression literals, template interpolation, import shadowing, TypeScript aliases, Python `src` layouts and multiline import forms, bundler resolution, and HTML server-root conventions are not fully modeled. Dependency discovery above 1 MB is skipped with a diagnostic; the file stays in the inventory. Syntax presence does not prove a reference executes. Changes to scanned file contents change the fingerprint even when the graph stays the same.
 
-```text
-README / docs / .buildmap manifest
-              │
-              ▼
-      intent recovery
-              │
-              ▼
-      repository scanner ──── imports / planned dependencies
-              │
-              ▼
-       proof-state model
-              │
-              ▼
-       local HTTP server
-              │
-              ▼
-      interactive SVG/HTML map
-              │
-              ▼
-          project mission
-```
+## Agent/API access
 
-There is no database, bundler, React dependency, or diagramming framework yet. That is deliberate: v0.1 exists to prove the BuildMap idea, not a frontend stack.
+No database, bundler, framework, or third-party runtime dependencies are required.
 
-## Tests
+| Interface | Output |
+| --- | --- |
+| `GET /api/map` | Project, states, nodes, edges with provenance, gaps, diagnostics, scan scope, hashes, fingerprint, timestamp. |
+| `GET /api/gaps` | Project summary, prioritized gaps, diagnostics, fingerprint, timestamp. |
+| `GET /api/health` | Server availability and mapped root; not a scan/proof check. |
+| `node src/cli.js PATH --json` | Full map snapshot to stdout, then exit. |
+
+Gap records contain `id`, `kind`, `nodeId` (or null), `message`, and `priority` (`blocker`, `warning`, `info`). They are evidence-based prompts for the builder, not instructions to execute. APIs are read-only and do not expose arbitrary repository files as static downloads.
+
+## Architecture and validation
+
+Intent recovery (`src/intent.js`) and source discovery (`src/imports.js`) feed the snapshot/evidence/gap model (`src/scan.js`). The CLI selects a target; the local server exposes snapshots and serves `public/`. The browser polls `/api/map` every 1.6 seconds, redraws on fingerprint changes, preserves selection, and displays a stale-snapshot warning when refresh fails.
 
 ```bash
 npm test
 ```
 
-The current suite verifies the critical v0.1 promises: planned pieces appear before files, code wiring advances pieces to connected, explicit evidence can advance but not downgrade state, README intent is usable in brownfield mode, and missing intent does not block the map.
+Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and freshness, imports/assets, malformed config, path containment, CLI arguments/JSON mode, HTTP endpoints/live edits, and client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for the v0.1 review findings and remaining limits.
 
-## Where this should go next
-
-The strongest next steps are not more decoration. They are deeper truth:
-
-- richer dependency discovery across more languages;
-- Git history so a piece can visually "arrive" with its commit;
-- CI/test receipts that automatically earn `verified`;
-- runtime/deployment evidence that can earn `computing` and `live`;
-- architecture-drift detection between planned and actual connections;
-- interview-assisted intent recovery when README/docs are unclear;
-- capability and subsystem zoom levels above individual files;
-- optional agent hooks so coding agents can read BuildMap gaps before deciding what to build next.
-
-That last item is central to the original motivation: BuildMap should not merely document a build. It should help keep the **builder** ultra-focused by making missing pieces, dead ends, and unsupported assumptions visually obvious while work is still happening.
-
-## Project status
-
-This is the first working proof of concept. Expect the data model and UI to evolve quickly. The important contract to preserve is the distinction between **existence**, **connection**, and **proof**.
+BuildMap dogfoods its own manifest and source-bound test receipts. Its visualizer has no computing/verified/live claim until an actual browser observation supports one. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 
 ## License
 

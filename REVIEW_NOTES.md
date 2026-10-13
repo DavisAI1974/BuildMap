@@ -1,0 +1,38 @@
+# BuildMap v0.1 review and improvement pass
+
+Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_REVIEW_HANDOFF.md`, the manifest/evidence, source, and tests. No framework or npm runtime dependency was introduced.
+
+## Findings and changes
+
+| Finding | Result |
+| --- | --- |
+| Planned dependencies granted `connected` without source wiring. | Declared and observed edges are separate; declarations no longer promote state. |
+| Manifest status, status-only receipts, and receipts for missing code could hide unsupported claims. | Upper states require a descriptive evidence record and complete implementation. Rejected claims remain inspectable and become gaps. |
+| Evidence had no freshness model; ordinary source edits could leave the fingerprint unchanged. | Optional full-piece SHA-256 binding rejects stale receipts. Content hashes refresh the snapshot even without graph changes. Unbound claims disclose unknown freshness. |
+| HTML/CSS were excluded, making the dogfood visualizer appear missing beneath its computing claim. | Assets and explicit declared files count as implementation. HTML/CSS relationships are discovered within documented limits. The unsupported visualizer computing claim was removed. |
+| Python relative imports were handled as JS paths; JS comments/string examples could create false edges. | Separate heuristic source discovery handles Python packages/relative imports, JS lexical exclusions/re-exports, and TypeScript emitted `.js` names. |
+| Code and planned arrows used opposite directions and “feeds” language implied runtime flow. | All dependency arrows run dependency → dependent; observed edges retain importer/imported provenance. Runtime flow is not claimed. |
+| Missing wiring and unsupported assumptions were buried in the graph. | Prioritized clickable gaps, piece warnings, declared/observed inspector sections, and `/api/gaps` expose them directly. |
+| An arbitrary percentage was labeled “System proof,” and the mission inherited upper states. | It is now an explicitly documented evidence index; the mission remains an unproved intent target. |
+| CLI flags before a path could turn a port into the target directory. | Strict option parsing, one-shot `--json`, temporary-clone cleanup, and runtime API tests. |
+| Fit merely scrolled; refresh errors and removed selections were easy to miss. | Fit scales; actual-size restores; selection persists or clears; refresh errors display a stale-snapshot warning. |
+| README described capabilities beyond the verified build. | Rewritten around current behavior, explicit limitations, trust/freshness semantics, and the still-unmerged quick start. |
+
+## Validation
+
+- Baseline: 7 tests passed; local HTTP map, health, HTML, and JS smoke passed before changes.
+- Final suite: 25 tests, covering model semantics, discovery, CLI/API, live edits, and real client logic against a DOM double.
+- JS syntax checks and `git diff --check` passed; package dry-run inspected.
+- Public URL clone/JSON smoke succeeded with `octocat/Hello-World`, recovered `README` intent, and removed its temporary clone on exit. BuildMap's default branch was also cloned; it currently contains no app code.
+- Dogfood manifest includes the new import-discovery module and all test files. Test receipts are bound to the corresponding final source hashes. No piece is marked live.
+
+**Browser layout/integration remains unverified.** The installed Playwright package has no local browser executable, and the available cloud browser returned `ERR_CONNECTION_REFUSED` for the workspace's loopback server. The DOM harness checks rendering logic, escaping, provenance, selection, filtering, scaling intent, and refresh behavior; it cannot establish visual layout or actual browser/server integration. The visualizer therefore stays at its source-discovered state.
+
+## Remaining product work
+
+1. Exercise the UI in a browser against a real project, including narrow screens and a larger map. Only then record a source-bound visualizer observation.
+2. Add parser-backed language resolution before treating missing source wiring as stronger than a review prompt. HTTP relationships, TypeScript aliases, Python `src` layouts, and other languages remain outside current support.
+3. Add authenticated CI/runtime/deployment receipts. Current evidence is manually recorded; source identity is not proof authenticity or deployment liveness.
+4. Add capability/subsystem navigation when real repository size justifies it. The current bounded dependency layering tolerates cycles but is not a full graph-layout engine.
+
+The next useful dogfood gap remains the server-to-visualizer HTTP connection. It is intentionally shown as declared but unobserved rather than “fixed” by treating the declaration as code evidence.

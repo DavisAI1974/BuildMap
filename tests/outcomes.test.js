@@ -91,6 +91,13 @@ test('outcome examples stale on participating/support source, plan, and explicit
   f.plan.steps[1].expected = 'A receipt with the total and customer name.'; f.save();
   assert.match(scanProject(f.root).outcomes[0].evidenceAssessment.reason, /definition.*changed/);
   f.plan.steps[1].expected = 'A confirmation containing the total.'; f.save();
+  f.plan.steps[1].explanation = 'Explain the confirmation in everyday words.';
+  f.plan.steps[1].example = 'This order shows the total to the customer.'; f.save();
+  const explained = scanProject(f.root);
+  assert.equal(explained.outcomes[0].steps[1].explanation, f.plan.steps[1].explanation);
+  assert.equal(explained.outcomes[0].steps[1].example, f.plan.steps[1].example);
+  assert.match(explained.outcomes[0].evidenceAssessment.reason, /definition.*changed/);
+  delete f.plan.steps[1].explanation; delete f.plan.steps[1].example; f.save();
   f.write('input.json', '{"quantity":2}');
   proof.inputHashes = { 'input.json': crypto.createHash('sha256').update('{"quantity":2}').digest('hex') }; f.record(proof);
   const current = scanProject(f.root); assert.equal(current.outcomes[0].status, 'verified');
@@ -131,7 +138,8 @@ test('partial, failed, missing-handoff, malformed and unsupported claims cannot 
 
 test('invalid plans, falsy/orphan receipts and ownership conflicts stay visible without granting outcome proof', t => {
   const f = fixture(t);
-  for (const value of [false, {}, [{ id: 'bad', goal: 'Goal', steps: [{ id: 's', nodeId: 'price' }] }], [f.plan, f.plan]]) {
+  for (const value of [false, {}, [{ id: 'bad', goal: 'Goal', steps: [{ id: 's', nodeId: 'price' }] }],
+    [{ ...f.plan, steps: [{ ...f.plan.steps[0], example: { invalid: true } }] }], [f.plan, f.plan]]) {
     f.manifest.outcomes = value; f.save();
     assert.ok(scanProject(f.root).gaps.some(g => g.kind === 'invalid-outcome'));
   }

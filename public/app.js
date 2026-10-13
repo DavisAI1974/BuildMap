@@ -14,6 +14,7 @@ let showAllResults = false;
 let mapPositions = new Map();
 let mapScale = 1;
 let selectedOutcomeId = null;
+let selectedGapId = null;
 
 const $ = id => document.getElementById(id);
 const snapshotElement = $('buildmapSnapshot');
@@ -35,7 +36,7 @@ $('fitButton').addEventListener('click', () => { fit = true; scaleMap(); viewpor
 $('sizeButton').addEventListener('click', () => { fit = false; scaleMap(); });
 $('moreGaps').addEventListener('click', () => { showAllGaps = !showAllGaps; renderGaps(); });
 $('clearOutcome').addEventListener('click', () => {
-  selectedOutcomeId = null; renderOutcomes(); applyFilter();
+  selectedOutcomeId = null; selectedGapId = null; renderOutcomes(); renderGaps(); applyFilter();
   if (selectedId) renderDetail(selectedId);
   else $('detail').innerHTML = '<h2>Choose a piece or outcome</h2><p>Inspect its purpose, evidence, and next gap.</p>';
   $('search').focus({ preventScroll: true });
@@ -65,6 +66,7 @@ async function refresh() {
     const focusedOutcome = active?.classList.contains('outcome-choice') ? active.dataset.outcomeId : null;
     currentFingerprint = next.fingerprint;
     model = next;
+    if (selectedGapId && !model.gaps.some((g, i) => (g.id || `gap:${i}`) === selectedGapId)) selectedGapId = null;
     renderHeader();
     renderLegend();
     if (selectedOutcomeId && !model.outcomes?.some(o => o.id === selectedOutcomeId)) {
@@ -185,6 +187,8 @@ function scaleMap() {
   $('mapSizer').style.width = `${mapSize.width * scale}px`;
   $('mapSizer').style.height = `${mapSize.height * scale}px`;
   mapScale = scale;
+  $('fitButton').setAttribute('aria-pressed', String(fit));
+  $('sizeButton').setAttribute('aria-pressed', String(!fit));
 }
 
 function layout(nodes, edges) {
@@ -216,6 +220,7 @@ function layout(nodes, edges) {
 
 function selectPiece(id, reveal = false) {
   if (!model.nodes.some(n => n.id === id)) return;
+  selectedGapId = null; renderGaps();
   selectedId = id;
   document.querySelectorAll('.node').forEach(n => {
     n.classList.toggle('selected', n.dataset.id === id);
@@ -242,13 +247,19 @@ function renderGaps() {
   const gaps = model.gaps || [];
   $('gapHeading').textContent = `Next gaps (${gaps.length})`;
   $('gaps').innerHTML = gaps.length ? '' : '<p>No detected gaps within the scanner’s supported scope.</p>';
-  for (const gap of (showAllGaps ? gaps : gaps.slice(0, 12))) {
+  for (const [index, gap] of (showAllGaps ? gaps : gaps.slice(0, 12)).entries()) {
     const el = document.createElement('button');
     el.className = `gap ${gap.priority}`;
     el.type = 'button';
+    const key = gap.id || `gap:${index}`;
+    el.setAttribute('aria-pressed', String(selectedGapId === key));
     const name = (gap.outcomeId ? model.outcomes?.find(o => o.id === gap.outcomeId)?.name : model.nodes.find(n => n.id === gap.nodeId)?.name) || 'Project';
     el.innerHTML = `<strong>${escapeHtml(name)}</strong><span>${escapeHtml(gap.message)}</span>`;
-    el.addEventListener('click', () => gap.outcomeId ? selectOutcome(gap.outcomeId) : selectPiece(gap.nodeId || '__mission__', true));
+    el.addEventListener('click', () => {
+      if (gap.outcomeId) selectOutcome(gap.outcomeId);
+      else selectPiece(gap.nodeId || '__mission__', true);
+      selectedGapId = key; renderGaps();
+    });
     $('gaps').appendChild(el);
   }
   $('moreGaps').hidden = gaps.length <= 12;
@@ -311,6 +322,7 @@ function renderOutcomes() {
 }
 function selectOutcome(id) {
   if (!model.outcomes?.some(o => o.id === id)) return;
+  selectedGapId = null; renderGaps();
   selectedOutcomeId = id; selectedId = null;
   document.querySelectorAll('.node').forEach(n => { n.classList.remove('selected'); n.setAttribute('aria-pressed', 'false'); });
   renderOutcomes(); applyFilter(); renderOutcomeDetail(id);
@@ -329,7 +341,9 @@ function renderOutcomeDetail(id) {
     const item = document.createElement('li');
     const observation = step.observation;
     item.innerHTML = `<h3>${escapeHtml(step.label)}</h3><p>${escapeHtml(step.pieceName)} · piece ${escapeHtml(step.pieceStatus || 'unmapped')}<br>${walkthroughLabel(step.state)}</p>
-      <p><strong>Expected:</strong> ${escapeHtml(step.expected)}</p>${observation ? `<p>Recorded sample${step.state === 'stale-example' || step.state === 'unaccepted-example' ? ' · not accepted for the current outcome' : ''}</p>
+      <div class="step-explanation"><h4>In plain English</h4><p>${escapeHtml(step.explanation || `This is the part of your goal handled by ${step.pieceName}. The expected result below describes what it should accomplish.`)}</p>
+      ${step.example ? `<h4>Example for this project · illustration</h4><p>${escapeHtml(step.example)}</p>` : ''}</div>
+      <p><strong>Expected result:</strong> ${escapeHtml(step.expected)}</p>${observation ? `<p>Recorded sample${step.state === 'stale-example' || step.state === 'unaccepted-example' ? ' · not accepted for the current outcome' : ''}</p>
       ${observation.handoff ? `<p><strong>Handoff from previous step:</strong> ${escapeHtml(observation.handoff)}</p>` : ''}
       <h4>Input</h4><pre>${escapeHtml(JSON.stringify(observation.input, null, 2))}</pre><h4>Output</h4><pre>${escapeHtml(JSON.stringify(observation.output, null, 2))}</pre>${observation.note ? `<p>${escapeHtml(observation.note)}</p>` : ''}` : '<p>No observation recorded for this step.</p>'}`;
     if (model.nodes.some(n => n.id === step.nodeId)) {

@@ -83,8 +83,12 @@ test('refresh preserves selection, reports failures, recovers, and clears a remo
 
 test('fit actually scales the map and search can find evidence states', async () => {
   const ui = await client(model('one', [piece('a', { status: 'verified' }), piece('b')]));
+  assert.equal(ui.get('sizeButton').attributes['aria-pressed'], 'true');
   ui.get('fitButton').click(); assert.notEqual(ui.get('mapCanvas').style.transform, 'scale(1)');
+  assert.equal(ui.get('fitButton').attributes['aria-pressed'], 'true');
+  assert.equal(ui.get('sizeButton').attributes['aria-pressed'], 'false');
   ui.get('sizeButton').click(); assert.equal(ui.get('mapCanvas').style.transform, 'scale(1)');
+  assert.equal(ui.get('fitButton').attributes['aria-pressed'], 'false');
   ui.get('search').listeners.input({ target: { value: 'verified' } });
   assert.equal(ui.get('nodeLayer').children.find(e => e.dataset.id === 'a').classes.has('filtered'), false);
   assert.equal(ui.get('nodeLayer').children.find(e => e.dataset.id === 'b').classes.has('filtered'), true);
@@ -307,7 +311,7 @@ test('scanned outcome walkthroughs show real sample data, navigate pieces, and s
   fs.writeFileSync(path.join(root, 'main.js'), 'export const main = 1;');
   fs.writeFileSync(path.join(root, 'extra.js'), 'export const extra = 1;');
   const plan = { outcomes: [{ id: 'demo', name: '<img onerror=evil()>', goal: 'Display a value.', steps: [
-    { id: 'display', nodeId: 'file:main.js', label: 'Display', expected: 'An escaped value.' }
+    { id: 'display', nodeId: 'file:main.js', label: 'Display', expected: 'An escaped value.', explanation: 'Show the person the result.', example: 'A project-specific <img onerror=evil()> illustration.' }
   ] }] };
   const save = () => fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan));
   save(); const initial = scanProject(root); const outcome = initial.outcomes[0];
@@ -324,6 +328,10 @@ test('scanned outcome walkthroughs show real sample data, navigate pieces, and s
   assert.match(ui.get('detail').innerHTML, /Observed example/);
   const steps = ui.get('detail').children[0];
   assert.match(steps.children[0].innerHTML, /&lt;script&gt;example/);
+  assert.match(steps.children[0].innerHTML, /In plain English/);
+  assert.match(steps.children[0].innerHTML, /Show the person the result/);
+  assert.match(steps.children[0].innerHTML, /Example for this project · illustration/);
+  assert.match(steps.children[0].innerHTML, /project-specific &lt;img/);
   assert.doesNotMatch(steps.children[0].innerHTML, /<script>/);
   const card = id => ui.get('nodeLayer').children.find(n => n.dataset.id === id);
   assert.ok(card('file:main.js').classes.has('in-outcome'));
@@ -347,14 +355,24 @@ test('outcome gaps open the walkthrough and shared offline navigation makes no r
   input.outcomes = [{ id: 'goal', name: 'Useful result', goal: 'Produce a useful result.', status: 'unproved', nodeIds: ['a'], supports: [],
     steps: [{ id: 'first', nodeId: 'a', label: 'Do work', expected: 'Useful output.', pieceName: 'a', pieceStatus: 'coded', state: 'unobserved', observation: null }],
     firstGap: { label: 'Do work', state: 'unobserved' }, evidence: null, evidenceAssessment: { accepted: false, reason: 'No recorded example.' }, sourceHashes: {}, definitionHash: 'a'.repeat(64) }];
-  input.gaps = [{ kind: 'unproved-outcome', outcomeId: 'goal', nodeId: null, priority: 'info', message: 'Record an example.' }];
+  input.gaps = [{ id: 'outcome-gap', kind: 'unproved-outcome', outcomeId: 'goal', nodeId: null, priority: 'info', message: 'Record an example.' },
+    { id: 'piece-gap', kind: 'unproved', nodeId: 'b', priority: 'warning', message: 'Observe this piece.' }];
   for (const offline of [false, true]) {
     const ui = await client(input, offline); ui.get('gaps').children[0].click();
     assert.match(ui.get('detail').innerHTML, /OUTCOME WALKTHROUGH/);
     assert.match(ui.get('detail').innerHTML, /Do work · No observation recorded/);
+    assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'true');
+    assert.equal(ui.get('gaps').children[1].attributes['aria-pressed'], 'false');
+    ui.get('gaps').children[1].click();
+    assert.equal(ui.get('gaps').children[0].attributes['aria-pressed'], 'false');
+    assert.equal(ui.get('gaps').children[1].attributes['aria-pressed'], 'true');
+    if (!offline) { ui.setModel({ ...input, fingerprint: 'refreshed' }); await ui.refresh();
+      assert.equal(ui.get('gaps').children[1].attributes['aria-pressed'], 'true'); }
+    ui.get('gaps').children[0].click();
     assert.equal(ui.get('clearOutcome').hidden, false);
     ui.get('clearOutcome').click();
     assert.equal(ui.get('clearOutcome').hidden, true);
+    assert.ok(ui.get('gaps').children.every(g => g.attributes['aria-pressed'] === 'false'));
     assert.ok(ui.get('nodeLayer').children.filter(n => n.dataset.id).every(n => !n.classes.has('outside-outcome')));
     if (offline) assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
   }

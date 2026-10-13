@@ -70,12 +70,13 @@ function validPlans(value, add) {
   return value.flatMap(plan => {
     const valid = plan && typeof plan === 'object' && !Array.isArray(plan) && text(plan.id) && text(plan.goal) &&
       (plan.name === undefined || text(plan.name)) && Array.isArray(plan.steps) && plan.steps.length &&
-      plan.steps.every(s => s && typeof s === 'object' && !Array.isArray(s) && ['id', 'nodeId', 'label', 'expected'].every(k => text(s[k]))) &&
+      plan.steps.every(s => s && typeof s === 'object' && !Array.isArray(s) && ['id', 'nodeId', 'label', 'expected'].every(k => text(s[k])) && ['explanation', 'example'].every(k => s[k] === undefined || text(s[k]))) &&
       new Set(plan.steps.map(s => s.id)).size === plan.steps.length &&
       (plan.supports === undefined || (Array.isArray(plan.supports) && plan.supports.every(text)));
-    if (!valid || ids.has(plan.id)) { add('invalid-outcome', 'Each outcome needs a unique id, a goal, and ordered steps with unique ids, nodeId, label, and expected result; supports must be an array of piece ids.', { priority: 'blocker' }); return []; }
+    if (!valid || ids.has(plan.id)) { add('invalid-outcome', 'Each outcome needs a unique id, a goal, and ordered steps with unique ids, nodeId, label, and expected result; optional explanation/example fields must be nonempty strings, and supports an array of piece ids.', { priority: 'blocker' }); return []; }
     ids.add(plan.id);
     return [{ id: plan.id, name: plan.name || plan.id, goal: plan.goal,
-      steps: plan.steps.map(({ id, nodeId, label, expected }) => ({ id, nodeId, label, expected })), supports: [...new Set(plan.supports || [])] }];
+      steps: plan.steps.map(({ id, nodeId, label, expected, explanation, example }) => ({ id, nodeId, label, expected,
+        ...(explanation ? { explanation } : {}), ...(example ? { example } : {}) })), supports: [...new Set(plan.supports || [])] }];
   });
 }

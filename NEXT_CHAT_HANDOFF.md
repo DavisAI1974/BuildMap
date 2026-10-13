@@ -6,7 +6,7 @@ PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
 Branch: `feat/buildmap-v1-living-map`
 
-Continuation base for this outcome walkthrough pass: `cd8e3a4050efff0a4187ca2638f386cdc4c0a7da`; use the current branch head, not the continuation base.
+Continuation base for this selection/explanation polish: `262f19841ca7e049ceda5ee9c48cffeeaaa9abb0`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
 
@@ -42,6 +42,12 @@ A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside 
 - Sidebar outcome selection highlights participating/supporting pieces, opens the ordered walkthrough, shows its first unresolved point and input/output samples, and links to piece inspection and back. Live edits and offline exports use this same client. Pieces without outcome assignments produce informational scope-review findings; useful support work is not labeled unnecessary.
 - BuildMap declares "Understand the current build." A real Node 24 readIntent/scan/local-HTTP observation records selected input/output fields for its first three steps. This is explicitly a partial backend example, not a full payload or instrumented trace. Its browser step remains unobserved, so its outcome stays unproved. No browser restriction was retried or bypassed.
 - Manual plan/example authoring is the current boundary. No automatic runtime instrumentation, receipt authentication, interpretation of natural-language expected results, branching paths, or graphical outcome editor was added.
+
+## Latest user feedback incorporated
+
+Selected boxes should clearly light up. Gap choices now keep one pressed/selected state through refresh, with persistent blue background/glow; map cards, outcomes, search results, and Fit/Actual size controls use consistent selection treatment. This does not change evidence states.
+
+The user clarified twice that the earlier customer-order table was an example of plain wording, not a workflow or analogy to apply to every project. Explain each job's own goal and actual steps in simple language. BuildMap's walkthrough now reads "Agree on the goal", "Check what's built", "Make the results available", and "Review what works", with BuildMap-specific explanations. Optional per-step `explanation` and `example` strings support tailored wording; illustrations stay separate from recorded results. The full normalized definition, including these fields, is bound by the definition hash.
 
 ## Business idea to revisit
 

@@ -120,3 +120,12 @@ Validation: **71/71 tests pass on Node v20.20.2 and v24.19.0**. Six focused test
 Current authoring is through manifest/evidence files. Examples and handoff descriptions remain user-recorded claims; there is no automatic instrumentation, semantic comparison with expected-result prose, or receipt authentication. A named example does not prove every input. Those boundaries are explicit in the README.
 
 A read-only Node v24.19.0 dogfood observation recovered intent, scanned the repo, started a temporary local server, and fetched `/api/map`. Its fingerprint and selected fields matched the direct scan. The receipt records selected values for those three steps and leaves browser inspection absent; the walkthrough remains unproved with `inspect` as its first unresolved point. The server was closed. This records a partial example, not a complete trace, runtime instrumentation, or browser proof.
+
+
+## Selection and plain-English polish from 262f198
+
+Gap boxes now retain a pressed/selected state while their finding remains in the refreshed map. Selecting another gap clears the previous choice; direct piece/outcome selection and clearing outcome context clear gap selection. Persistent blue backgrounds/glows also strengthen map-card, outcome/search-result, and Fit/Actual size selection without changing proof states.
+
+Optional step explanations and project-specific illustrations are typed, preserved in snapshots, escaped in the inspector, and included in definition binding. BuildMap's own labels and explanations describe its actual goal and steps in everyday language. The user clarified that the customer-order story illustrated the writing style; no universal order workflow or analogy is applied to other jobs. Recorded observations remain distinct from explanatory text.
+
+The existing interaction/freshness tests now cover exclusive gap selection across refresh, Fit/Actual size pressed states, escaped tailored explanations, and explanation/example definition changes. **71/71 tests still pass on Node v20.20.2 and v24.19.0**; no new tests or framework were added. Real browser appearance remains pending under the existing restrictions. Backend partial observations are refreshed after these source changes; the browser step and whole outcome remain unproved.

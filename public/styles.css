@@ -149,3 +149,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .walkthrough-steps h3 { font-size: 13px; margin: 0; }
 .walkthrough-steps h4 { font-size: 11px; margin: 8px 0 4px; color: var(--muted); }
 .detail-section button { margin: 4px 4px 0 0; font-size: 11px; }
+.gap[aria-pressed="true"], .outcome-choice[aria-pressed="true"], .search-result[aria-pressed="true"], .top-actions button[aria-pressed="true"] {
+  background: #1b354b; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(124,197,255,.18);
+}
+.node.selected { background: #1b354b; border-color: var(--accent); opacity: 1; box-shadow: 0 0 0 2px var(--accent), 0 0 22px rgba(124,197,255,.25); }
+.step-explanation { background: #142333; border-left: 3px solid var(--accent); padding: 8px 10px; margin: 10px 0; }
+.step-explanation h4 { color: #c2e4ff; }

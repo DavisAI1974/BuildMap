@@ -113,26 +113,30 @@
         {
           "id": "intent",
           "nodeId": "intent",
-          "label": "Recover the intended goal",
-          "expected": "A declared or attributed goal; unknown intent stays visible."
+          "label": "Agree on the goal",
+          "expected": "A declared or attributed goal; unknown intent stays visible.",
+          "explanation": "We want BuildMap to help you see what has been built, how the pieces fit together, and what still needs work. This step reads the project's stated goal so the map stays focused on that purpose."
         },
         {
           "id": "scan",
           "nodeId": "scanner",
-          "label": "Map the current repository",
-          "expected": "A snapshot separating implementation, source connections, evidence, outcomes, and gaps."
+          "label": "Check what's built",
+          "expected": "A snapshot separating implementation, source connections, evidence, outcomes, and gaps.",
+          "explanation": "BuildMap looks through the project files and builds a picture of the pieces, their connections, and the evidence behind them. It makes missing parts and unproved behavior visible."
         },
         {
           "id": "serve",
           "nodeId": "server",
-          "label": "Deliver the map",
-          "expected": "The current snapshot is available through the local HTTP API or a standalone export."
+          "label": "Make the results available",
+          "expected": "The current snapshot is available through the local HTTP API or a standalone export.",
+          "explanation": "BuildMap delivers that picture to the viewer, or packages it into a file you can open and share."
         },
         {
           "id": "inspect",
           "nodeId": "visualizer",
-          "label": "Inspect the build",
-          "expected": "A person can locate a piece or outcome and understand its files, purpose, evidence, examples, and next gap."
+          "label": "Review what works",
+          "expected": "A person can locate a piece or outcome and understand its files, purpose, evidence, examples, and next gap.",
+          "explanation": "You select a piece or walkthrough step to see what it does, why it matters, and what still needs attention. This is where you can check whether the build is serving the goal."
         }
       ]
     }

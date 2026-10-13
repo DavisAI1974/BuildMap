@@ -2,48 +2,62 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { startServer } from './server.js';
+import { scanProject } from './scan.js';
 
-const args = process.argv.slice(2);
-if (args.includes('--help') || args.includes('-h')) {
-  console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1]\n\nExamples:\n  buildmap .\n  buildmap ../my-new-project\n  buildmap https://github.com/owner/repo\n`);
-  process.exit(0);
+export function parseArgs(args) {
+  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, help: false };
+  let targetSeen = false;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--help' || arg === '-h') options.help = true;
+    else if (arg === '--json') options.json = true;
+    else if (arg === '--port' || arg === '--host') {
+      const value = args[++i];
+      if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}.`);
+      options[arg.slice(2)] = arg === '--port' ? Number(value) : value;
+    } else if (arg.startsWith('-')) throw new Error(`Unknown option: ${arg}.`);
+    else if (targetSeen) throw new Error('Pass one project path or GitHub URL.');
+    else { options.target = arg; targetSeen = true; }
+  }
+  if (!Number.isInteger(options.port) || options.port < 0 || options.port > 65535) throw new Error('--port must be an integer from 0 to 65535.');
+  return options;
 }
 
-const target = args.find(a => !a.startsWith('-')) || '.';
-const port = Number(valueOf('--port') || 4173);
-const host = valueOf('--host') || '127.0.0.1';
-const root = prepareTarget(target);
-startServer({ root, host, port });
-
-function valueOf(flag) {
-  const i = args.indexOf(flag);
-  return i >= 0 ? args[i + 1] : null;
-}
-
-function prepareTarget(target) {
-  if (/^https?:\/\/github\.com\//i.test(target)) {
-    const clean = target.replace(/\.git\/?$/, '').replace(/\/$/, '');
-    const name = clean.split('/').slice(-2).join('-');
-    const dest = fs.mkdtempSync(path.join(os.tmpdir(), `buildmap-${name}-`));
-    console.log(`Cloning ${clean} for read-only mapping…`);
-    const result = spawnSync('git', ['clone', '--depth', '1', clean, dest], { stdio: 'inherit' });
+export function prepareTarget(target, log = console.log) {
+  if (/^https?:\/\//i.test(target)) {
+    if (!/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/i.test(target)) throw new Error('Use a repository URL like https://github.com/owner/repo, or a local path.');
+    const clean = target.replace(/\/$/, '').replace(/\.git$/, '');
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-'));
+    log(`Cloning ${clean} for read-only mapping…`);
+    const result = spawnSync('git', ['clone', '--depth', '1', '--', clean, dest], { stdio: ['ignore', 'ignore', 'inherit'] });
     if (result.status !== 0) {
-      console.error('Could not clone the repository. For private repositories, clone it yourself and pass the local path.');
-      process.exit(result.status || 1);
+      fs.rmSync(dest, { recursive: true, force: true });
+      throw new Error('Could not clone the repository. For private repositories, clone it yourself and pass the local path.');
     }
-    return dest;
+    return { root: dest, cleanup: () => fs.rmSync(dest, { recursive: true, force: true }) };
   }
-
   const full = path.resolve(target);
-  if (!fs.existsSync(full)) {
-    fs.mkdirSync(full, { recursive: true });
-    console.log(`Created empty project folder: ${full}`);
-  }
-  if (!fs.statSync(full).isDirectory()) {
-    console.error(`Not a directory: ${full}`);
-    process.exit(1);
-  }
-  return full;
+  if (!fs.existsSync(full)) { fs.mkdirSync(full, { recursive: true }); log(`Created empty project folder: ${full}`); }
+  if (!fs.statSync(full).isDirectory()) throw new Error(`Not a directory: ${full}`);
+  return { root: full, cleanup: () => {} };
 }
+
+function main() {
+  try {
+    const options = parseArgs(process.argv.slice(2));
+    if (options.help) {
+      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--json]\n\n--json prints one map snapshot, including gaps and source hashes, then exits.\n\nExamples:\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap . --json\n`);
+      return;
+    }
+    const { root, cleanup } = prepareTarget(options.target, options.json ? console.error : console.log);
+    process.once('exit', cleanup);
+    if (options.json) { console.log(JSON.stringify(scanProject(root), null, 2)); return; }
+    const server = startServer({ root, host: options.host, port: options.port });
+    server.once('error', err => { console.error(`BuildMap could not start: ${err.message}`); process.exitCode = 1; });
+    for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close());
+  } catch (err) { console.error(`BuildMap: ${err.message}`); process.exitCode = 1; }
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

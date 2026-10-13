@@ -15,6 +15,7 @@ let mapPositions = new Map();
 let mapScale = 1;
 let selectedOutcomeId = null;
 let mapShowsOutcome = false;
+let guidePieceId = null;
 let selectedGapId = null;
 let currentView = 'map';
 let walkthroughReturnId = null;
@@ -231,6 +232,7 @@ function layout(nodes, edges) {
 function selectPiece(id, reveal = false, returnToOutcome = null) {
   if (!model.nodes.some(n => n.id === id)) return;
   mapShowsOutcome = false;
+  guidePieceId = null;
   walkthroughReturnId = returnToOutcome;
   if (currentView !== 'map') showView('map');
   selectedGapId = null; renderGaps();
@@ -298,6 +300,7 @@ function edgePath(a,b,type) {
 }
 
 function renderDetail(id) {
+  if (guidePieceId === id) { renderCodeGuide(id); return; }
   const node = model.nodes.find(n => n.id === id);
   if (!node) return;
   const findings = pieceGaps().filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId));
@@ -316,10 +319,52 @@ function renderDetail(id) {
     <div class="detail-section"><h3>Evidence</h3><div class="evidence-box">${evidenceText(node)}</div></div>
   `;
   if (finding) appendTaskBrief(finding, node);
+  if (node.kind !== 'mission') {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'guide-open'; button.textContent = 'Inspect actual code · Guide preview';
+    button.addEventListener('click', () => { guidePieceId = id; renderCodeGuide(id); }); $('detail').appendChild(button);
+  }
   if (walkthroughReturnId && model.outcomes?.some(o => o.id === walkthroughReturnId)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'return-outcome'; button.textContent = 'Return to walkthrough';
     button.addEventListener('click', () => selectOutcome(walkthroughReturnId)); $('detail').appendChild(button);
   }
+  appendFinishedProduct();
+}
+
+function renderCodeGuide(id) {
+  const node = model.nodes.find(n => n.id === id);
+  if (!node) return;
+  const guide = node.codeGuide;
+  $('detail').innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · CODE PREVIEW</div><h2>${escapeHtml(node.name)}</h2>
+    <p>See what the source declares: inputs, return expressions, and calls written inside its top-level functions. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
+    <p>This is the first Guide capability available for MVP review. Billing and the wider coaching/review loop are not built.</p>`;
+  const back = document.createElement('button'); back.type = 'button'; back.className = 'guide-back'; back.textContent = 'Back to piece';
+  back.addEventListener('click', () => { guidePieceId = null; renderDetail(id); }); $('detail').appendChild(back);
+  if (!guide) {
+    const section = document.createElement('p'); section.textContent = 'Code explanations were not captured in this snapshot. Re-scan the current project to include them.'; $('detail').appendChild(section);
+  }
+  for (const file of guide?.files || []) {
+    const section = document.createElement('section'); section.className = 'detail-section code-guide';
+    section.innerHTML = `<h3>${escapeHtml(file.path)}</h3><p>${escapeHtml(file.reason)}</p>
+      <details><summary>Captured source identity</summary><p>SHA-256: <code>${escapeHtml(file.sourceHash || 'unavailable')}</code></p></details>`;
+    for (const fn of file.functions || []) {
+      const details = document.createElement('details'); details.className = 'code-function';
+      const where = `${file.path}:${fn.line}:${fn.column}`;
+      details.innerHTML = `<summary>${escapeHtml(fn.name)} · ${escapeHtml(where)}</summary>
+        <p>${escapeHtml(fn.summary)} ${fn.exported ? 'Declared as an export.' : 'Not declared as an ES-module export.'} ${fn.async ? 'Declared async.' : ''} ${fn.generator ? 'Declared as a generator.' : ''}</p>
+        <h4>Inputs declared by the function</h4><p>${fn.parameters.length ? fn.parameters.map(escapeHtml).join('; ') : 'No parameters declared. This does not mean the function has no other inputs or dependencies.'}</p>
+        <h4>What its return expressions describe</h4>${fn.returns.length ? fn.returns.map(r => `<p>${escapeHtml(`${file.path}:${r.line}:${r.column}`)} · ${escapeHtml(r.summary)}</p>${r.fields ? `<ul>${r.fields.map(f => `<li>${escapeHtml(f.name)}: ${escapeHtml(f.summary)}</li>`).join('')}</ul>` : ''}`).join('') : '<p>No explicit return site found. This does not establish its effects, outputs or successful completion.</p>'}
+        <h4>Calls written inside this function</h4>${fn.calls.length ? `<ul>${fn.calls.map(c => `<li>${escapeHtml(c.target)} · ${escapeHtml(`${file.path}:${c.line}:${c.column}`)} · ${c.argumentCount} argument expressions${c.resolution === 'same-file-function' ? ` · uniquely bound function declaration at ${escapeHtml(`${file.path}:${c.targetLocation.line}:${c.targetLocation.column}`)}` : ' · target not resolved'}${c.kind === 'construction' ? ' · constructor syntax' : ''}</li>`).join('')}</ul>` : '<p>No call/construction site found in this function body. Nested function bodies are excluded.</p>'}
+        <p>Source contains ${fn.conditions} condition constructs, ${fn.loops} loops and ${fn.throws} throw statements. Their presence does not establish which path runs.</p>`;
+      section.appendChild(details);
+    }
+    if (file.status === 'parsed' && !file.functions.length) {
+      const empty = document.createElement('p'); empty.textContent = 'No top-level function declaration or assigned function was found within the supported scope. This does not mean the file has no behavior.'; section.appendChild(empty);
+    }
+    $('detail').appendChild(section);
+  }
+  const limits = document.createElement('section'); limits.className = 'detail-section';
+  limits.innerHTML = `<h3>What this explanation covers</h3><ul>${(guide?.limitations || ['Only captured source descriptions are available; there is no runtime observation.']).map(text => `<li>${escapeHtml(text)}</li>`).join('')}</ul>`;
+  $('detail').appendChild(limits);
   appendFinishedProduct();
 }
 
@@ -338,7 +383,7 @@ function renderOutcomes() {
 }
 function selectOutcome(id, inMap = false) {
   if (!model.outcomes?.some(o => o.id === id)) return;
-  selectedOutcomeId = id; walkthroughReturnId = null; mapShowsOutcome = inMap;
+  selectedOutcomeId = id; walkthroughReturnId = null; mapShowsOutcome = inMap; guidePieceId = null;
   if (!inMap && currentView !== 'walkthrough') showView('walkthrough');
   selectedGapId = null; renderGaps();
   renderOutcomes(); applyFilter(); renderOutcomeDetail(id);

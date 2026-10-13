@@ -4,11 +4,15 @@ Repository: `DavisAI1974/BuildMap`
 
 PR: https://github.com/DavisAI1974/BuildMap/pull/1
 
-Branch: `feat/buildmap-v1-living-map`
+Branch: `guide/source-code-preview-20261013` (parked Guide work; the active free MVP remains on `feat/buildmap-v1-living-map`)
 
 Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469a5a6b110734506662f5e45`; use the current branch head, not the continuation base.
 
 **Fetch the current branch head first and preserve anything newer; do not reset to the historical checkpoint.** This file is updated alongside the latest review corrections and validation.
+
+## Priority update from the user
+
+Finish the free MVP builder flow before expanding paid Guide work. This branch preserves the tested code-reading preview as parked work; it is not part of PR #1's free-MVP branch. Resume active free work on `feat/buildmap-v1-living-map` after fetching its current head. Preserve this branch for later integration rather than rebuilding the preview. Do not create or update HTML preview artifacts unless the user explicitly asks. Existing export functionality remains available.
 
 ## Active request and boundaries
 
@@ -58,7 +62,7 @@ The user attached `BuildMap_Competitive_Strategy_Work_Handoff.docx` and instruct
 
 Goals now appear in the default map sidebar. Choosing one reads its walkthrough beside the graph and highlights participating/supporting pieces. Clear goal focus restores the search-filtered graph; inspecting a step and returning to the wider walkthrough still works. Map · Free and Walkthrough · Free are reading views of the same product. The original source/evidence gap list remains intact; outcome/scope findings remain separately inspectable in the free walkthrough. Refresh, selection, examples and briefs share the existing engine/client, without changing evidence states.
 
-**BuildMap Guide** is proposed paid deeper code-level explanation, next-step coaching with acceptance criteria, change-impact previews, review of agent changes, guided verification and continuity. It is not built or billed. Its proposed loop is understand, prepare, build with the user's agent, review actual changes/evidence, continue. Pricing is undecided. Do not claim code execution/data flow from source references or agent assertions; no billing, orchestration platform or separate coding agent is authorized by this strategy alone.
+**BuildMap Guide** is proposed paid deeper code-level explanation, next-step coaching with acceptance criteria, change-impact previews, review of agent changes, guided verification and continuity. The first bounded JavaScript code-reading preview below is now built for MVP review. The broader Guide loop is not built or billed. Its proposed loop is understand, prepare, build with the user's agent, review actual changes/evidence, continue. Pricing is undecided. Do not claim code execution/data flow from source references or agent assertions; no billing, orchestration platform or separate coding agent is authorized by this strategy alone.
 
 Browser checks are still pending under the documented restrictions. PR #1 stays open with no deployment/live claim. Historical review entries describing the earlier paid split record prior behavior and are superseded by this section.
 
@@ -102,7 +106,7 @@ The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/ba
 
 ## Current validation and proof state
 
-- **83/83 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **87/87 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
@@ -195,7 +199,7 @@ The shared client explains how to create the first walkthrough, including `--ini
 
 Four focused tests bring the suite to 82 on Node 20.20.2 and 24.19.0: actual CLI append with original fields/goals/source/evidence/piece states retained and orphan-id avoidance; cancellation/defaults/invalid choices/incomplete input/mode/path refusal; concurrent edits and new receipt collisions; and shared-client empty guidance/refresh/offline/free-map retention. The latter uses the DOM double, not browser proof. Receipts are refreshed only after passing checks. The partial backend example is re-observed; its browser step and the whole outcome stay unproved. No piece is live. PR #1 stays open; nothing is deployed or published.
 
-The next usability gaps are component grouping/planned-piece authoring and recorded-example capture. The proposed first Guide increment is deeper source-attributed code explanation from a concrete use case, not a claim that it already exists. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.
+The next usability gaps are component grouping/planned-piece authoring and recorded-example capture. The first bounded JavaScript code-reading preview is now implemented; broader source-to-task coaching should start from a concrete use case. Scope a concrete next change rather than building a broad editor or billing platform. The outstanding release-confidence check is still a permitted real-browser observation.
 
 
 ## Updated strategy integration from 2a54023
@@ -203,3 +207,14 @@ The next usability gaps are component grouping/planned-piece authoring and recor
 The uploaded strategy is adopted through the updated boundary above, README, gap report, UI labels and declared finished-product description. Current walkthroughs and goal-aware basic briefs remain free. Goals are directly accessible in the map; the wider reading view is retained for longer explanations. No new Guide capability or paid service was built.
 
 83 tests pass on Node 20.20.2 and 24.19.0. One focused scan-to-client regression covers map goal selection beside the graph, escaped wording, participant highlights through search, unchanged proof, basic goal-aware copy fallback, refresh/focus, clear focus with retained scale/search, piece inspection/return and removed goals. Existing live/offline/navigation/export checks now enforce the free labels and features. These remain DOM-double checks, not browser verification. Test receipts and partial backend intent/scan/HTTP observations are refreshed after successful checks; the browser step and the whole outcome remain unproved. No piece is live.
+
+
+## First Guide code-reading increment from ce9fd52
+
+`src/code-guide.js` builds deterministic function descriptions from the existing Acorn AST in `src/javascript.js`. No second parser pass, target-code execution, model service, new npm dependency or billing was added. The scanner assigns `nodes[].codeGuide` with source-syntax basis/limits and every piece file's status, captured hash and supported top-level functions. It labels missing/unsupported/parse-failed/large/unreadable/changed-during-scan files. Functions include declared parameter patterns, return-expression/object-field descriptions, call/construction sites, locations and condition/loop/throw counts. Bare call names match same-file definitions only under conservative whole-file unique binding; other targets stay unresolved. Nested callbacks/class/object methods are excluded from catalog and enclosing-body counts; complex expressions have an explicit expansion boundary. Source order is not runtime order.
+
+The free piece inspector has **Inspect actual code · Guide preview**, with expandable function details, source identity, visible scope limits and **Back to piece**. It retains the free graph, task brief and finished-product ending, follows source refresh and remains request-free in exports. This is the first implemented Guide preview, not a complete code/data-flow walkthrough or a paid launch. Broader coaching/acceptance/impact/post-agent review/continuity/verification and pricing remain proposed.
+
+87 tests pass on Node 20.20.2 and 24.19.0. Four focused regressions cover real parser scope, parameter/return/call/location facts, excluded nested/string examples and unresolved shadowed calls without source execution; unsupported/parse-failed/large/missing full-file scope; source edits and stale receipts; and live/offline preview escaping/refresh/back-navigation, retained free task briefs and unchanged proof. Syntax and whitespace checks pass. Updated test receipts bind the complete scanner including the new helper and selected dependencies/checks. Partial backend observations are refreshed; the browser step and whole outcome stay unproved. No piece is live.
+
+The existing strategy handoff remains preserved as a dated source. Its earlier claim that Guide is wholly unbuilt is superseded only for this bounded implemented preview. Do not claim actual runtime flow, inferred types, authenticated results or browser verification from these descriptions. Next useful Guide work: prepare one task from a selected function/source fact with concrete acceptance criteria, retaining the existing free basic brief.

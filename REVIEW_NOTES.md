@@ -2,7 +2,7 @@
 
 Reviewed PR #1 from `1ee8314a130cc1b8db36399757c84400b286f1a9`, including `GPT6_REVIEW_HANDOFF.md`, the manifest/evidence, source, and tests. The initial pass introduced no framework or npm runtime dependency; the later parser pass below adds Acorn.
 
-Current product direction: the strategy integration below supersedes the earlier paid-walkthrough split. Current walkthroughs and basic briefs are free; BuildMap Guide remains proposed. Historical entries retain the behavior and checks recorded at their checkpoints.
+Current product direction: the strategy integration below supersedes the earlier paid-walkthrough split. Current walkthroughs and basic briefs are free; BuildMap Guide has a bounded JavaScript code-reading preview; its wider paid loop remains proposed. Historical entries retain the behavior and checks recorded at their checkpoints.
 
 ## Findings and changes
 
@@ -174,3 +174,12 @@ The user supplied the competitive strategy DOCX and asked Work to adopt it while
 Goals appear in the default map sidebar and can be inspected beside the graph, with participating/supporting highlights. Clearing goal focus preserves search and fit scale. The wider free walkthrough remains available, including scoped findings, samples, basic goal-aware copy briefs and piece-return navigation. Refresh retains current goal detail/focus and handles removed goals. Evidence data/states are unchanged by navigation. Live and exported clients share the same implementation; README, gap report, declared destination and next-chat handoff reflect the new boundary.
 
 Validation: **83/83 tests pass on Node v20.20.2 and v24.19.0**. One focused real-scan-to-client regression exercises goal selection beside the graph, escaping, highlights/search, copied-brief fallback, refresh/focus, clear-focus scale/search retention, piece inspection/return, removed goals, offline operation and unchanged proof. Existing shared-client/free-feature checks are retained; export checks enforce free labels. Syntax and whitespace checks pass. Receipts and partial backend intent/scan/HTTP observations are refreshed only after the checks; browser layout/integration remains unobserved and the whole outcome unproved. PR #1 stays open; nothing is deployed or marked live.
+
+
+## First Guide code-reading preview from ce9fd52
+
+The next scoped Guide increment explains actual source syntax for a selected piece. The existing Acorn parse now feeds `src/code-guide.js`; `nodes[].codeGuide` retains per-file coverage/status/hash, top-level function inputs, return expressions/fields, call/construction sites, source locations and control-construct counts. It does not execute code, infer business behavior/types/values, observe runtime data flow or grant proof. Whole-file unique bare names can match same-file functions; other calls stay unresolved. Nested bodies/class/object methods, imported/dynamic dispatch, other languages and complex-expression expansion have visible limits. Parse failures, missing/large/unsupported/unreadable files and detected mid-scan source edits never receive fabricated explanations.
+
+The piece inspector exposes an accessible MVP **Guide code preview**, with expandable details and a return to the original free inspector/task brief. Selection and source refresh are preserved, snapshots perform no requests, display escapes source-derived names/fields, and the finished-product ending stays present. The wider Guide coaching/review/continuity loop and billing are still unbuilt.
+
+Validation: **87/87 tests pass on Node v20.20.2 and v24.19.0**. Four focused regressions cover source facts/scope/shadowed calls with a module that would throw if executed; unsupported/parse-failed/large/missing coverage; changed source and rejected earlier receipts; and real scan-to-client preview escaping, live refresh, offline operation, return navigation, retained free briefs and unchanged proof. Syntax/whitespace checks pass. Receipts and partial intent/scan/HTTP observations are refreshed only after the checks. Browser layout/integration remains unobserved and the whole outcome unproved. PR #1 remains open; nothing is deployed or marked live.

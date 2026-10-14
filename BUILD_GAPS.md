@@ -1,6 +1,6 @@
 # BuildMap stage and remaining gaps
 
-**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. No additional core source feature is currently assigned. The local Chromium acceptance baseline now passes; this is not a release, deployment, or live-completion claim.
+**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. The next bounded refinement is the separately parked existing-piece file-extension draft; it is not part of this implemented MVP checkpoint. The local Chromium acceptance baseline now passes; this is not a release, deployment, or live-completion claim.
 
 This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **92/92 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. The 92-test suite uses a DOM double for client checks. A separate retained browser check now passes 19 scoped cases in Chromium 153.0.8010.0 on Node 24.19.0.
 
@@ -41,7 +41,7 @@ PR #1 remains open. Merge, deployment, npm publication and paid launch are separ
 
 | Area | Current boundary | Later work when a concrete need justifies it |
 | --- | --- | --- |
-| Easier onboarding and plan editing | CLI setup and append-only piece/walkthrough interviews; existing edits, ownership moves and reference migration require file authoring. | Simplify installation, or add a narrowly scoped editor/migration flow from actual usage. |
+| Easier onboarding and plan editing | CLI setup and append-only piece/walkthrough interviews; existing edits, ownership moves and reference migration require file authoring. | Next: finish and review the bounded `--extend-piece` draft parked on `refinement/extend-piece-wip-20261013`; it is not active or verified. Preserve ids/metadata/ownership/references and evidence freshness. Broader installation/editor/migration work remains later. |
 | Evidence capture and independent provenance | Manual receipts and explicit selected inputs; recording guidance is implemented, not automatic capture. | Assisted entry or authenticated CI/runtime observations; retain scope, freshness and uncertainty. No command execution or upper states inferred from file/agent presence. |
 | Broader wiring discovery | Parsed JavaScript and bounded HTTP source matching; TypeScript/JSX, Python/HTML/CSS have disclosed heuristic limits. | Concrete adapters for frameworks/wrappers, aliases, Python src layouts and other languages with provenance. |
 | Larger repositories | Full scans/hashes and all-card rendering; no scale benchmark. | Measure realistic use, then improve caching/layout/navigation while preserving change detection. |

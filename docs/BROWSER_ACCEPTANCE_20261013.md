@@ -1,6 +1,6 @@
 # Local browser observation — October 13, 2026
 
-The local browser environment is working. **25 scoped checks pass** in headless Chromium **153.0.8010.0**, driven by Playwright on Node **24.19.0**. The Guide integration rerun starts from parent `818a0f7c491a7960483d3e9f181b27674a05f6f7`; the JSON observation identifies the actual changed working source/check hashes. The full suite passes **101/101** on Node 20.20.2 and 24.19.0.
+The local browser environment is working. **30 scoped checks pass** in headless Chromium **153.0.8010.0**, driven by Playwright on Node **24.19.0**. The Guide task/review rerun starts from parent `953bf3737425fc89c69f2daca5e744d8865886fd`; the JSON observation identifies the actual changed working source/check hashes. The full suite passes **106/106** on Node 20.20.2 and 24.19.0.
 
 The retained driver is [browser-check.mjs](../.buildmap/browser-check.mjs). The [JSON observation](BROWSER_ACCEPTANCE_20261013.json) records the browser/runtime, revision, actual check results, visualizer source hashes and selected input hashes. This is a manually recorded local check, not independently authenticated CI evidence.
 
@@ -19,6 +19,7 @@ The retained driver is [browser-check.mjs](../.buildmap/browser-check.mjs). The 
 | Changes | Actual fixture source edit produces a new fetched fingerprint while preserving selected-card focus. Deleting declared source updates the card and inspector to planned/missing. |
 | Failure and recovery | Intercepted HTTP 500 during polling retains the last map and shows stale feedback, then recovers. An initial API failure reports retry and subsequently loads the map. |
 | Guide code reading | Current and captured JavaScript descriptions; same-file function jump and focus; retained expansion/focus after unrelated refresh; changed source clearing its old expansion; unresolved targets, 390px layout and missing declared source. Six new cases, with no target code execution. |
+| Guide tasks and review | Captured manual copy and current-comparison refusal; retained draft wording/caret through refresh; reviewed function/explicit support scope, escaping and exact clipboard/free return; actual inside/outside scope edits and 390px layout; failed fresh-read refusal/recovery. Five new cases, without acceptance evaluation or target execution. |
 | Browser errors | No uncaught page JavaScript errors on the pages exercised by the driver. Expected API failures are intentional test conditions. |
 
 The driver edits only a disposable project fixture, closes its temporary servers and browser, and removes that fixture. It reads the mapped checkout. Completion remains checked in the disposable fixture. Guide was integrated for the user’s paid-tier request while retaining the original free checks. These cases observe its source-reading/navigation behavior; the wider Guide loop is outside scope.
@@ -44,4 +45,4 @@ node .buildmap/browser-check.mjs
 
 If `playwright-core` resolves normally and its browser is installed, omit the module/executable variables. The optional report variable writes JSON to the chosen path; the driver writes no HTML or screenshot artifacts. A future workspace may need its local browser provisioned again. A successful local check does not repair or authorize the blocked cloud route.
 
-PR #1 remains open. Nothing is merged, deployed, published or marked live. The complete map, current walkthrough and basic task briefs remain free; the first Guide code-reading increment is checked for review; wider paid work remains planned.
+PR #1 remains open. Nothing is merged, deployed, published or marked live. The complete map, current walkthrough and basic task briefs remain free; Guide code reading, reviewed task preparation and bounded change comparison are checked; persistent continuity and billing remain unbuilt.

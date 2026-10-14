@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { scanProject } from './scan.js';
 
 const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
-const ASSETS = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'] };
+const ASSETS = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/guide-tasks.js': ['guide-tasks.js', 'text/javascript'], '/styles.css': ['styles.css', 'text/css'] };
 
 export function startServer({ root, source = null, host = '127.0.0.1', port = 4173 }) {
   const server = http.createServer((req, res) => {

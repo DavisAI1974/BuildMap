@@ -69,7 +69,7 @@ test('server maps live edits, serves gaps/assets, and keeps repository files pri
   const changedOutcome = await read('/api/map');
   assert.notEqual(changedOutcome.outcomes[0].definitionHash, outcomeMap.outcomes[0].definitionHash);
   assert.notEqual(changedOutcome.fingerprint, outcomeMap.fingerprint);
-  for (const route of ['/', '/app.js', '/styles.css']) assert.equal((await fetch(base + route)).status, 200);
+  for (const route of ['/', '/app.js', '/guide-tasks.js', '/styles.css']) assert.equal((await fetch(base + route)).status, 200);
   for (const route of ['/secret.txt', '/src/scan.js', '/%2e%2e%2fpackage.json']) assert.equal((await fetch(base + route)).status, 404);
   assert.equal((await fetch(base + '/api/map', { method: 'POST' })).status, 405);
   assert.equal((await fetch(base + '/', { method: 'HEAD' })).status, 200);

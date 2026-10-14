@@ -1,3 +1,5 @@
+import { guideFunctionChoices, prepareGuideTask, compareGuideTask, detailedGuideBrief } from './guide-tasks.js';
+
 const stateColors = {
   planned: 'var(--planned)', coded: 'var(--coded)', connected: 'var(--connected)',
   computing: 'var(--computing)', verified: 'var(--verified)', live: 'var(--live)'
@@ -10,6 +12,7 @@ let mapSize = { width: 1000, height: 680 };
 let fit = false;
 let showAllGaps = false;
 let refreshing = false;
+let refreshPromise = null;
 let showAllResults = false;
 let mapPositions = new Map();
 let mapScale = 1;
@@ -17,6 +20,8 @@ let selectedOutcomeId = null;
 let mapShowsOutcome = false;
 let guidePieceId = null;
 const guideOpenFunctions = new Set();
+let guideTaskSession = null;
+let taskVisible = false;
 let selectedGapId = null;
 let currentView = 'map';
 let walkthroughReturnId = null;
@@ -48,14 +53,21 @@ $('clearOutcome').addEventListener('click', () => {
 });
 $('mapViewButton').addEventListener('click', () => showView('map'));
 $('walkthroughViewButton').addEventListener('click', () => showView('walkthrough'));
+$('guideTaskButton').addEventListener('click', () => {
+  if (!guideTaskSession) return;
+  taskVisible = true; mapShowsOutcome = false; showView('map'); renderGuideTask();
+});
 new ResizeObserver(() => { if (fit) scaleMap(); }).observe(viewport);
 
 showView('map');
 await refresh();
 if (!snapshot) setInterval(refresh, 1600);
 
-async function refresh() {
-  if (refreshing) return;
+function refresh() {
+  if (!refreshPromise) refreshPromise = refreshOnce().finally(() => { refreshPromise = null; });
+  return refreshPromise;
+}
+async function refreshOnce() {
   refreshing = true;
   try {
     let next = snapshot;
@@ -64,15 +76,20 @@ async function refresh() {
       if (!response.ok) throw new Error(`Server returned ${response.status}`);
       next = await response.json();
     }
+    const wasStale = $('refreshStatus').classList.contains('stale');
     $('refreshStatus').textContent = snapshot ? `Snapshot · ${new Date(snapshot.generatedAt).toLocaleString()}` : 'Updated just now';
     $('refreshStatus').classList.remove('stale');
-    if (next.fingerprint === currentFingerprint) return;
+    if (next.fingerprint === currentFingerprint) {
+      if (wasStale && taskVisible && guideTaskSession.phase !== 'edit') renderGuideTask();
+      return true;
+    }
     const active = document.activeElement;
     const focusedId = active?.dataset?.id;
     const focusInResults = active?.classList.contains('search-result');
     const focusOnCard = active?.classList.contains('node');
     const focusedOutcome = active?.classList.contains('outcome-choice') ? active.dataset.outcomeId : null;
     const focusedGuide = active?.dataset?.guideControl || active?.closest?.('[data-guide-control]')?.dataset.guideControl;
+    const focusedTask = active?.dataset?.taskControl, caret = [active?.selectionStart, active?.selectionEnd];
     currentFingerprint = next.fingerprint;
     model = next;
     const visibleGaps = currentView === 'map' ? pieceGaps() : model.gaps.filter(isOutcomeGap);
@@ -94,6 +111,7 @@ async function refresh() {
     }
     if (currentView === 'walkthrough' && !outcomeRemoved) renderWalkthroughDetail();
     if (currentView === 'map' && mapShowsOutcome) renderOutcomeDetail(selectedOutcomeId);
+    if (taskVisible && currentView === 'map') renderGuideTask();
     if (currentView === 'map' && focusedId && (focusOnCard || focusInResults)) {
       const candidates = focusInResults ? [...$('searchResults').children] : [...document.querySelectorAll('.node')];
       const replacement = candidates.find(el => el.dataset.id === focusedId && el.tabIndex !== -1);
@@ -104,10 +122,18 @@ async function refresh() {
       const controls = [...$('detail').children].flatMap(el => [el, ...el.children]);
       (controls.find(el => el.dataset.guideControl === focusedGuide) || controls.find(el => el.dataset.guideControl === 'back') || $('search')).focus({ preventScroll: true });
     }
+    if (focusedTask && taskVisible && currentView === 'map') {
+      const replacement = taskControls().find(el => el.dataset.taskControl === focusedTask && !el.disabled);
+      (replacement || $('guideTaskButton')).focus({ preventScroll: true });
+      if (replacement && typeof caret[0] === 'number') replacement.setSelectionRange?.(...caret);
+    }
+    return true;
   } catch (err) {
     $('refreshStatus').textContent = model ? 'Refresh failed · showing last snapshot' : 'Could not load map · retrying';
     $('refreshStatus').classList.add('stale');
     console.error('BuildMap refresh failed', err);
+    if (taskVisible && guideTaskSession?.phase !== 'edit') renderGuideTask();
+    return false;
   } finally { refreshing = false; }
 }
 
@@ -241,6 +267,7 @@ function layout(nodes, edges) {
 
 function selectPiece(id, reveal = false, returnToOutcome = null) {
   if (!model.nodes.some(n => n.id === id)) return;
+  taskVisible = false;
   mapShowsOutcome = false;
   guidePieceId = null;
   guideOpenFunctions.clear();
@@ -372,6 +399,8 @@ function renderCodeGuide(id) {
   const back = document.createElement('button'); back.type = 'button'; back.className = 'guide-back'; back.textContent = 'Back to piece';
   back.dataset.guideControl = 'back';
   back.addEventListener('click', () => { guidePieceId = null; renderDetail(id); [...$('detail').children].find(el => el.classList.contains('guide-open'))?.focus({ preventScroll: true }); }); $('detail').appendChild(back);
+  const prepare = document.createElement('button'); prepare.type = 'button'; prepare.className = 'guide-prepare'; prepare.textContent = 'Prepare detailed task';
+  prepare.addEventListener('click', () => startGuideTask(id)); $('detail').appendChild(prepare);
   if (!guide) {
     const section = document.createElement('p'); section.textContent = 'Code explanations were not captured in this snapshot. Re-scan the current project to include them.'; $('detail').appendChild(section);
   }
@@ -405,6 +434,12 @@ function renderCodeGuide(id) {
         });
         details.appendChild(jump);
       }
+      const taskButton = document.createElement('button'); taskButton.type = 'button'; taskButton.className = 'guide-prepare-function'; taskButton.textContent = 'Prepare task for this function';
+      taskButton.addEventListener('click', () => {
+        if (model.fingerprint !== capturedFingerprint) return;
+        const choice = guideFunctionChoices(node).find(f => f.file === file.path && f.line === fn.line && f.column === fn.column);
+        startGuideTask(id, choice?.key || '');
+      }); details.appendChild(taskButton);
       section.appendChild(details);
     }
     if (file.status === 'parsed' && !file.functions.length) {
@@ -423,6 +458,110 @@ function renderCodeGuide(id) {
   appendFinishedProduct();
 }
 
+function taskControls() {
+  const controls = [], stack = [...$('detail').children];
+  while (stack.length) { const el = stack.pop(); controls.push(el); stack.push(...el.children); }
+  return controls;
+}
+function startGuideTask(nodeId, functionKey = '') {
+  guideTaskSession = { nodeId, phase: 'edit', fields: { goal: '', criteria: '', limits: '', supportIds: [], functionKey,
+    outcomeId: walkthroughReturnId || '' }, notice: '' };
+  taskVisible = true; mapShowsOutcome = false; $('guideTaskButton').hidden = false;
+  renderGuideTask(); taskControls().find(el => el.dataset.taskControl === 'goal').focus();
+}
+function renderGuideTask() {
+  const session = guideTaskSession;
+  if (!session) return;
+  const revision = session.renderRevision = (session.renderRevision || 0) + 1;
+  const panel = $('detail'), node = model.nodes.find(n => n.id === session.nodeId);
+  panel.innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · REVIEWED TASK</div><h2>${escapeHtml(session.task?.target.name || node?.name || 'Original piece')}</h2>
+    <p>Prepare one task, agree on its boundaries, then review later changes against that snapshot. The task stays in this tab; copy its brief before handing it to your agent. Starting another task replaces this tab’s task.</p>`;
+  const notice = document.createElement('p'); notice.className = 'guide-task-notice'; notice.setAttribute('role', 'status'); notice.textContent = session.notice; panel.appendChild(notice);
+  const button = (label, key, action, disabled = false) => {
+    const el = document.createElement('button'); el.type = 'button'; el.textContent = label; el.dataset.taskControl = key; el.disabled = disabled;
+    el.addEventListener('click', () => { if (guideTaskSession === session && session.renderRevision === revision && taskVisible && currentView === 'map' && !el.disabled) return action(); }); panel.appendChild(el); return el;
+  };
+  button('Back to piece', 'task-back', () => { taskVisible = false; if (node) selectPiece(node.id); else panel.innerHTML = '<h2>Piece removed</h2><p>The original task remains available from Guide task.</p>'; });
+  if (session.phase === 'edit') {
+    const field = (key, label, tag = 'textarea') => {
+      const wrapper = document.createElement('label'); wrapper.className = 'guide-task-field'; const heading = document.createElement('span'); heading.textContent = label; wrapper.appendChild(heading);
+      const input = document.createElement(tag); input.dataset.taskControl = key; input.value = session.fields[key];
+      input.addEventListener(tag === 'select' ? 'change' : 'input', () => { if (guideTaskSession === session && session.renderRevision === revision && session.phase === 'edit') session.fields[key] = input.value; });
+      wrapper.appendChild(input); panel.appendChild(wrapper); return input;
+    };
+    field('goal', 'What should this task accomplish?');
+    field('criteria', 'How will you check it? One acceptance criterion per line.');
+    field('limits', 'What must stay unchanged?');
+    const functions = field('functionKey', 'Function focus (file scope remains the whole selected piece)', 'select');
+    for (const choice of [{ key: '', name: 'Whole piece' }, ...guideFunctionChoices(node || {})]) {
+      const option = document.createElement('option'); option.value = choice.key; option.textContent = choice.file ? `${choice.name} · ${choice.file}:${choice.line}` : choice.name; functions.appendChild(option);
+    }
+    functions.value = session.fields.functionKey;
+    const goals = field('outcomeId', 'Related project goal (optional)', 'select');
+    for (const goal of [{ id: '', name: 'No goal association' }, ...(model.outcomes || [])]) { const option = document.createElement('option'); option.value = goal.id; option.textContent = goal.name; goals.appendChild(option); }
+    goals.value = session.fields.outcomeId;
+    const supports = document.createElement('section'); supports.className = 'detail-section guide-task-supports'; supports.innerHTML = '<h3>Additional files you explicitly allow</h3><p>Select supporting pieces only when the task needs changes to their files. Source dependencies do not automatically expand the allowed scope.</p>';
+    for (const support of model.nodes.filter(n => n.kind !== 'mission' && n.id !== session.nodeId)) {
+      const label = document.createElement('label'), check = document.createElement('input'), text = document.createElement('span');
+      check.type = 'checkbox'; check.checked = session.fields.supportIds.includes(support.id); check.dataset.taskControl = `support:${support.id}`;
+      check.addEventListener('change', () => {
+        if (guideTaskSession !== session || session.renderRevision !== revision || session.phase !== 'edit') return;
+        session.fields.supportIds = check.checked ? [...new Set([...session.fields.supportIds, support.id])] : session.fields.supportIds.filter(id => id !== support.id);
+      });
+      text.textContent = `${support.name} · ${support.files.join(', ') || 'no files declared'}`; label.appendChild(check); label.appendChild(text); supports.appendChild(label);
+    }
+    panel.appendChild(supports);
+    const scope = document.createElement('p'); scope.textContent = `Selected piece files: ${node?.files.join(', ') || 'piece missing or no files declared'}. Missing exact paths can be planned; arbitrary new paths need an explicit piece declaration first.`; panel.appendChild(scope);
+    button('Review this task', 'task-prepare', () => {
+      if ($('refreshStatus').classList.contains('stale')) { session.notice = 'Refresh the map successfully before preparing a current task.'; renderGuideTask(); return; }
+      try { session.task = prepareGuideTask(model, session.nodeId, session.fields); session.phase = 'review'; session.notice = ''; }
+      catch (error) { session.notice = error.message; }
+      renderGuideTask();
+    });
+    appendFinishedProduct(); return;
+  }
+  const task = session.task, current = model.fingerprint === task.snapshot.fingerprint && !$('refreshStatus').classList.contains('stale');
+  const summary = document.createElement('section'); summary.className = 'detail-section guide-task-summary';
+  summary.innerHTML = `<h3>${session.phase === 'review' ? 'Review before agreeing' : 'Agreed task · original baseline retained'}</h3>
+    <p>${escapeHtml(task.goal)}</p><h4>Acceptance criteria · check these yourself</h4><ol>${task.criteria.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ol>
+    <h4>Keep unchanged</h4><p>${escapeHtml(task.limits)}</p><h4>Allowed files</h4><ul>${task.allowedPaths.map(f => `<li>${escapeHtml(f)} · ${task.context.sourceHashes[f] ? 'present at preparation' : 'planned / unavailable'}</li>`).join('')}</ul>
+    <h4>Possible review impact</h4><p>${task.context.impact.pieces.map(n => escapeHtml(n.name)).join(', ') || 'No mapped relationship found.'} Source and planned dependencies suggest review scope; they do not establish runtime effects.</p>
+    <p>${current ? 'The snapshot still matches this preparation.' : 'The snapshot changed or refresh failed. Keep the agreed baseline for comparison; prepare and review current context before another handoff.'}</p>`;
+  panel.appendChild(summary);
+  button('Edit and review current context', 'task-edit', () => { session.phase = 'edit'; session.notice = ''; renderGuideTask(); });
+  if (session.phase === 'review') button('Agree to this task', 'task-confirm', () => {
+    if (model.fingerprint !== task.snapshot.fingerprint || $('refreshStatus').classList.contains('stale')) { session.notice = 'The snapshot changed. Edit and review the current context before agreeing.'; renderGuideTask(); return; }
+    session.phase = 'agreed'; session.notice = 'Task agreed. Copy the brief, let your agent work, then review later changes.'; renderGuideTask();
+  }, !current);
+  const manual = document.createElement('details'); manual.className = 'guide-task-copy'; const title = document.createElement('summary'); title.textContent = 'Detailed task brief · selectable text'; manual.appendChild(title);
+  const area = document.createElement('textarea'); area.readOnly = true; area.value = detailedGuideBrief(task); area.dataset.taskControl = 'task-text'; area.rows = 15; manual.appendChild(area); panel.appendChild(manual);
+  if (session.phase === 'agreed') {
+    button('Copy detailed task', 'task-copy', async () => {
+      if (guideTaskSession !== session || model.fingerprint !== task.snapshot.fingerprint || $('refreshStatus').classList.contains('stale')) return;
+      try { if (!navigator?.clipboard?.writeText) throw new Error('Clipboard unavailable'); await navigator.clipboard.writeText(area.value); notice.textContent = 'Copied the agreed task.'; }
+      catch { manual.open = true; area.focus(); area.select(); notice.textContent = 'Automatic copying is unavailable. The complete agreed brief is selected for manual copying.'; }
+    }, !current);
+    button('Review later changes', 'task-compare', async () => {
+      const freshRead = await refresh();
+      if (guideTaskSession !== session || session.phase !== 'agreed') return;
+      session.comparison = compareGuideTask(task, model, { freshRead, captured: Boolean(snapshot) }); session.notice = ''; renderGuideTask();
+    });
+  }
+  if (session.comparison) {
+    const result = session.comparison, review = document.createElement('section'); review.className = 'detail-section guide-change-review';
+    if (!result.available) review.innerHTML = `<h3>Comparison unavailable</h3><p>${escapeHtml(result.reason)}</p>`;
+    else review.innerHTML = `<h3>Changes to review · acceptance not evaluated</h3><p>Compared against the original agreed task. ${result.comparedFingerprint === model.fingerprint && !$('refreshStatus').classList.contains('stale') ? 'Comparison matches the current snapshot.' : 'This comparison is from an earlier read. Review later changes again.'}</p>
+      <ul>${result.fileChanges.map(c => `<li>${c.inScope ? 'Inside agreed scope' : 'Outside agreed scope'} · ${escapeHtml(c.file)} · ${escapeHtml(c.kind)}</li>`).join('') || '<li>No mapped file changes detected; this does not prove the task is complete.</li>'}</ul>
+      <p>Mapped piece definitions changed: ${escapeHtml(result.pieceChanges.join(', ') || 'none')}. Evidence records or assessments changed: ${escapeHtml(result.evidenceChanges.join(', ') || 'none')}. Goal plans/records/assessments changed: ${escapeHtml(result.outcomeChanges.join(', ') || 'none')}.</p>
+      <p>${result.targetRemoved ? 'The selected piece was removed. Review its identity and ownership.' : ''} ${result.functionFileChanged ? 'The selected function’s file changed; read its current implementation.' : ''} ${result.relationshipsChanged ? 'Source/planned relationships or their locations changed.' : ''} ${result.intentChanged || result.destinationChanged ? 'The project intent or destination changed.' : ''} ${result.completionChanged ? 'The separate completion review changed.' : ''}</p>
+      <h4>Current target evidence</h4><p>${escapeHtml(result.currentEvidence?.assessment?.reason || 'No current target claim is available.')} This does not automatically satisfy the task criteria.</p>
+      <h4>Next point to inspect</h4><p>${escapeHtml(result.nextPoint ? `${result.nextPoint.label} · ${result.nextPoint.state}` : 'Check each acceptance criterion against actual behavior and repeat affected source-bound observations before claiming completion.')}</p>
+      <details><summary>Compared hashes, bindings and review scope</summary><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre></details>`;
+    panel.appendChild(review);
+  }
+  appendFinishedProduct();
+}
+
 function renderOutcomes() {
   const outcomes = model.outcomes || [];
   $('outcomeHint').textContent = outcomes.length ? 'Choose an intended result to inspect its steps and recorded example.' : 'Start with one result you want the project to deliver, then choose the pieces that should build toward it.';
@@ -438,6 +577,7 @@ function renderOutcomes() {
 }
 function selectOutcome(id, inMap = false) {
   if (!model.outcomes?.some(o => o.id === id)) return;
+  taskVisible = false;
   selectedOutcomeId = id; walkthroughReturnId = null; mapShowsOutcome = inMap; guidePieceId = null;
   if (!inMap && currentView !== 'walkthrough') showView('walkthrough');
   selectedGapId = null; renderGaps();

@@ -26,8 +26,8 @@ Guide navigation grants no evidence state, verifies no outcome, and does not com
 
 After those checks, affected source/input receipts were refreshed and the separate complete four-step free-MVP intent → scan → local HTTP → Chromium example and explicit scope review were repeated. The current dogfood scan has five accepted piece receipts, an accepted named free goal and completion review, no detected gaps and zero live states. The browser/completion JSON files record actual checked hashes and runtime scope.
 
-## Remaining paid work
+## Later task/review increment
 
-The next bounded increment is **deeper user-reviewed task preparation** from a selected function/piece and concrete goal: code context, acceptance criteria, relevant files and scope limits. Existing basic copy briefs remain free. Change-impact/post-agent review should then compare actual changes with that agreed task and current source/evidence, leading to the next unfinished point. Continuity and assisted verification follow real needs. Those features are not yet implemented by this code-reading preview.
+After this 101-test/25-browser-case code-reading checkpoint, the authorized reviewed-task and bounded source-change comparison increments were implemented. See `docs/GUIDE_TASK_REVIEW_20261013.md` for the current 106-test/30-case scope, explicit criteria/file permission, retained in-tab baseline and refusal to infer acceptance from source or agent claims. Persistent continuity, richer diff/impact and assisted actual verification remain later work.
 
 Pricing, accounts, billing and paid access enforcement remain unbuilt. This preview is accessible for development review; no paid service has launched. No target execution, separate coding agent or broad orchestration was added. No HTML preview artifact was generated; retained checks use in-memory exports. Cloud restrictions remain respected. PR #1 stays open; nothing is merged, deployed or marked live.

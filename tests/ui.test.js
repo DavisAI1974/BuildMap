@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { scanProject } from '../src/scan.js';
 import { spawnSync } from 'node:child_process';
+import { clientSource } from '../src/export.js';
 
 // Executes the real client against a small DOM double. This covers rendering
 // logic and interactions, not CSS layout or browser integration.
@@ -51,7 +52,7 @@ async function client(initial, offline = false, navigator = undefined) {
   const context = vm.createContext({ document, navigator,
     fetch: async () => { requests++; return { ok: !failed, status: failed ? 500 : 200, json: async () => current }; },
     ResizeObserver: class { observe() {} }, setInterval: () => { polls++; }, console: { error() {} } });
-  const source = fs.readFileSync(new URL('../public/app.js', import.meta.url), 'utf8');
+  const source = clientSource();
   const api = await vm.runInContext(`(async () => { ${source}\nreturn { refresh }; })()`, context);
   return { get, context, counts: () => ({ requests, polls }), setModel: m => { current = m; }, fail: value => { failed = value; },
     refresh: () => api.refresh() };
@@ -704,6 +705,70 @@ test('Guide follows resolved same-file calls, keeps current reading focus, and d
     assert.equal(JSON.stringify(input), original); assert.equal(input.project.counts.verified, 0);
     ui.get('detail').children.find(e => e.classes.has('guide-back')).click();
     assert.equal(ui.context.document.activeElement.classList.contains('guide-open'), true);
+  }
+});
+
+test('Guide prepares and agrees an escaped detailed task, retains it through navigation and reviews actual later scope changes', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-task-client-')); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'core.js'), 'export function result(input) { return input + 1; }');
+  fs.writeFileSync(path.join(root, 'support.js'), 'export const support = true;');
+  const initial = scanProject(root), original = JSON.stringify(initial); let copied;
+  const ui = await client(initial, false, { clipboard: { writeText: async value => { copied = value; } } });
+  const controls = () => { const all = [], stack = [...ui.get('detail').children]; while (stack.length) { const el = stack.pop(); all.push(el); stack.push(...el.children); } return all; };
+  const control = key => controls().find(el => el.dataset.taskControl === key);
+  const set = (key, value) => { const el = control(key); el.value = value; el.listeners.input(); };
+  const open = () => { ui.get('nodeLayer').children.find(n => n.dataset.id === 'file:core.js').click(); ui.get('detail').children.find(e => e.classes.has('guide-open')).click(); };
+  open(); ui.get('detail').children.find(e => e.classes.has('guide-prepare')).click();
+  control('task-prepare').click(); assert.match(ui.get('detail').children[0].textContent, /goal.*acceptance criterion/);
+  set('goal', '<img onerror=evil()> Improve result'); set('criteria', 'One checked result.\nNo regression.'); set('limits', 'Keep support unchanged.');
+  const oldInput = control('goal'); oldInput.focus();
+  fs.writeFileSync(path.join(root, 'support.js'), 'export const support = false;'); ui.setModel(scanProject(root)); await ui.refresh();
+  assert.equal(control('goal').value, '<img onerror=evil()> Improve result'); assert.equal(ui.context.document.activeElement, control('goal'));
+  oldInput.value = 'Detached edit'; oldInput.listeners.input(); control('task-prepare').click();
+  const summary = () => ui.get('detail').children.find(e => e.classes.has('guide-task-summary'));
+  assert.match(summary().innerHTML, /&lt;img/); assert.doesNotMatch(summary().innerHTML, /<img|Detached edit/);
+  const oldConfirm = control('task-confirm'); oldConfirm.click(); assert.equal(control('task-confirm'), undefined);
+  await control('task-copy').click(); assert.match(copied, /One checked result/); assert.match(copied, /allowedFiles/);
+  const detachedCopy = control('task-copy');
+  ui.get('nodeLayer').children.find(n => n.dataset.id === 'file:support.js').click();
+  assert.ok(ui.get('detail').children.some(e => e.classes.has('task-brief'))); ui.get('guideTaskButton').click();
+  assert.match(summary().innerHTML, /Agreed task/);
+  fs.writeFileSync(path.join(root, 'core.js'), 'export function result(input) { return input + 2; }');
+  fs.writeFileSync(path.join(root, 'support.js'), 'export const support = 3;'); ui.setModel(scanProject(root)); await ui.refresh();
+  assert.equal(control('task-copy').disabled, true); copied = null; await detachedCopy.click(); assert.equal(copied, null);
+  await control('task-compare').click();
+  const review = ui.get('detail').children.find(e => e.classes.has('guide-change-review'));
+  assert.match(review.innerHTML, /Inside agreed scope.*core.js/); assert.match(review.innerHTML, /Outside agreed scope.*support.js/);
+  assert.match(review.innerHTML, /acceptance not evaluated/); assert.equal(JSON.stringify(initial), original); assert.equal(initial.project.counts.verified, 0);
+  ui.fail(true); await ui.refresh(); await control('task-compare').click();
+  assert.match(ui.get('detail').children.find(e => e.classes.has('guide-change-review')).innerHTML, /Comparison unavailable/);
+  assert.equal(control('task-copy').disabled, true);
+});
+
+test('Guide task review requires renewed agreement after source change and offers offline manual copy without current-change claims', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-task-agreement-')); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'core.js'), 'export function result(input) { return input; }');
+  for (const offline of [false, true]) {
+    const input = scanProject(root), ui = await client(input, offline);
+    const controls = () => { const all = [], stack = [...ui.get('detail').children]; while (stack.length) { const e = stack.pop(); all.push(e); stack.push(...e.children); } return all; };
+    const get = key => controls().find(e => e.dataset.taskControl === key);
+    ui.get('nodeLayer').children.find(n => n.dataset.id === 'file:core.js').click(); ui.get('detail').children.find(e => e.classes.has('guide-open')).click();
+    ui.get('detail').children.find(e => e.classes.has('guide-prepare')).click();
+    for (const [key, value] of [['goal', 'Review output'], ['criteria', 'Observe one result'], ['limits', 'Keep other work unchanged']]) { get(key).value = value; get(key).listeners.input(); }
+    get('task-prepare').click();
+    if (!offline) {
+      const stale = get('task-confirm'); fs.writeFileSync(path.join(root, 'core.js'), 'export function result(input) { return input + 1; }'); ui.setModel(scanProject(root)); await ui.refresh();
+      assert.equal(get('task-confirm').disabled, true); stale.click(); assert.equal(get('task-copy'), undefined);
+      get('task-edit').click(); assert.equal(get('goal').value, 'Review output'); get('task-prepare').click();
+    }
+    get('task-confirm').click(); await get('task-copy').click();
+    const manual = ui.get('detail').children.find(e => e.classes.has('guide-task-copy'));
+    assert.equal(manual.open, true); assert.equal(get('task-text').selectedText, true);
+    if (offline) {
+      await get('task-compare').click(); assert.match(ui.get('detail').children.find(e => e.classes.has('guide-change-review')).innerHTML, /Captured and GitHub snapshots/);
+      assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+    }
+    assert.equal(input.project.counts.live, 0);
   }
 });
 

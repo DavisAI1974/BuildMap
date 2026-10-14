@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-14T00:54:34.097Z",
-  "revision": "818a0f7c491a7960483d3e9f181b27674a05f6f7",
+  "checkedAt": "2026-10-14T01:59:27.943Z",
+  "revision": "953bf3737425fc89c69f2daca5e744d8865886fd",
   "checks": [
     {
       "name": "Live dogfood map loads six cards, free views and no live states"
@@ -36,6 +36,9 @@
       "name": "Captured Guide explanations render in the self-contained export"
     },
     {
+      "name": "Captured detailed task supports manual copy and refuses current working-tree comparison"
+    },
+    {
       "name": "Self-contained export renders and navigates with no API/assets/polling requests"
     },
     {
@@ -64,6 +67,18 @@
       "name": "Guide refresh discards changed-source expansion, discloses unresolved targets and fits 390px"
     },
     {
+      "name": "Guide task draft retains wording and text selection through source refresh"
+    },
+    {
+      "name": "Reviewed function task has explicit support scope, escaped wording, exact clipboard and free-map return"
+    },
+    {
+      "name": "Guide compares actual inside/outside source changes without evaluating criteria and fits 390px"
+    },
+    {
+      "name": "Guide change review refuses a failed fresh read and recovers against its original baseline"
+    },
+    {
       "name": "Reviewed scope lights the final box and opens its checked walkthrough"
     },
     {
@@ -89,28 +104,32 @@
   "browser": "153.0.8010.0",
   "node": "v24.19.0",
   "sourceHashes": {
-    "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
-    "public/app.js": "ba31702055ddd994bea33d3a2b1a52d12d9264a4433b8b36d3ce5713219d3982",
-    "public/styles.css": "dd1d6d03feaa38612a5e41af3e0703da88f992079e3a0ec31ae59cab34adca5f"
+    "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
+    "public/app.js": "8bab767b806cf3e5009a8bad404f8cf75740e7316726569028bc4fb6934a660e",
+    "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
+    "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d"
   },
   "result": "passed",
-  "revisionContext": "Parent HEAD at observation; the integrated Guide working source/check scope is identified by actual hashes below.",
+  "revisionContext": "Parent HEAD at observation; task/review source, checks and corrected declaration scope are identified by actual hashes below.",
   "checkedWorkingTree": {
-    "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
-    "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
-    "src/scan.js": "d2da920c3158a67e18f37c5d7fec476e2e908f9b4e00c05fc6a368ff7e6fe12b",
-    "public/app.js": "ba31702055ddd994bea33d3a2b1a52d12d9264a4433b8b36d3ce5713219d3982",
-    "public/styles.css": "dd1d6d03feaa38612a5e41af3e0703da88f992079e3a0ec31ae59cab34adca5f",
-    "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
-    "tests/ui.test.js": "b73ea0b940fad63b219f93e0dcf4be838c6199cee5dbf2fda6bd20d0dd372391",
-    ".buildmap/browser-check.mjs": "87766ac14f0310637a85562f2791e1e2e0d44cf984921d39f4c9401ccd9e1d3d",
-    ".buildmap/project.json": "0511c5c76cc0859cef6ead9794056528a753de1f820cd9e4bd3bfeb23df1906c"
+    "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d",
+    "public/app.js": "8bab767b806cf3e5009a8bad404f8cf75740e7316726569028bc4fb6934a660e",
+    "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
+    "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
+    "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
+    "src/export.js": "5722354aa43df21e6ce95f162c35d3b27946efd2ec0b743682bfa5e5e5964773",
+    "tests/guide-tasks.test.js": "feaef9914800538b75b5de1bdfa88e96802e03d498d5ad29bda93e67bac091ec",
+    "tests/ui.test.js": "180598d11184ecaae6e0294a99e70293fd133be6cae704785bf6065609153ceb",
+    "tests/server.test.js": "27a29c1cd6062246c96aa1a8b0b4f6aa13710782b90dd8cf8a32a8baf9a16c47",
+    "tests/export.test.js": "18bd90c2e1f0b1dc1ff1ea5b5b4044c1929dfb693d17bf526d4db35c04a0cdac",
+    ".buildmap/browser-check.mjs": "9d10d576107a34397458c36494ece6d27d0d1bdca4a367f5adc549b68ff7e013",
+    ".buildmap/project.json": "ffa06b3568fa78f1ed3ff5d78929479b102bfcb0cd66929cf92e0f32893dd019"
   },
   "inputHashes": {
-    ".buildmap/browser-check.mjs": "87766ac14f0310637a85562f2791e1e2e0d44cf984921d39f4c9401ccd9e1d3d",
-    ".buildmap/project.json": "0511c5c76cc0859cef6ead9794056528a753de1f820cd9e4bd3bfeb23df1906c",
-    "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
-    "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
+    ".buildmap/browser-check.mjs": "9d10d576107a34397458c36494ece6d27d0d1bdca4a367f5adc549b68ff7e013",
+    ".buildmap/project.json": "ffa06b3568fa78f1ed3ff5d78929479b102bfcb0cd66929cf92e0f32893dd019",
+    "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
+    "src/export.js": "5722354aa43df21e6ce95f162c35d3b27946efd2ec0b743682bfa5e5e5964773",
     "src/scan.js": "d2da920c3158a67e18f37c5d7fec476e2e908f9b4e00c05fc6a368ff7e6fe12b",
     "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
     "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
@@ -120,6 +139,6 @@
     "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
     "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632"
   },
-  "scope": "Prior 19 retained free checks plus six Guide source-reading/navigation cases. Source syntax is not observed execution or data flow; the complete named free goal and review are recorded separately.",
-  "transport": "Direct permitted loopback HTTP; self-contained export rendered in memory. No HTML preview artifact, tunnel or cloud-file navigation."
+  "scope": "Prior 25 free/Guide cases plus five reviewed-task and current local snapshot comparison cases. Acceptance criteria are not automatically evaluated, source is not executed and no agent attribution is established.",
+  "transport": "Direct permitted loopback HTTP. Shared helper bundled into in-memory exports with no asset/API/polling requests. No HTML preview artifact, tunnel or cloud-file navigation."
 }

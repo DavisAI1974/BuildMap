@@ -2,7 +2,7 @@
 
 **Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. The bounded existing-piece file-extension refinement is now implemented and checked; broader editing remains later work. The local Chromium acceptance baseline now passes; this is not a release, deployment, or live-completion claim.
 
-This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **101/101 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. The 101-test suite uses a DOM double for client checks. A separate retained browser check now passes 25 scoped cases in Chromium 153.0.8010.0 on Node 24.19.0.
+This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **106/106 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. The 106-test suite uses a DOM double for client checks. A separate retained browser check now passes 30 scoped cases in Chromium 153.0.8010.0 on Node 24.19.0.
 
 ## Free BuildMap stage checklist
 
@@ -19,7 +19,7 @@ This record is maintained alongside the evidence-review pass based on `3f7ae7f`.
 | Use APIs and portable snapshots | Implemented | Read-only map/gaps/health, JSON and self-contained HTML export; GitHub branch/tag snapshot provenance and cleanup. Export shares the live client and does not poll. No preview artifact is generated unless requested. |
 | Support the documented local runtime/startup | Checked | Node 20+ commands remain required; full tests on Node 20.20.2 and 24.19.0. Historical public clone/ref and Node 20 CLI/server/API/assets/exit smoke results remain documented. No no-code/browser onboarding claim. |
 | Show reviewed milestone completion | Implemented and observed | Explicit scope plus review bound to exact current verified outcome examples. Final box shows MVP verified for that scope, with evidence/goal links; source/plan/input/record changes return it to pending. Counts and independent mission intent state are unchanged. |
-| Observe the real browser experience | Scoped baseline passed | 25 local Chromium checks: live server, in-memory export, desktop/390px and 30-piece fixture, clipboard success/fallback, search/fit/scroll, native Tab/Enter/Escape, source edits/deletion and failure/recovery. Full assistive-technology, real-device and other-browser review remains open; see [observation](docs/BROWSER_ACCEPTANCE_20261013.md). |
+| Observe the real browser experience | Scoped baseline passed | 30 local Chromium checks: live server, in-memory export, desktop/390px and 30-piece fixture, clipboard success/fallback, search/fit/scroll, native Tab/Enter/Escape, source edits/deletion and failure/recovery. Full assistive-technology, real-device and other-browser review remains open; see [observation](docs/BROWSER_ACCEPTANCE_20261013.md). |
 
 The implemented source checkpoint can now be reviewed as one free BuildMap flow. Further source work should come from a concrete finding, user feedback, or the permitted browser observation rather than treating all future capabilities as unfinished MVP work.
 
@@ -33,7 +33,7 @@ Hash matches establish identity, not receipt authenticity, complete transitive i
 
 ## Remaining stage acceptance check
 
-The cloud browser could not reach workspace loopback, and its URL policy rejected local HTML navigation and prohibited workarounds. Those restrictions remain. An independently installed local headless Chromium now reaches the server directly in this workspace; no cloud restriction was retried or bypassed, and nothing was tunneled or deployed. The local browser’s 25-case baseline passes. Full keyboard usability/assistive-technology review, actual mobile devices, and other browsers remain open. The complete named dogfood example and its separate scoped MVP review are now recorded. Record only the observed scope; the browser report is not authenticated provenance or continuing liveness.
+The cloud browser could not reach workspace loopback, and its URL policy rejected local HTML navigation and prohibited workarounds. Those restrictions remain. An independently installed local headless Chromium now reaches the server directly in this workspace; no cloud restriction was retried or bypassed, and nothing was tunneled or deployed. The local browser’s 30-case baseline passes. Full keyboard usability/assistive-technology review, actual mobile devices, and other browsers remain open. The complete named dogfood example and its separate scoped MVP review are now recorded. Record only the observed scope; the browser report is not authenticated provenance or continuing liveness.
 
 PR #1 remains open. Merge, deployment, npm publication and paid launch are separate actions. Nothing is marked live.
 
@@ -55,9 +55,9 @@ The parked JavaScript code-reading preview from `guide/source-code-preview-20261
 | Guide increment | Status | Boundary / next work |
 | --- | --- | --- |
 | Source-bound JavaScript function walkthrough | Implemented and checked | Declared inputs/defaults, return expressions/fields, body calls/argument expressions, resolved same-file function navigation, exact locations/hashes and explicit unsupported/unresolved limits. No execution or observed data flow. See `docs/GUIDE_CODE_READING_20261013.md`. |
-| Deeper task preparation | Next bounded increment | User-reviewed task goal, relevant functions/files, acceptance criteria and scope limits; keep existing basic briefs free. |
-| Change-impact and post-agent review | Planned after task preparation | Compare actual changes against intended scope and current source/evidence; avoid granting proof from an agent claim. |
-| Continuity / assisted verification | Later | Retain checked task context and identify the next unresolved point without replacing actual observations. |
+| Deeper task preparation | Implemented and checked | Explicit goal/criteria/exclusions, optional function/goal focus, exact selected/support file scope, source identities, impact context, review/agreement and guarded copy/manual fallback. Basic briefs remain free. |
+| Change-impact and post-agent review | Bounded snapshot review implemented | Successful local refresh compared with agreed baseline: inside/outside mapped file changes, definitions/ownership, relationships, goal/evidence/completion changes, current evidence and next point. Criteria are not automatically evaluated; no full Git diff or agent attribution. See `docs/GUIDE_TASK_REVIEW_20261013.md`. |
+| Continuity / assisted verification | Active-tab continuity only; broader work later | Draft/agreed task survives map navigation/refresh in the current tab. Persistent/versioned sessions, task history/import/export and assisted behavior verification remain unbuilt. |
 | Accounts, billing and paid launch | Unbuilt | Establish useful Guide behavior first. Pricing is undecided. |
 
 The complete map, current walkthrough and basic task briefs remain free. No separate coding agent or broad orchestration platform was added. The strategy document remains a dated product direction, not proof that all proposed Guide features exist.

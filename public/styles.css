@@ -172,6 +172,15 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .code-function:focus-visible, .code-function summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .code-guide code, .code-function li { overflow-wrap: anywhere; }
 .guide-call { display: block; margin: 8px 0; max-width: 100%; white-space: normal; text-align: left; }
+.guide-task-field { display: block; margin: 14px 0; font-size: 12px; }
+.guide-task-field span { display: block; margin-bottom: 6px; }
+.guide-task-field textarea, .guide-task-field select, .guide-task-copy textarea { width: 100%; padding: 10px; color: var(--text); background: #0c1219; border: 1px solid #34445a; border-radius: 6px; font: inherit; }
+.guide-task-field textarea { min-height: 80px; resize: vertical; }
+.guide-task-field select { max-width: 100%; }
+.guide-task-supports label { display: flex; gap: 8px; margin: 8px 0; font-size: 12px; overflow-wrap: anywhere; }
+.guide-task-supports input { flex-shrink: 0; }
+.guide-task-field :focus-visible, .guide-task-copy textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.guide-task-summary li, .guide-change-review li { overflow-wrap: anywhere; }
 .view-switch { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: #0f151d; }
 .view-switch button span { color: var(--muted); font-size: 10px; margin-left: 8px; text-transform: uppercase; }
 .view-switch button[aria-pressed="true"] { background: #1b354b; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }

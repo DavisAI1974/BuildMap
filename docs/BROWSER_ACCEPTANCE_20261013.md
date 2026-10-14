@@ -1,6 +1,6 @@
 # Local browser observation — October 13, 2026
 
-The local browser environment is working. **19 scoped checks pass** in headless Chromium **153.0.8010.0**, driven by Playwright on Node **24.19.0**. The completion pass starts from `c3e7d389d29325636c31fd830eddb3c8d6b028b2` and checks the actual changed source/input hashes in the JSON observation. The full suite passes **92/92** on Node 20.20.2 and 24.19.0.
+The local browser environment is working. **19 scoped checks pass** in headless Chromium **153.0.8010.0**, driven by Playwright on Node **24.19.0**. The bounded extension refinement rerun starts from parent `e301c3cc0e15ca1eedd5e59f5a822fc8b6d1ad99`; the JSON observation identifies the actual changed working source/check hashes. The full suite passes **96/96** on Node 20.20.2 and 24.19.0.
 
 The retained driver is [browser-check.mjs](../.buildmap/browser-check.mjs). The [JSON observation](BROWSER_ACCEPTANCE_20261013.json) records the browser/runtime, revision, actual check results, visualizer source hashes and selected input hashes. This is a manually recorded local check, not independently authenticated CI evidence.
 

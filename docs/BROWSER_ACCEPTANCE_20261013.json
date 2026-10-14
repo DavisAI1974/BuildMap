@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-14T00:20:50.846Z",
-  "revision": "c3e7d389d29325636c31fd830eddb3c8d6b028b2",
+  "checkedAt": "2026-10-14T00:42:24.948Z",
+  "revision": "e301c3cc0e15ca1eedd5e59f5a822fc8b6d1ad99",
   "checks": [
     {
       "name": "Live dogfood map loads six cards, free views and no live states"
@@ -76,6 +76,12 @@
     "public/styles.css": "5d874eb2bcab055aa7d3f27c0f08e9baabe6045326bef9fee936baa12bbd387f"
   },
   "result": "passed",
+  "revisionContext": "Parent HEAD at observation; the bounded uncommitted refinement is identified by the actual hashes below.",
+  "checkedWorkingTree": {
+    "src/cli.js": "4b9493b80f4aa25851273e7d485de3df06d1e2936968a09bc96daaf8b351c25d",
+    "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
+    "tests/server.test.js": "a29a94d961966eee762f502c9b775d9a28d5abd779e146a42ef9c8594177b287"
+  },
   "inputHashes": {
     ".buildmap/browser-check.mjs": "3de9a45c248f5ebfc2f7983b8e25a3b1cc2ff552e7cfc16a1d204f34dad23ac4",
     ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
@@ -88,8 +94,5 @@
     "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
     "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
     "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
-  },
-  "scope": "Local Chromium only: baseline navigation plus explicit fixture completion and source-change invalidation. Named dogfood example is recorded separately.",
-  "workingTreeChanges": true,
-  "transport": "Direct loopback HTTP; self-contained export rendered in memory, no file navigation."
+  }
 }

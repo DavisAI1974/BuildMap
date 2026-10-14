@@ -104,7 +104,7 @@ export async function createWalkthrough(target, { input = process.stdin, output 
 }
 
 
-// Both authoring flows append one reviewed declaration to the captured plan.
+// Authoring appends a reviewed declaration or extends one captured component.
 // Re-read before an atomic rename; never replace edits made during the interview.
 function editablePlan(target, flag) {
   if (/^https?:\/\//i.test(target)) throw new Error(`${flag} needs a local project folder. Clone a remote repository locally first.`);
@@ -131,23 +131,31 @@ function editablePlan(target, flag) {
     try { return JSON.parse(fs.readFileSync(evidencePath, 'utf8')); } catch { throw new Error('Review the unreadable evidence.json before adding a declaration. No plan was changed.'); }
   };
   const evidence = readEvidence();
-  return { root, destination, manifest, map, evidence, append(collection, record) {
+  return { root, destination, manifest, map, evidence, append(collection, record, replaceIndex = null) {
     const currentFolder = regular(folder, true), currentFile = regular(destination);
     if (currentFolder.dev !== folderStat.dev || currentFolder.ino !== folderStat.ino ||
         currentFile.dev !== originalStat.dev || currentFile.ino !== originalStat.ino || fs.readFileSync(destination, 'utf8') !== original)
       throw new Error('The project plan changed during setup. Start again from the current plan; no plan was changed by this command.');
-    if (Object.hasOwn(readEvidence()?.[collection] || {}, record.id)) throw new Error('An evidence claim now uses this declaration id. Start again; no plan was changed.');
+    const latest = readEvidence();
+    if (replaceIndex === null && Object.hasOwn(latest?.[collection] || {}, record.id)) throw new Error('An evidence claim now uses this declaration id. Start again; no plan was changed.');
+    if (replaceIndex !== null && JSON.stringify(latest?.components?.[record.id]) !== JSON.stringify(evidence?.components?.[record.id]))
+      throw new Error('The selected piece evidence changed during setup. Review the current claim and start again; no plan was changed.');
+    const declarations = [...(manifest[collection] || [])];
+    if (replaceIndex === null) declarations.push(record); else declarations[replaceIndex] = record;
     const temp = path.join(folder, `.project-${process.pid}-${crypto.randomUUID()}.tmp`);
     try {
-      fs.writeFileSync(temp, JSON.stringify({ ...manifest, [collection]: [...(manifest[collection] || []), record] }, null, 2) + '\n', { flag: 'wx', mode: originalStat.mode & 0o777 });
+      fs.writeFileSync(temp, JSON.stringify({ ...manifest, [collection]: declarations }, null, 2) + '\n', { flag: 'wx', mode: originalStat.mode & 0o777 });
       fs.renameSync(temp, destination);
     } finally { fs.rmSync(temp, { force: true }); }
   } };
 }
 
-export async function createPiece(target, { input = process.stdin, output = process.stdout } = {}) {
-  const plan = editablePlan(target, '--piece');
+export async function createPiece(target, { input = process.stdin, output = process.stdout, extend = false } = {}) {
+  const plan = editablePlan(target, extend ? '--extend-piece' : '--piece');
   const { root, destination, manifest, map, evidence } = plan;
+  const declared = map.nodes.filter(n => n.kind === 'component');
+  if (extend && !declared.length) throw new Error('No declared pieces to extend. Create one with --piece first.');
+  let selected = null, replaceIndex = null;
   const available = map.nodes.filter(n => n.kind === 'file').map(n => n.files[0]);
   const owned = new Set(map.nodes.filter(n => n.kind === 'component').flatMap(n => n.files));
   const referenced = new Set(map.outcomes.flatMap(o => o.nodeIds));
@@ -157,7 +165,7 @@ export async function createPiece(target, { input = process.stdin, output = proc
     if (!rel || rel.includes('\\') || rel.includes('\0') || path.posix.isAbsolute(rel) || /^[A-Za-z]:/.test(rel) ||
         path.posix.normalize(rel) !== rel || rel === '.' || rel === '..' || rel.startsWith('../') || rel.endsWith('/') || /[*?]/.test(rel))
       throw new Error('Use an exact project-relative file path, without traversal, backslashes or wildcard patterns.');
-    if (owned.has(rel)) throw new Error(`${rel} already belongs to a declared piece. This command never moves another piece's files.`);
+    if (owned.has(rel) && !selected?.files.includes(rel)) throw new Error(`${rel} already belongs to a declared piece. This command never moves another piece's files.`);
     if (referenced.has(`file:${rel}`)) throw new Error(`${rel} is used by an existing walkthrough. Review its piece references before regrouping; this command leaves that walkthrough intact.`);
     let current = root;
     for (const [i, part] of rel.split('/').entries()) {
@@ -169,7 +177,9 @@ export async function createPiece(target, { input = process.stdin, output = proc
     }
     return rel;
   };
-  output.write('Describe one piece and the exact files that belong to it. Source and evidence stay intact; missing files remain planned.\n');
+  output.write(extend ? 'Add files to an existing piece. Its identity, descriptions, goals, source and evidence stay intact. Bound records may become stale when scope expands.\n'
+    : 'Describe one piece and the exact files that belong to it. Source and evidence stay intact; missing files remain planned.\n');
+  if (extend) declared.forEach((n, i) => output.write(`Piece ${i + 1}. ${n.name} [${n.id}] — ${n.files.join(', ') || 'no files assigned'}\n`));
   output.write('Available ungrouped files (numbers are only for selection):\n');
   available.forEach((file, i) => output.write(`${i + 1}. ${file}\n`));
   if (!available.length) output.write('None yet. You can describe planned file paths below.\n');
@@ -181,11 +191,27 @@ export async function createPiece(target, { input = process.stdin, output = proc
     return next.value.trim();
   };
   const required = async prompt => { for (;;) { const value = await ask(prompt); if (value) return value; output.write('Please describe this in your own words.\n'); } };
-  let component;
+  let component, additions;
   try {
-    const name = await required('Name this piece: '), purpose = await required('What job should it do? ');
-    const contributes = await ask('How does it help the project goal? [optional] ');
-    const files = new Set();
+    if (extend) for (;;) {
+      const choice = await ask('Which existing piece should receive files? [piece number]: ');
+      if (!/^\d+$/.test(choice) || !declared[Number(choice) - 1]) { output.write('Choose a declared piece number.\n'); continue; }
+      replaceIndex = Number(choice) - 1; selected = declared[replaceIndex];
+      // Plan validation forbids filtered/duplicate declarations. Keep this
+      // positional correspondence explicit before replacing an original entry.
+      if (manifest.components?.length !== declared.length || !manifest.components[replaceIndex] ||
+          (manifest.components[replaceIndex].id && manifest.components[replaceIndex].id !== selected.id))
+        throw new Error('The selected piece does not match its original declaration. No plan was changed.');
+      if (selected.conflictingFiles.length) throw new Error('Resolve this piece\'s overlapping ownership before extending it. No plan was changed.');
+      const receipt = evidence?.components?.[selected.id];
+      if (receipt && ['computing', 'verified', 'live'].includes(receipt.status) && receipt.sourceHashes === undefined)
+        throw new Error('This piece has an unbound behavior claim. Record its actual observation with full source hashes before extending scope; the existing claim is untouched.');
+      break;
+    }
+    const name = selected ? selected.name : await required('Name this piece: ');
+    const purpose = selected ? selected.purpose : await required('What job should it do? ');
+    const contributes = selected ? selected.contributes : await ask('How does it help the project goal? [optional] ');
+    const files = new Set(selected?.files || []);
     for (;;) {
       const answer = await ask('Existing files [numbers separated by commas, or Enter for none]: ');
       if (!answer) break;
@@ -203,16 +229,25 @@ export async function createPiece(target, { input = process.stdin, output = proc
       try { files.add(checkPath(answer)); } catch (err) { output.write(`${err.message}\n`); }
     }
     const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'piece';
-    let id = base; for (let suffix = 2; reserved.has(id); suffix++) id = `${base}-${suffix}`;
-    component = { id, name, purpose, ...(contributes ? { contributes } : {}), files: [...files] };
+    let id = selected?.id || base; if (!selected) for (let suffix = 2; reserved.has(id); suffix++) id = `${base}-${suffix}`;
+    if (selected && files.size === selected.files.length) { output.write('No additional files selected. No plan was changed.\n'); return null; }
+    const originalPiece = selected && manifest.components[replaceIndex];
+    const originalFiles = originalPiece && (originalPiece.files || originalPiece.file || []);
+    additions = [...files].filter(f => !selected?.files.includes(f));
+    // Retain authored spelling/order/duplicates and legacy fields. Only the
+    // additions use normalized exact paths; pin any previously inferred id.
+    component = selected ? { ...originalPiece, id: originalPiece.id || id,
+      files: [...(Array.isArray(originalFiles) ? originalFiles : [originalFiles]), ...additions] }
+      : { id, name, purpose, ...(contributes ? { contributes } : {}), files: [...files] };
     output.write(`\nReview before saving: ${name} [${id}]\nJob: ${purpose}\nContribution: ${contributes || 'not described'}\n`);
     files.forEach(f => output.write(`- ${f} — ${fs.existsSync(path.join(root, f)) ? 'present' : 'planned / missing'}\n`));
     if (!files.size) output.write('No files assigned yet — this piece stays planned.\n');
     output.write('Grouping does not prove component behavior. File-only receipts stay file-only; walkthroughs and evidence are not rewritten.\n');
+    if (selected) output.write('The piece id and goal references are preserved. Existing bound piece and walkthrough examples can be rejected as stale or incomplete after adding files. Repeat relevant observations/checks before recording new hashes.\n');
     if ((await ask('Save this piece? [yes/No] ')).toLowerCase() !== 'yes') { output.write('Cancelled. No plan was changed.\n'); return null; }
   } finally { reader.close(); }
-  component.files.forEach(checkPath); // Paths may have changed while answering.
-  plan.append('components', component);
+  additions.forEach(checkPath); // New paths may have changed while answering.
+  plan.append('components', component, replaceIndex);
   output.write(`Saved piece "${component.name}" (${component.id}). Open the free map to inspect its complete file list and gaps.\nNo source, connections or proof was created.\n`);
   return { root, component, path: destination };
 }

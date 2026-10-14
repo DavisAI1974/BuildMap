@@ -19,7 +19,7 @@ function fixture(t) {
 }
 
 test('CLI consumes flag values independently of project position and rejects mistakes', () => {
-  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, walkthrough: false, piece: false, help: false });
+  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, walkthrough: false, piece: false, extendPiece: false, help: false });
   for (const args of [['--port'], ['--port', 'NaN'], ['--port', '65536'], ['--unknown'], ['a', 'b'], ['--html'], ['--html', 'out.html', '--json'], ['--ref'], ['--ref', 'main', '.'], ['https://github.com/owner/repo', '--ref', '-bad']]) assert.throws(() => parseArgs(args));
 });
 
@@ -326,5 +326,124 @@ test('piece setup preserves edits and new receipt collisions made during its int
     assert.equal(fs.readFileSync(planPath, 'utf8'), change === 'plan' ? newer : '{}');
     if (change === 'evidence') assert.equal(fs.readFileSync(evidencePath, 'utf8'), claim);
     assert.equal(fs.existsSync(path.join(root, 'future.js')), false);
+  }
+});
+
+test('extend-piece CLI retains the selected declaration and invalidates old piece, goal and completion scope', t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap'));
+  for (const file of ['owned.js', 'a.js', 'b.js']) fs.writeFileSync(path.join(root, file), `export const value = '${file}';`);
+  const planPath = path.join(root, '.buildmap/project.json'), evidencePath = path.join(root, '.buildmap/evidence.json');
+  const component = { id: 'core', name: 'Core', files: ['./a.js', 'a.js'], purpose: 'Original job.', contributes: 'Original goal.',
+    group: 'Build', dependsOn: [], visual: { kind: 'flow', label: 'Original' }, custom: { keep: [1, 2] } };
+  const manifest = { mission: 'Read useful output.', custom: { keep: true }, components: [{ id: 'owner', files: ['owned.js'] }, component],
+    outcomes: [{ id: 'goal', goal: 'Read the output.', steps: [{ id: 'read', nodeId: 'core', label: 'Read', expected: 'Useful output.' }] }],
+    completion: { label: 'Fixture MVP', outcomeIds: ['goal'] } };
+  fs.writeFileSync(planPath, JSON.stringify(manifest));
+  const initial = scanProject(root), goal = initial.outcomes[0];
+  const evidence = { components: { core: { status: 'verified', note: 'Original check.', sourceHashes: initial.nodes.find(n => n.id === 'core').sourceHashes } },
+    files: { 'b.js': { status: 'verified', note: 'Only this file.' } },
+    outcomes: { goal: { status: 'verified', note: 'Original example.', definitionHash: goal.definitionHash, sourceHashes: goal.sourceHashes,
+      example: { name: 'Read once', input: 0, output: 1, steps: [{ stepId: 'read', result: 'observed', input: 0, output: 1 }] } } } };
+  fs.writeFileSync(evidencePath, JSON.stringify(evidence));
+  const before = scanProject(root);
+  evidence.completion = { status: 'verified', note: 'Original scope review.', definitionHash: before.project.completion.definitionHash,
+    outcomeEvidenceHashes: before.project.completion.outcomeEvidenceHashes };
+  const evidenceBytes = JSON.stringify(evidence); fs.writeFileSync(evidencePath, evidenceBytes);
+  assert.equal(scanProject(root).project.completion.status, 'verified');
+  const result = spawnSync(process.execPath, ['src/cli.js', root, '--extend-piece'], { input: '2\n1,1\n./a.js\nb.js\n\nyes\n', encoding: 'utf8', timeout: 5000 });
+  assert.equal(result.status, 0, result.stderr); assert.match(result.stdout, /Bound records may become stale/);
+  const saved = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+  assert.deepEqual(saved, { ...manifest, components: [manifest.components[0], { ...component, files: [...component.files, 'b.js'] }] });
+  assert.equal(fs.readFileSync(evidencePath, 'utf8'), evidenceBytes);
+  for (const file of ['owned.js', 'a.js', 'b.js']) assert.equal(fs.readFileSync(path.join(root, file), 'utf8'), `export const value = '${file}';`);
+  const after = scanProject(root), core = after.nodes.find(n => n.id === 'core');
+  assert.deepEqual(core.files, ['a.js', 'b.js']); assert.equal(core.evidenceAssessment.accepted, false);
+  assert.equal(core.evidenceAssessment.binding, 'stale'); assert.notEqual(core.status, 'verified');
+  assert.equal(core.fileEvidence[0].assessment.accepted, true); assert.equal(after.nodes.some(n => n.id === 'file:b.js'), false);
+  assert.equal(after.outcomes[0].status, 'unproved'); assert.equal(after.project.completion.status, 'pending');
+  assert.equal(after.outcomes[0].definitionHash, goal.definitionHash); assert.equal(after.nodes.find(n => n.kind === 'mission').status, 'planned');
+});
+
+test('extend-piece preserves legacy files, inferred ids and planned empty pieces without editing another declaration', t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap'));
+  const planPath = path.join(root, '.buildmap/project.json');
+  for (const original of [{ file: './old.js', description: 'Legacy job.', goal: 'Legacy goal.' },
+    { files: 'old.js', name: 'Original name' }, { name: 'Empty piece', files: [], custom: 1 }]) {
+    const manifest = { components: [{ id: 'first', files: [] }, original] };
+    fs.writeFileSync(planPath, JSON.stringify(manifest)); const id = scanProject(root).nodes.filter(n => n.kind === 'component')[1].id;
+    const result = spawnSync(process.execPath, ['src/cli.js', root, '--extend-piece'], { input: '2\n\nsrc/future.js\n\nyes\n', encoding: 'utf8', timeout: 5000 });
+    assert.equal(result.status, 0, result.stderr);
+    const saved = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+    assert.deepEqual(saved.components[0], manifest.components[0]);
+    assert.deepEqual(saved.components[1], { ...original, id, files: [...(original.file ? [original.file] : typeof original.files === 'string' ? [original.files] : original.files), 'src/future.js'] });
+    assert.equal(scanProject(root).nodes.filter(n => n.kind === 'component')[1].id, id);
+    assert.equal(fs.existsSync(path.join(root, 'src')), false);
+  }
+});
+
+test('extend-piece refuses unsafe scope changes and invalid modes, with no-op, cancellation and incomplete input preserving bytes', t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap')); fs.mkdirSync(path.join(root, 'directory'));
+  for (const file of ['a.js', 'owned.js', 'used.js']) fs.writeFileSync(path.join(root, file), 'export const value = 1;');
+  fs.symlinkSync(path.join(root, 'directory'), path.join(root, 'linked')); fs.symlinkSync(path.join(root, 'a.js'), path.join(root, 'link.js'));
+  const planPath = path.join(root, '.buildmap/project.json'), evidencePath = path.join(root, '.buildmap/evidence.json');
+  const manifest = { components: [{ id: 'core', files: ['a.js'] }, { id: 'other', files: ['owned.js'] }],
+    outcomes: [{ id: 'goal', goal: 'Keep this file.', supports: ['file:used.js'], steps: [{ id: 'read', nodeId: 'core', label: 'Read', expected: 'Output.' }] }] };
+  const original = JSON.stringify(manifest); fs.writeFileSync(planPath, original);
+  const run = (input = '', flags = [], target = root) => spawnSync(process.execPath, ['src/cli.js', target, '--extend-piece', ...flags], { input, encoding: 'utf8', timeout: 5000 });
+  const invalid = run('0\n3\nno\n1\n999\n\nowned.js\nused.js\n../out.js\n/a.js\nC:/a.js\na\\b.js\nsrc/*.js\nlink.js\nlinked/new.js\ndirectory\na.js/child.js\nfuture.js\n\nno\n');
+  assert.equal(invalid.status, 0, invalid.stderr);
+  for (const message of [/Choose a declared piece/, /Choose available file/, /already belongs/, /used by an existing walkthrough/,
+    /project-relative file path/, /linked files\/directories/, /must name files/, /Cancelled/]) assert.match(invalid.stdout, message);
+  assert.equal(fs.readFileSync(planPath, 'utf8'), original);
+  for (const input of ['1\n\n\n', '1\n\na.js\n\n']) {
+    const result = run(input); assert.equal(result.status, 0, result.stderr); assert.match(result.stdout, /No additional files/);
+    assert.equal(fs.readFileSync(planPath, 'utf8'), original);
+  }
+  assert.equal(run('1\n\nfuture.js\n').status, 1);
+  for (const flags of [['--init'], ['--piece'], ['--walkthrough'], ['--json'], ['--html', path.join(root, 'preview.html')], ['--ref', 'main']]) assert.equal(run('', flags).status, 1);
+  assert.equal(run('', [], 'https://github.com/owner/repo').status, 1); assert.match(run('', ['--help']).stdout, /--extend-piece adds files/);
+  assert.equal(fs.readFileSync(planPath, 'utf8'), original); assert.equal(fs.existsSync(path.join(root, 'future.js')), false);
+  for (const status of ['computing', 'verified', 'live']) {
+    const claim = JSON.stringify({ components: { core: { status, note: 'Unbound claim.' } } }); fs.writeFileSync(evidencePath, claim);
+    const result = run('1\n'); assert.equal(result.status, 1); assert.match(result.stderr, /unbound behavior claim/);
+    assert.equal(fs.readFileSync(planPath, 'utf8'), original); assert.equal(fs.readFileSync(evidencePath, 'utf8'), claim);
+  }
+  fs.rmSync(evidencePath);
+  for (const components of [[], [null, manifest.components[0]], [manifest.components[0], { id: 'overlap', files: ['a.js'] }]]) {
+    const bytes = JSON.stringify({ components }); fs.writeFileSync(planPath, bytes);
+    assert.equal(run('1\n').status, 1); assert.equal(fs.readFileSync(planPath, 'utf8'), bytes);
+  }
+  fs.writeFileSync(planPath, original);
+  fs.linkSync(planPath, path.join(root, 'plan-copy')); assert.equal(run().status, 1); fs.rmSync(path.join(root, 'plan-copy'));
+  fs.renameSync(planPath, path.join(root, 'plan-original')); fs.symlinkSync(path.join(root, 'plan-original'), planPath);
+  assert.equal(run().status, 1); fs.rmSync(planPath); fs.renameSync(path.join(root, 'plan-original'), planPath);
+  fs.renameSync(path.join(root, '.buildmap'), path.join(root, 'config')); fs.symlinkSync(path.join(root, 'config'), path.join(root, '.buildmap'));
+  assert.equal(run().status, 1); assert.equal(fs.readFileSync(planPath, 'utf8'), original);
+});
+
+test('extend-piece preserves concurrent plans and selected receipts and rechecks new paths before saving', async t => {
+  const root = fixture(t); fs.mkdirSync(path.join(root, '.buildmap'));
+  const planPath = path.join(root, '.buildmap/project.json'), evidencePath = path.join(root, '.buildmap/evidence.json');
+  const original = '{"components":[{"id":"core","files":[]}]}', newer = '{"mission":"Newer plan"}', answers = '1\n\nfuture.js\n\nyes\n';
+  for (const change of ['plan', 'new-claim', 'changed-claim', 'deleted-claim', 'path', 'unrelated-claim']) {
+    fs.writeFileSync(planPath, original); fs.rmSync(path.join(root, 'future.js'), { force: true });
+    const evidence = { components: change === 'changed-claim' || change === 'deleted-claim' ? { core: { status: 'verified', note: 'Original.', sourceHashes: {} } } : {} };
+    fs.writeFileSync(evidencePath, JSON.stringify(evidence));
+    const output = { write(text) { if (!text.startsWith('Save this piece?')) return;
+      if (change === 'plan') fs.writeFileSync(planPath, newer);
+      else if (change === 'path') fs.symlinkSync(path.join(root, 'missing'), path.join(root, 'future.js'));
+      else { if (change === 'deleted-claim') delete evidence.components.core;
+        else evidence.components[change === 'unrelated-claim' ? 'other' : 'core'] = { status: 'verified', note: 'Newer observation.' };
+        fs.writeFileSync(evidencePath, JSON.stringify(evidence)); }
+    } };
+    const operation = createPiece(root, { extend: true, input: Readable.from([answers]), output });
+    if (change === 'unrelated-claim') {
+      await operation; assert.deepEqual(JSON.parse(fs.readFileSync(planPath, 'utf8')).components[0].files, ['future.js']);
+    } else {
+      await assert.rejects(operation, change === 'plan' ? /plan changed/ : change === 'path' ? /linked files\/directories/ : /selected piece evidence changed/);
+      assert.equal(fs.readFileSync(planPath, 'utf8'), change === 'plan' ? newer : original);
+    }
+    assert.equal(fs.readFileSync(evidencePath, 'utf8'), JSON.stringify(evidence));
+    assert.equal(fs.readdirSync(path.join(root, '.buildmap')).some(f => f.endsWith('.tmp')), false);
   }
 });

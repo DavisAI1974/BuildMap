@@ -1,8 +1,8 @@
 # BuildMap stage and remaining gaps
 
-**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. The next bounded refinement is the separately parked existing-piece file-extension draft; it is not part of this implemented MVP checkpoint. The local Chromium acceptance baseline now passes; this is not a release, deployment, or live-completion claim.
+**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. The bounded existing-piece file-extension refinement is now implemented and checked; broader editing remains later work. The local Chromium acceptance baseline now passes; this is not a release, deployment, or live-completion claim.
 
-This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **92/92 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. The 92-test suite uses a DOM double for client checks. A separate retained browser check now passes 19 scoped cases in Chromium 153.0.8010.0 on Node 24.19.0.
+This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **96/96 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. The 96-test suite uses a DOM double for client checks. A separate retained browser check now passes 19 scoped cases in Chromium 153.0.8010.0 on Node 24.19.0.
 
 ## Free BuildMap stage checklist
 
@@ -10,7 +10,7 @@ This record is maintained alongside the evidence-review pass based on `3f7ae7f`.
 | --- | --- | --- |
 | Describe a project and its intended finished experience/behavior | Implemented | Explicit local `--init`; attributed README/manifest intent; unknown intent and malformed descriptions stay visible. Both explanation views end with the destination. |
 | Map the repository and every mapped piece/file | Implemented | Git/filesystem inventory, supported source discovery and exact declared paths. Full file inspectors, present/missing counts and planned pieces. This is not automatic inventory of every unsupported repository asset. |
-| Organize files and describe planned pieces | Implemented | Reviewed local `--piece` appends groups or missing/empty pieces, preserving existing plans/source/evidence. Ownership and direct walkthrough references block unsafe regrouping. Existing-piece edits remain file-authored. |
+| Organize files and describe planned pieces | Implemented | Reviewed local `--piece` appends groups or missing/empty pieces, preserving existing plans/source/evidence. Ownership and direct walkthrough references block unsafe regrouping. Reviewed `--extend-piece` adds files to an existing declaration; other edits remain file-authored. |
 | Separate implementation, source wiring and behavior claims | Implemented | Planned/coded/connected/computing/verified/live contract; declared dependencies cannot grant source connectivity. Missing/overlapping implementation and stale/rejected claims remain visible. |
 | Follow goals through the build | Implemented | Free goals beside the graph and a wider free walkthrough; reviewed local `--walkthrough`; ordered steps, expected results, samples, handoffs, first unfinished point and supporting pieces. |
 | Prepare one focused task for a coding agent | Implemented | Free finding guidance and basic copy briefs, including goal/first-step context. Relevant files, captured fingerprint, scope limits and manual copy fallback; BuildMap does not send or execute tasks. |
@@ -41,7 +41,7 @@ PR #1 remains open. Merge, deployment, npm publication and paid launch are separ
 
 | Area | Current boundary | Later work when a concrete need justifies it |
 | --- | --- | --- |
-| Easier onboarding and plan editing | CLI setup and append-only piece/walkthrough interviews; existing edits, ownership moves and reference migration require file authoring. | Next: finish and review the bounded `--extend-piece` draft parked on `refinement/extend-piece-wip-20261013`; it is not active or verified. Preserve ids/metadata/ownership/references and evidence freshness. Broader installation/editor/migration work remains later. |
+| Easier onboarding and plan editing | CLI setup, new piece/walkthrough interviews and reviewed file additions with `--extend-piece`; other edits, ownership moves and reference migration require file authoring. | The bounded extension is complete: identity/metadata/original files/goals are retained, unsafe ownership/reference changes and concurrent edits are refused, and expanded scope invalidates older bound proof. See `docs/EXTEND_PIECE_REVIEW_20261013.md`. Broader installation/editor/migration work remains later. |
 | Evidence capture and independent provenance | Manual receipts and explicit selected inputs; recording guidance is implemented, not automatic capture. | Assisted entry or authenticated CI/runtime observations; retain scope, freshness and uncertainty. No command execution or upper states inferred from file/agent presence. |
 | Broader wiring discovery | Parsed JavaScript and bounded HTTP source matching; TypeScript/JSX, Python/HTML/CSS have disclosed heuristic limits. | Concrete adapters for frameworks/wrappers, aliases, Python src layouts and other languages with provenance. |
 | Larger repositories | Full scans/hashes and all-card rendering; no scale benchmark. | Measure realistic use, then improve caching/layout/navigation while preserving change detection. |

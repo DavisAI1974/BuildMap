@@ -1,0 +1,92 @@
+{
+  "checkedAt": "2026-10-14T00:00:16.365Z",
+  "revision": "a96489d29c5054eeda4abd882f9e0cde46f5b3c9",
+  "checks": [
+    {
+      "name": "Live dogfood map loads six cards, free views and no live states"
+    },
+    {
+      "name": "Fit map contains full graph in desktop viewport",
+      "width": 875,
+      "height": 825,
+      "sw": 875,
+      "sh": 825
+    },
+    {
+      "name": "Assigned-file search, Enter, card focus, scrolling and complete inspector"
+    },
+    {
+      "name": "Filtered cards leave native Tab navigation; Escape clears search"
+    },
+    {
+      "name": "Goal finding, evidence review and native clipboard attempt",
+      "clipboardStatus": "Select and copy the brief in the open task panel. Automatic copying is unavailable in this browser."
+    },
+    {
+      "name": "Permission-granted clipboard copies exact task brief"
+    },
+    {
+      "name": "Free goal walkthrough beside graph, highlights, samples, first gap and destination"
+    },
+    {
+      "name": "Wider free walkthrough, inspect step and return"
+    },
+    {
+      "name": "390px map and goal controls accessible, no page-width overflow",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "name": "Clipboard unavailable opens and selects complete manual brief"
+    },
+    {
+      "name": "Self-contained export renders and navigates with no API/assets/polling requests"
+    },
+    {
+      "name": "Larger-map gap selection reveals a piece and its evidence review"
+    },
+    {
+      "name": "30-piece larger fixture fit, assigned-path search, distant-card scroll and focus"
+    },
+    {
+      "name": "Source edit refresh retains selected-card keyboard focus"
+    },
+    {
+      "name": "Deleted declared source becomes planned and missing without losing selection"
+    },
+    {
+      "name": "HTTP refresh failure retains last snapshot and recovers"
+    },
+    {
+      "name": "Initial API failure reports retry and recovers"
+    },
+    {
+      "name": "No uncaught page JavaScript errors"
+    }
+  ],
+  "errors": [],
+  "browser": "153.0.8010.0",
+  "node": "v24.19.0",
+  "sourceHashes": {
+    "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
+    "public/app.js": "02e3d28a73a61fa90c6797e6700f9c3ecef8fc279995c1568ce965ba6216cec5",
+    "public/styles.css": "3fd0e1526283a657020f17f4922a8df5806525c51116c734df1f4769d5646515"
+  },
+  "result": "passed",
+  "inputHashes": {
+    ".buildmap/browser-check.mjs": "959e5a80cd26dad5142ddc5e7d13d006382a2fa24ae4f8d31a1d557272becda2",
+    ".buildmap/project.json": "b776d7fa83da777b9492afe5ff01db8aff3592e092b97856555d6d3542734c5f",
+    "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
+    "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
+    "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+    "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
+    "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
+    "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+    "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a",
+    "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+    "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
+  },
+  "scope": "Local headless Chromium only; independent from the named partial dogfood outcome. No deployment or live claim.",
+  "transport": "Direct loopback HTTP; self-contained export rendered in memory, no file navigation.",
+  "artifactPolicy": "No user-facing HTML preview generated."
+}

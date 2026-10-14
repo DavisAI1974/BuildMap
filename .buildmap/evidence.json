@@ -95,6 +95,31 @@
         "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a",
         "src/setup.js": "910c81ce7771f1d3b1693795e2c1b2ad22c53159958d499ea32d7a3b75fb38ef"
       }
+    },
+    "visualizer": {
+      "status": "verified",
+      "command": "node .buildmap/browser-check.mjs (separate Playwright Core; local Chromium 153.0.8010.0; Node v24.19.0)",
+      "note": "18 scoped local headless Chromium checks passed against the recorded implementation. Direct local live map and free goals, desktop/390px layout, assigned-file search, native Tab/Enter/Escape and focus, fit/scroll, evidence review, step inspection/return, clipboard permission-granted exact copy and unavailable fallback, self-contained export rendered in memory without API/assets/polling, a disposable 30-piece fixture, fetched source-change fingerprint, deletion-to-planned state, initial/polling HTTP failure and recovery, and no uncaught page JavaScript errors. Selected driver, manifest, backend/parser/export and package inputs are bound; this is not complete transitive input coverage or authenticated provenance. See docs/BROWSER_ACCEPTANCE_20261013.md and its JSON observation. Full accessibility, physical devices, other browsers and the complete named dogfood outcome were not established. No local-file navigation, deployment or live claim.",
+      "recordedAt": "2026-10-14T00:00:16.365Z",
+      "sourceHashes": {
+        "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
+        "public/app.js": "02e3d28a73a61fa90c6797e6700f9c3ecef8fc279995c1568ce965ba6216cec5",
+        "public/styles.css": "3fd0e1526283a657020f17f4922a8df5806525c51116c734df1f4769d5646515"
+      },
+      "inputHashes": {
+        ".buildmap/browser-check.mjs": "959e5a80cd26dad5142ddc5e7d13d006382a2fa24ae4f8d31a1d557272becda2",
+        ".buildmap/project.json": "b776d7fa83da777b9492afe5ff01db8aff3592e092b97856555d6d3542734c5f",
+        "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
+        "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
+        "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+        "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
+        "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
+        "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+        "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a",
+        "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
+        "docs/BROWSER_ACCEPTANCE_20261013.json": "63216c18074db016481fa53bdfbf4cde2a56d26c3059a1b5af9e2de5f3717df5"
+      }
     }
   },
   "outcomes": {

@@ -12,7 +12,7 @@ Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469
 
 ## BuildMap stage checkpoint
 
-The user asked to finish the BuildMap stage, then return to refinements, and to update the gap sheet to stay on track. The current free source-build scope is implemented and tracked row by row in `BUILD_GAPS.md`. No additional core source task is currently assigned. Real-browser acceptance remains blocked by the documented restrictions; do not label the product released, deployed, fully browser-verified or live. Begin later refinement only from concrete feedback or an observed issue. This supersedes earlier “next free work” suggestions below.
+The user asked to finish the BuildMap stage, then return to refinements, and to update the gap sheet to stay on track. The current free source-build scope is implemented and tracked row by row in `BUILD_GAPS.md`. No additional core source task is currently assigned. The local Chromium browser baseline now passes within the recorded scope; cloud-browser restrictions still apply; do not label the product released, deployed, fully browser-verified or live. Begin later refinement only from concrete feedback or an observed issue. This supersedes earlier “next free work” suggestions below.
 
 ## Latest user priorities
 
@@ -72,7 +72,7 @@ Goals now appear in the default map sidebar. Choosing one reads its walkthrough 
 
 **BuildMap Guide** is proposed paid deeper code-level explanation, next-step coaching with acceptance criteria, change-impact previews, review of agent changes, guided verification and continuity. It is not built or billed. Its proposed loop is understand, prepare, build with the user's agent, review actual changes/evidence, continue. Pricing is undecided. Do not claim code execution/data flow from source references or agent assertions; no billing, orchestration platform or separate coding agent is authorized by this strategy alone.
 
-Browser checks are still pending under the documented restrictions. PR #1 stays open with no deployment/live claim. Historical review entries describing the earlier paid split record prior behavior and are superseded by this section.
+Scoped local Chromium checks now pass; see the browser observation below. Cloud-browser restrictions, broader accessibility/device review and the incomplete named dogfood outcome example remain. PR #1 stays open with no deployment/live claim. Historical review entries describing the earlier paid split record prior behavior and are superseded by this section.
 
 ## Audience and focused task briefs
 
@@ -125,7 +125,7 @@ The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/ba
 - Public default-clone smoke with `octocat/Hello-World` recovered README intent and cleaned up.
 - Real branch/JSON smoke cloned BuildMap's PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported that exact revision, and cleaned up.
 - Offline fixture checks cover branch and tag selection, failed-ref cleanup, HTML export safety/overwrite refusal, and client live/offline logic through a DOM double.
-- Dogfood map: **four verified components from current source-bound recorded receipts with selected dependency/test-input bindings, one source-connected visualizer, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence, one HTTP source reference, and the visualizer behavior-unproved plus the separate unproved outcome findings**.
+- Dogfood map: **five verified components from scoped, current source-bound recorded receipts with selected inputs, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence, one HTTP source reference, and the separate unproved outcome finding**. The visualizer receipt covers only the local Chromium baseline; the named partial outcome remains independent.
 
 Do not call DOM-double tests browser verification. Receipts are manually recorded claims; source hashes bind each piece's implementation and optional input hashes bind only explicitly selected dependency/test/data/config files. Complete transitive input coverage, environment identity, and continuing deployment liveness are not established.
 
@@ -133,7 +133,7 @@ Do not call DOM-double tests browser verification. Receipts are manually recorde
 
 ### Release-confidence checks
 
-1. Real browser end-to-end: live server, exported snapshot, narrow screens, representative larger map, selection/gaps/search/fit/keyboard, source edits, and failure/recovery. Record only what is actually observed.
+1. The scoped local Chromium baseline now passes for live server/export, narrow and larger fixtures, selection/search/fit/basic keyboard, edits and failure/recovery. Remaining review covers full accessibility/keyboard usability, real devices/other browsers and a complete independently recorded outcome example. Record only what is actually observed.
 
 Completed release check: the full suite and CLI/server smoke passed on Node 20.20.2. No additional runtime check is currently pending.
 
@@ -148,9 +148,9 @@ Git arrival animation, continuous remote refresh, all five conceptual zoom level
 
 ## Current browser limitation
 
-The installed Playwright package has no local browser executable. The available cloud browser returned `ERR_CONNECTION_REFUSED` for the workspace server. Its URL security policy also rejected local HTML-file navigation and expressly prohibited workarounds around that rejection. No workaround was attempted. Use a permitted browser environment for the outstanding observation; do not retry the blocked action or claim success from the DOM harness. The visualizer has no computing/verified/live receipt.
+The cloud browser returned `ERR_CONNECTION_REFUSED` for the workspace server. Its URL security policy also rejected local HTML-file navigation and expressly prohibited workarounds around that rejection. Those cloud restrictions remain; do not retry or bypass them. The standard Playwright browser CDN returned a 195-byte Site Unavailable HTML page instead of its archive. A standard npm-distributed local Chromium package (`@sparticuz/chromium@153.0.0`) was installed outside the product dependencies, unpacked without changing archive ownership, and launched with default Playwright settings against direct local HTTP. No cloud navigation, external tunnel, hosting or deployment was used. Chromium 153.0.8010.0 passes 18 scoped cases on Node 24.19.0 using `.buildmap/browser-check.mjs`; the export is rendered only in memory over a local test server, with no HTML preview artifact written. See `docs/BROWSER_ACCEPTANCE_20261013.md` and its JSON report. A source-bound scoped visualizer receipt is now recorded; the complete named dogfood outcome still has no browser-step I/O record. Broader accessibility, real-device and other-browser observations remain open.
 
-The current release-confidence findings are the visualizer behavior-unproved gap and its unproved outcome/browser walkthrough step. Its declared server dependency now has an observed heuristic HTTP source path match with locations; this is not runtime/browser proof.
+The current outstanding dogfood finding is its unproved outcome/browser walkthrough step. The visualizer’s scoped local Chromium receipt does not fill that independent example. Its declared server dependency now has an observed heuristic HTTP source path match with locations; this is not runtime/browser proof.
 
 ## Resume commands
 
@@ -235,3 +235,9 @@ The free piece inspector now separates file/source facts, attributed recorded de
 89/89 tests pass on Node 20.20.2 and 24.19.0. Two focused scan-to-client regressions cover accepted/stale/invalid-input/unbound/file-only/missing evidence, attributed text escaping, refresh and offline behavior; and absent/partial/failed/accepted/stale-plan examples with unchanged piece proof. Existing free map, task briefs, CLI builder flow, APIs and export checks remain. Syntax/whitespace checks pass. Test receipts and partial backend intent/scan/HTTP observations are refreshed only after checks; the browser step and whole outcome stay unproved, with no live state.
 
 The user’s gap-sheet request is implemented in `BUILD_GAPS.md`: current stage requirements are marked implemented/checked, the real-browser acceptance row is blocked, and broader refinements/paid Guide are separate later work. Keep this checkpoint stable for review rather than expanding its scope indefinitely. No user-facing HTML preview was generated.
+
+## Local browser acceptance checkpoint — 2026-10-13
+
+The user asked to get the browser working. The retained local Chromium check passes 18 scoped cases; the existing 89-test suite was rerun successfully on Node 24.19.0. No core product source was changed for browser provisioning. The gap sheet and README distinguish this baseline from complete accessibility/device coverage and the still-partial independent outcome example. Five source-bound piece receipts are now accepted, none live. Historical entries above saying browser behavior was unobserved describe earlier checkpoints and are superseded only within the new report’s explicit scope.
+
+The main workspace has paused, uncommitted `--extend-piece` refinement changes in `src/cli.js`, `src/setup.js` and `tests/server.test.js`; they were preserved and excluded from this browser checkpoint. Browser checks ran in a clean detached worktree from the current pushed free branch. Do not discard the paused work or claim it is published/tested. Resume it only when returning to scoped refinements.

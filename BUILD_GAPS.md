@@ -1,8 +1,8 @@
 # BuildMap stage and remaining gaps
 
-**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. No additional core source feature is currently assigned. Browser acceptance remains blocked; this is not a release, deployment, or live-completion claim.
+**Current checkpoint: the free BuildMap source-build stage is implemented within the MVP scope below.** The user asked to finish this stage before returning to refinements. No additional core source feature is currently assigned. The local Chromium acceptance baseline now passes; this is not a release, deployment, or live-completion claim.
 
-This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **89/89 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. Client interaction checks use a DOM double, not a real browser.
+This record is maintained alongside the evidence-review pass based on `3f7ae7f`. Current validation: **89/89 tests pass on Node v20.20.2 and v24.19.0**, plus syntax/whitespace checks. The 89-test suite uses a DOM double for client checks. A separate retained browser check now passes 18 scoped cases in Chromium 153.0.8010.0 on Node 24.19.0.
 
 ## Free BuildMap stage checklist
 
@@ -15,24 +15,24 @@ This record is maintained alongside the evidence-review pass based on `3f7ae7f`.
 | Follow goals through the build | Implemented | Free goals beside the graph and a wider free walkthrough; reviewed local `--walkthrough`; ordered steps, expected results, samples, handoffs, first unfinished point and supporting pieces. |
 | Prepare one focused task for a coding agent | Implemented | Free finding guidance and basic copy briefs, including goal/first-step context. Relevant files, captured fingerprint, scope limits and manual copy fallback; BuildMap does not send or execute tasks. |
 | Read evidence without confusing a claim with proof | Implemented | Plain-English piece/whole-example review, recorded descriptions, binding/coverage limits, observed/failed/unaccepted step counts and recording guidance. Original raw claims/assessments/hashes remain inspectable. Evidence authoring remains manual. |
-| Navigate and follow local source changes | Implemented | Search across assigned paths, result/gap focus, selection highlights, fit/actual size, refresh/removal and refresh-failure feedback. Checked through shared-client DOM tests; real layout/accessibility is pending. |
+| Navigate and follow local source changes | Implemented | Search across assigned paths, result/gap focus, selection highlights, fit/actual size, refresh/removal and refresh-failure feedback. DOM tests plus scoped real Chromium search/fit/scroll, native Tab/Enter/Escape, narrow layout, edits and recovery checks. Full accessibility review remains open. |
 | Use APIs and portable snapshots | Implemented | Read-only map/gaps/health, JSON and self-contained HTML export; GitHub branch/tag snapshot provenance and cleanup. Export shares the live client and does not poll. No preview artifact is generated unless requested. |
 | Support the documented local runtime/startup | Checked | Node 20+ commands remain required; full tests on Node 20.20.2 and 24.19.0. Historical public clone/ref and Node 20 CLI/server/API/assets/exit smoke results remain documented. No no-code/browser onboarding claim. |
-| Observe the real browser experience | Blocked | Live server and export, narrow/larger maps, clipboard, search/fit/scroll, keyboard/accessibility, edits and failure/recovery still need a permitted browser environment. |
+| Observe the real browser experience | Scoped baseline passed | 18 local Chromium checks: live server, in-memory export, desktop/390px and 30-piece fixture, clipboard success/fallback, search/fit/scroll, native Tab/Enter/Escape, source edits/deletion and failure/recovery. Full assistive-technology, real-device and other-browser review remains open; see [observation](docs/BROWSER_ACCEPTANCE_20261013.md). |
 
 The implemented source checkpoint can now be reviewed as one free BuildMap flow. Further source work should come from a concrete finding, user feedback, or the permitted browser observation rather than treating all future capabilities as unfinished MVP work.
 
 ## Current dogfood evidence
 
-The manifest has five implemented components. Four backend/test pieces have current manually recorded, source-bound test receipts with selected dependency/test-input bindings. The visualizer is source-connected and behavior-unproved. There are no missing implementation files, unexpected declared-plan dependencies, or unmapped evidence claims in the dogfood map.
+The manifest has five implemented components. Four backend/test pieces retain current manually recorded, source-bound test receipts with selected dependency/test-input bindings. The visualizer has a new source-bound receipt for the scoped local Chromium checks, with the retained driver and selected server/scanner/export inputs bound. Five piece receipts are accepted; none is live. There are no missing implementation files, unexpected declared-plan dependencies, or unmapped evidence claims in the dogfood map.
 
-The literal `/api/map` fetch and supported Node HTTP handler match with source locations. This is source syntax, not proof of runtime origin, transport, execution, or browser behavior. A partial Node intent/scan/local-HTTP example records selected fields for three steps; its browser step and the whole “Understand the current build” outcome remain unproved. No piece is live.
+The literal `/api/map` fetch and supported Node HTTP handler match with source locations. This is source syntax, not proof of runtime origin, transport, execution, or browser behavior. A partial Node intent/scan/local-HTTP example records selected fields for three steps; that named partial example still has no browser-step input/output record, so the whole “Understand the current build” outcome remains unproved. The separate browser checks do not automatically complete it. No piece is live.
 
 Hash matches establish identity, not receipt authenticity, complete transitive input coverage, environment identity, or continuing liveness. Piece proof and outcome/mission proof remain independent.
 
 ## Remaining stage acceptance check
 
-The available cloud browser could not reach workspace loopback, and its URL policy rejected local HTML navigation and prohibited workarounds. No workaround was used. Do not retry or bypass those restrictions; complete the browser checklist only in a permitted environment and record only what is observed.
+The cloud browser could not reach workspace loopback, and its URL policy rejected local HTML navigation and prohibited workarounds. Those restrictions remain. An independently installed local headless Chromium now reaches the server directly in this workspace; no cloud restriction was retried or bypassed, and nothing was tunneled or deployed. The local browser’s 18-case baseline passes. Full keyboard usability/assistive-technology review, actual mobile devices, other browsers and a complete independently recorded dogfood outcome example are still open. Record only the observed scope; the browser report is not authenticated provenance or continuing liveness.
 
 PR #1 remains open. Merge, deployment, npm publication and paid launch are separate actions. Nothing is marked live.
 

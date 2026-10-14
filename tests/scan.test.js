@@ -57,6 +57,70 @@ function write(root, rel, text) {
 function planned(root, components) { write(root, '.buildmap/project.json', { components }); }
 function node(map, id) { return map.nodes.find(n => n.id === id); }
 
+test('code guide explains parsed function inputs, returns and calls without executing source or confusing nested bodies', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/engine.js', `throw new Error('Mapping must never execute this module');
+function format(value) { return value * 2; }
+export { format as present };
+export function outer({amount} = {}, ...rest) {
+  function format(value) { return value + 1; }
+  const callback = () => hiddenCall();
+  const example = 'function invented() { fakeCall(); }';
+  if (amount) return { total: format(amount), note: example };
+  return service['save'](...rest);
+}
+export const echo = input => ({ value: input.amount + 1 });
+function unique() { return echo({ amount: 7 }); }
+function bigintKey(input) { return service[1n](input); }
+`);
+  const map = scanProject(root), n = map.nodes.find(n => n.files.includes('src/engine.js'));
+  const file = n.codeGuide.files[0]; assert.equal(file.status, 'parsed'); assert.equal(file.sourceHash, n.sourceHashes['src/engine.js']);
+  assert.deepEqual(file.functions.map(f => f.name), ['format', 'outer', 'echo', 'unique', 'bigintKey']);
+  assert.equal(file.functions[0].exported, true);
+  const outer = file.functions[1]; assert.deepEqual(outer.parameters, ['object fields: amount (default: an object)', 'remaining arguments in rest']);
+  assert.deepEqual(outer.calls.map(c => c.target), ['format', "service['save']"]);
+  assert.deepEqual(outer.calls[0].arguments, ['the value at amount']);
+  assert.deepEqual(outer.calls[1].arguments, ['spread values from the value at rest']);
+  assert.ok(outer.calls.every(c => c.resolution === 'unresolved-source-reference'));
+  assert.equal(outer.conditions, 1); assert.equal(outer.throws, 0); assert.equal(outer.line, 4);
+  assert.equal(outer.returns.length, 2); assert.equal(outer.returns[0].fields[0].name, 'total');
+  assert.equal(file.functions[3].calls[0].resolution, 'same-file-function');
+  assert.equal(file.functions[3].calls[0].targetLocation.line, 11);
+  assert.equal(file.functions[4].calls[0].target, 'service[1n]');
+  assert.match(file.functions[2].returns[0].fields[0].summary, /input.amount/);
+  assert.equal(n.status, 'coded'); assert.equal(map.project.counts.verified, 0); assert.equal(map.project.counts.live, 0);
+  assert.ok(n.codeGuide.limitations.some(s => s.includes('not runtime order')));
+});
+
+test('code guide discloses unsupported, parse-failed, large and missing files while retaining complete piece scope', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/typed.ts', 'export const fn = (x: number) => x;');
+  write(root, 'src/broken.js', 'export function {');
+  write(root, 'src/large.js', '//'+ 'x'.repeat(1_000_001));
+  write(root, 'src/empty.cjs', 'module.exports = 7;');
+  planned(root, [{ id: 'all', files: ['src/typed.ts', 'src/broken.js', 'src/large.js', 'src/empty.cjs', 'src/missing.js'] }]);
+  const n = node(scanProject(root), 'all');
+  assert.deepEqual(n.codeGuide.files.map(f => f.status), ['unsupported', 'parse-error', 'size-limit', 'parsed', 'missing']);
+  assert.ok(n.codeGuide.files.every(f => f.functions.length === 0));
+  assert.equal(n.codeGuide.files.at(-1).sourceHash, null); assert.equal(n.status, 'planned');
+  assert.deepEqual(n.missingFiles, ['src/missing.js']);
+});
+
+test('code explanations follow source edits, share source identity and cannot keep an earlier receipt accepted', t => {
+  const root = fixture(); t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  write(root, 'src/main.js', 'export function first(value) { return value; }');
+  planned(root, [{ id: 'main', files: ['src/main.js'] }]);
+  const first = scanProject(root);
+  write(root, '.buildmap/evidence.json', { components: { main: { status: 'verified', note: 'Earlier check.', sourceHashes: node(first, 'main').sourceHashes } } });
+  const bound = scanProject(root); assert.equal(node(bound, 'main').status, 'verified');
+  write(root, 'src/main.js', 'export async function second(value) { return await fetch(value); }');
+  const changed = scanProject(root), n = node(changed, 'main');
+  assert.notEqual(changed.fingerprint, bound.fingerprint); assert.equal(n.status, 'coded'); assert.equal(n.evidenceAssessment.accepted, false);
+  const guide = n.codeGuide.files[0]; assert.equal(guide.functions[0].name, 'second'); assert.equal(guide.functions[0].async, true);
+  assert.equal(guide.sourceHash, n.sourceHashes['src/main.js']); assert.equal(guide.functions[0].calls[0].target, 'fetch');
+  assert.match(guide.functions[0].returns[0].summary, /awaited result.*calling fetch/);
+});
+
 test('planned dependencies are visible but cannot establish a code connection', () => {
   const root = fixture();
   write(root, 'src/a.js', 'export const a = 1;'); write(root, 'src/b.js', 'export const b = 1;');

@@ -1,4 +1,5 @@
 import { parse } from 'acorn';
+import { explainFunctions } from './code-guide.js';
 
 const functions = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
 const httpModules = new Set(['http', 'node:http']);
@@ -96,7 +97,7 @@ export function analyzeJavaScript(source, ext = '.js') {
       }
     }
   });
-  return { imports: [...imports], requests, providers };
+  return { imports: [...imports], requests, providers, functions: explainFunctions(ast, bindings) };
 }
 
 function requestMethod(options) {

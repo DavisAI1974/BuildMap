@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { readIntent, readFinishedProduct } from './intent.js';
 import { sourceReferences, resolveImport } from './imports.js';
 import { buildOutcomes, buildCompletion } from './outcomes.js';
+import { CODE_GUIDE_LIMITS } from './code-guide.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -91,7 +92,9 @@ export function scanProject(root, { source = null } = {}) {
       conflictingFiles,
       implementation: complete ? 'complete' : present.length ? 'partial' : 'missing',
       baseStatus: base, status: resolveStatus({ base, evidence: assessment.accepted ? receipt.status : null }),
-      evidence: receipt || null, evidenceAssessment: assessment, sourceHashes };
+      evidence: receipt || null, evidenceAssessment: assessment, sourceHashes,
+      codeGuide: { basis: 'source-syntax', limitations: CODE_GUIDE_LIMITS, files: fields.files.map(file =>
+        discovery.guides.get(file) || { path: file, status: 'missing', reason: 'No readable implementation file is present.', sourceHash: null, functions: [] }) } };
   }
 
   for (const component of components) {
@@ -346,12 +349,23 @@ function walkFiles(root, diagnostics) {
 }
 
 function discoverImports(root, files, fileSet, diagnostics) {
-  const edges = [], requests = [], providers = [];
+  const edges = [], requests = [], providers = [], guides = new Map();
   for (const file of files) {
+    const ext = path.extname(file.path).toLowerCase();
+    const supported = ['.js', '.mjs', '.cjs'].includes(ext);
+    const guide = { path: file.path, status: supported ? 'unreadable' : 'unsupported', sourceHash: file.hash, functions: [],
+      reason: supported ? 'Source could not be read for this explanation.' : 'Function explanations currently support JavaScript .js, .mjs and .cjs only.' };
+    guides.set(file.path, guide);
+    if (supported && file.size > 1_000_000) { guide.status = 'size-limit'; guide.reason = 'Source explanation is skipped above the existing 1 MB discovery limit.'; }
     if (file.size > 1_000_000) { diagnostics.push({ code: 'large-file', message: `${file.path} is present but import discovery is skipped above 1 MB.` }); continue; }
     try {
-      const ext = path.extname(file.path).toLowerCase();
-      const references = sourceReferences(fs.readFileSync(path.join(root, file.path), 'utf8'), ext);
+      const bytes = fs.readFileSync(path.join(root, file.path));
+      const references = sourceReferences(bytes.toString('utf8'), ext);
+      if (supported) {
+        if (hash(bytes) !== file.hash) { guide.status = 'changed-during-scan'; guide.reason = 'Source changed while being scanned. Refresh before inspecting its functions.'; }
+        else if (references.error) { guide.status = 'parse-error'; guide.reason = references.error; }
+        else { guide.status = 'parsed'; guide.reason = 'Parsed source declarations; no code was executed.'; guide.functions = references.functions; }
+      }
       if (references.error) diagnostics.push({ code: 'javascript-parse-failed', message: `${file.path}: ${references.error}` });
       requests.push(...references.requests.map(r => ({ ...r, file: file.path })));
       providers.push(...references.providers.map(p => ({ ...p, file: file.path })));
@@ -376,7 +390,7 @@ function discoverImports(root, files, fileSet, diagnostics) {
     }
   }
   const unique = uniqueEdges(edges);
-  return { edges: unique, importCount, httpCount: unique.filter(e => e.type === 'http').length };
+  return { edges: unique, importCount, httpCount: unique.filter(e => e.type === 'http').length, guides };
 }
 
 function buildComponentEdges(nodes, importEdges) {

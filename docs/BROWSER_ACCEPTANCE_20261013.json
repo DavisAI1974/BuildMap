@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-10-14T00:42:24.948Z",
-  "revision": "e301c3cc0e15ca1eedd5e59f5a822fc8b6d1ad99",
+  "checkedAt": "2026-10-14T00:54:34.097Z",
+  "revision": "818a0f7c491a7960483d3e9f181b27674a05f6f7",
   "checks": [
     {
       "name": "Live dogfood map loads six cards, free views and no live states"
@@ -16,6 +16,9 @@
       "name": "Assigned-file search, Enter, card focus, scrolling and complete inspector"
     },
     {
+      "name": "Guide reads current dogfood JavaScript functions and returns to the free evidence inspector"
+    },
+    {
       "name": "Filtered cards leave native Tab navigation; Escape clears search"
     },
     {
@@ -28,6 +31,9 @@
       "name": "390px map and goal controls accessible, no page-width overflow",
       "width": 390,
       "scrollWidth": 390
+    },
+    {
+      "name": "Captured Guide explanations render in the self-contained export"
     },
     {
       "name": "Self-contained export renders and navigates with no API/assets/polling requests"
@@ -49,6 +55,15 @@
       "name": "30-piece larger fixture fit, assigned-path search, distant-card scroll and focus"
     },
     {
+      "name": "Guide shows argument expressions and opens/focuses a resolved same-file function"
+    },
+    {
+      "name": "Guide retains expanded function and keyboard focus after an unrelated refresh"
+    },
+    {
+      "name": "Guide refresh discards changed-source expansion, discloses unresolved targets and fits 390px"
+    },
+    {
       "name": "Reviewed scope lights the final box and opens its checked walkthrough"
     },
     {
@@ -56,6 +71,9 @@
     },
     {
       "name": "Deleted declared source becomes planned and missing without losing selection"
+    },
+    {
+      "name": "Guide reports missing declared source without inventing a function explanation"
     },
     {
       "name": "HTTP refresh failure retains last snapshot and recovers"
@@ -72,27 +90,36 @@
   "node": "v24.19.0",
   "sourceHashes": {
     "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
-    "public/app.js": "fa9008cef5077fc277314e621ac527e46d9c446db94446c7d5b3bd85763b3a10",
-    "public/styles.css": "5d874eb2bcab055aa7d3f27c0f08e9baabe6045326bef9fee936baa12bbd387f"
+    "public/app.js": "ba31702055ddd994bea33d3a2b1a52d12d9264a4433b8b36d3ce5713219d3982",
+    "public/styles.css": "dd1d6d03feaa38612a5e41af3e0703da88f992079e3a0ec31ae59cab34adca5f"
   },
   "result": "passed",
-  "revisionContext": "Parent HEAD at observation; the bounded uncommitted refinement is identified by the actual hashes below.",
+  "revisionContext": "Parent HEAD at observation; the integrated Guide working source/check scope is identified by actual hashes below.",
   "checkedWorkingTree": {
-    "src/cli.js": "4b9493b80f4aa25851273e7d485de3df06d1e2936968a09bc96daaf8b351c25d",
-    "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
-    "tests/server.test.js": "a29a94d961966eee762f502c9b775d9a28d5abd779e146a42ef9c8594177b287"
+    "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
+    "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
+    "src/scan.js": "d2da920c3158a67e18f37c5d7fec476e2e908f9b4e00c05fc6a368ff7e6fe12b",
+    "public/app.js": "ba31702055ddd994bea33d3a2b1a52d12d9264a4433b8b36d3ce5713219d3982",
+    "public/styles.css": "dd1d6d03feaa38612a5e41af3e0703da88f992079e3a0ec31ae59cab34adca5f",
+    "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
+    "tests/ui.test.js": "b73ea0b940fad63b219f93e0dcf4be838c6199cee5dbf2fda6bd20d0dd372391",
+    ".buildmap/browser-check.mjs": "87766ac14f0310637a85562f2791e1e2e0d44cf984921d39f4c9401ccd9e1d3d",
+    ".buildmap/project.json": "0511c5c76cc0859cef6ead9794056528a753de1f820cd9e4bd3bfeb23df1906c"
   },
   "inputHashes": {
-    ".buildmap/browser-check.mjs": "3de9a45c248f5ebfc2f7983b8e25a3b1cc2ff552e7cfc16a1d204f34dad23ac4",
-    ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
+    ".buildmap/browser-check.mjs": "87766ac14f0310637a85562f2791e1e2e0d44cf984921d39f4c9401ccd9e1d3d",
+    ".buildmap/project.json": "0511c5c76cc0859cef6ead9794056528a753de1f820cd9e4bd3bfeb23df1906c",
     "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
     "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
-    "src/scan.js": "464f36646cb19de48da5a3db55751b0db2f0cd0c11552c6d162b1e05c05c8048",
+    "src/scan.js": "d2da920c3158a67e18f37c5d7fec476e2e908f9b4e00c05fc6a368ff7e6fe12b",
     "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
     "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
-    "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
+    "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
     "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
     "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-    "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
-  }
+    "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
+    "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632"
+  },
+  "scope": "Prior 19 retained free checks plus six Guide source-reading/navigation cases. Source syntax is not observed execution or data flow; the complete named free goal and review are recorded separately.",
+  "transport": "Direct permitted loopback HTTP; self-contained export rendered in memory. No HTML preview artifact, tunnel or cloud-file navigation."
 }

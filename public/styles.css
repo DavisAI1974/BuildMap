@@ -167,6 +167,11 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .finished-product { margin-top: 24px; padding: 16px; border: 1px solid #345347; border-radius: 7px; background: #14221d; }
 .finished-product h2 { margin: 8px 0 16px; }
 .finished-product h3 { margin-top: 16px; }
+.code-function { margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #142333; }
+.code-function summary { cursor: pointer; color: #c2e4ff; overflow-wrap: anywhere; }
+.code-function:focus-visible, .code-function summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.code-guide code, .code-function li { overflow-wrap: anywhere; }
+.guide-call { display: block; margin: 8px 0; max-width: 100%; white-space: normal; text-align: left; }
 .view-switch { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); background: #0f151d; }
 .view-switch button span { color: var(--muted); font-size: 10px; margin-left: 8px; text-transform: uppercase; }
 .view-switch button[aria-pressed="true"] { background: #1b354b; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }

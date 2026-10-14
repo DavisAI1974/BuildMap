@@ -15,6 +15,8 @@ let mapPositions = new Map();
 let mapScale = 1;
 let selectedOutcomeId = null;
 let mapShowsOutcome = false;
+let guidePieceId = null;
+const guideOpenFunctions = new Set();
 let selectedGapId = null;
 let currentView = 'map';
 let walkthroughReturnId = null;
@@ -70,6 +72,7 @@ async function refresh() {
     const focusInResults = active?.classList.contains('search-result');
     const focusOnCard = active?.classList.contains('node');
     const focusedOutcome = active?.classList.contains('outcome-choice') ? active.dataset.outcomeId : null;
+    const focusedGuide = active?.dataset?.guideControl || active?.closest?.('[data-guide-control]')?.dataset.guideControl;
     currentFingerprint = next.fingerprint;
     model = next;
     const visibleGaps = currentView === 'map' ? pieceGaps() : model.gaps.filter(isOutcomeGap);
@@ -87,7 +90,7 @@ async function refresh() {
     renderMap();
     if (selectedId) {
       if (model.nodes.some(n => n.id === selectedId)) { if (currentView === 'map' && !mapShowsOutcome && !mapOutcomeRemoved) renderDetail(selectedId); }
-      else { selectedId = null; if (currentView === 'map') $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
+      else { selectedId = null; guidePieceId = null; guideOpenFunctions.clear(); if (currentView === 'map') $('detail').innerHTML = '<h2>Piece removed</h2><p>The selected piece is no longer in the current map.</p>'; }
     }
     if (currentView === 'walkthrough' && !outcomeRemoved) renderWalkthroughDetail();
     if (currentView === 'map' && mapShowsOutcome) renderOutcomeDetail(selectedOutcomeId);
@@ -97,6 +100,10 @@ async function refresh() {
       (replacement || $('search')).focus({ preventScroll: true });
     }
     if (focusedOutcome) ([...$('outcomes').children].find(el => el.dataset.outcomeId === focusedOutcome) || $(currentView === 'map' ? 'mapViewButton' : 'walkthroughViewButton')).focus({ preventScroll: true });
+    if (focusedGuide && currentView === 'map') {
+      const controls = [...$('detail').children].flatMap(el => [el, ...el.children]);
+      (controls.find(el => el.dataset.guideControl === focusedGuide) || controls.find(el => el.dataset.guideControl === 'back') || $('search')).focus({ preventScroll: true });
+    }
   } catch (err) {
     $('refreshStatus').textContent = model ? 'Refresh failed · showing last snapshot' : 'Could not load map · retrying';
     $('refreshStatus').classList.add('stale');
@@ -235,6 +242,8 @@ function layout(nodes, edges) {
 function selectPiece(id, reveal = false, returnToOutcome = null) {
   if (!model.nodes.some(n => n.id === id)) return;
   mapShowsOutcome = false;
+  guidePieceId = null;
+  guideOpenFunctions.clear();
   walkthroughReturnId = returnToOutcome;
   if (currentView !== 'map') showView('map');
   selectedGapId = null; renderGaps();
@@ -302,6 +311,7 @@ function edgePath(a,b,type) {
 }
 
 function renderDetail(id) {
+  if (guidePieceId === id) { renderCodeGuide(id); return; }
   const node = model.nodes.find(n => n.id === id);
   if (!node) return;
   const findings = pieceGaps().filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId));
@@ -322,6 +332,10 @@ function renderDetail(id) {
   `;
   if (completion) appendCompletion(completion);
   if (finding) appendTaskBrief(finding, node);
+  if (node.kind !== 'mission') {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'guide-open'; button.textContent = 'Inspect actual code · Guide preview';
+    button.addEventListener('click', () => { guidePieceId = id; renderCodeGuide(id); [...$('detail').children].find(el => el.classList.contains('guide-back')).focus({ preventScroll: true }); }); $('detail').appendChild(button);
+  }
   if (walkthroughReturnId && model.outcomes?.some(o => o.id === walkthroughReturnId)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'return-outcome'; button.textContent = 'Return to walkthrough';
     button.addEventListener('click', () => selectOutcome(walkthroughReturnId)); $('detail').appendChild(button);
@@ -345,6 +359,70 @@ function appendCompletion(completion) {
   $('detail').appendChild(panel);
 }
 
+function renderCodeGuide(id) {
+  const node = model.nodes.find(n => n.id === id);
+  if (!node) return;
+  const guide = node.codeGuide;
+  const capturedFingerprint = model.fingerprint, visibleKeys = new Set();
+  $('detail').innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · CODE PREVIEW</div><h2>${escapeHtml(node.name)}</h2>
+    <p>See what the source declares: inputs, return expressions, and calls written inside its top-level functions. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
+    <p>${escapeHtml(node.purpose)} This is the piece’s recorded purpose; the source descriptions below do not verify it.</p>
+    <p>This is the first Guide capability available for MVP review. Billing and the wider coaching/review loop are not built.</p>
+    <p>${snapshot ? 'Captured code reading · this snapshot does not follow later edits.' : 'Current source reading · follows local refresh.'} ${$('refreshStatus').classList.contains('stale') ? 'Refresh failed; this is the last captured source.' : ''}</p>`;
+  const back = document.createElement('button'); back.type = 'button'; back.className = 'guide-back'; back.textContent = 'Back to piece';
+  back.dataset.guideControl = 'back';
+  back.addEventListener('click', () => { guidePieceId = null; renderDetail(id); [...$('detail').children].find(el => el.classList.contains('guide-open'))?.focus({ preventScroll: true }); }); $('detail').appendChild(back);
+  if (!guide) {
+    const section = document.createElement('p'); section.textContent = 'Code explanations were not captured in this snapshot. Re-scan the current project to include them.'; $('detail').appendChild(section);
+  }
+  for (const file of guide?.files || []) {
+    const functionCards = new Map();
+    const section = document.createElement('section'); section.className = 'detail-section code-guide';
+    section.innerHTML = `<h3>${escapeHtml(file.path)}</h3><p>${escapeHtml(file.reason)}</p>
+      <details><summary>Captured source identity</summary><p>SHA-256: <code>${escapeHtml(file.sourceHash || 'unavailable')}</code></p></details>`;
+    for (const fn of file.functions || []) {
+      const details = document.createElement('details'); details.className = 'code-function';
+      const key = JSON.stringify([id, file.path, file.sourceHash, fn.line, fn.column]);
+      visibleKeys.add(key); details.open = guideOpenFunctions.has(key); details.tabIndex = -1; details.dataset.guideControl = key;
+      functionCards.set(`${fn.line}:${fn.column}`, details);
+      details.addEventListener('toggle', () => {
+        if (guidePieceId !== id || model.fingerprint !== capturedFingerprint) return;
+        if (details.open) guideOpenFunctions.add(key); else guideOpenFunctions.delete(key);
+      });
+      const where = `${file.path}:${fn.line}:${fn.column}`;
+      details.innerHTML = `<summary>${escapeHtml(fn.name)} · ${escapeHtml(where)}</summary>
+        <p>${escapeHtml(fn.summary)} ${fn.exported ? 'Declared as an export.' : 'Not declared as an ES-module export.'} ${fn.async ? 'Declared async.' : ''} ${fn.generator ? 'Declared as a generator.' : ''}</p>
+        <h4>Inputs declared by the function</h4><p>${fn.parameters.length ? fn.parameters.map(escapeHtml).join('; ') : 'No parameters declared. This does not mean the function has no other inputs or dependencies.'}</p>
+        <h4>What its return expressions describe</h4>${fn.returns.length ? fn.returns.map(r => `<p>${escapeHtml(`${file.path}:${r.line}:${r.column}`)} · ${escapeHtml(r.summary)}</p>${r.fields ? `<ul>${r.fields.map(f => `<li>${escapeHtml(f.name)}: ${escapeHtml(f.summary)}</li>`).join('')}</ul>` : ''}`).join('') : '<p>No explicit return site found. This does not establish its effects, outputs or successful completion.</p>'}
+        <h4>Calls written inside this function</h4>${fn.calls.length ? `<ul>${fn.calls.map(c => `<li>${escapeHtml(c.target)} · ${escapeHtml(`${file.path}:${c.line}:${c.column}`)} · ${c.argumentCount} argument expressions${c.arguments?.length ? `: ${c.arguments.map(escapeHtml).join('; ')}` : ''}${c.resolution === 'same-file-function' ? ` · uniquely bound function declaration at ${escapeHtml(`${file.path}:${c.targetLocation.line}:${c.targetLocation.column}`)}` : ' · target not resolved'}${c.kind === 'construction' ? ' · constructor syntax' : ''}</li>`).join('')}</ul>` : '<p>No call/construction site found in this function body. Nested function bodies are excluded.</p>'}
+        <p>Source contains ${fn.conditions} condition constructs, ${fn.loops} loops and ${fn.throws} throw statements. Their presence does not establish which path runs.</p>`;
+      for (const call of fn.calls.filter(c => c.resolution === 'same-file-function')) {
+        const jump = document.createElement('button'); jump.type = 'button'; jump.className = 'guide-call'; jump.textContent = `Read called function: ${call.target}`;
+        jump.addEventListener('click', () => {
+          if (guidePieceId !== id || model.fingerprint !== capturedFingerprint) return;
+          const target = functionCards.get(`${call.targetLocation.line}:${call.targetLocation.column}`);
+          if (target) { target.open = true; guideOpenFunctions.add(target.dataset.guideControl); target.scrollIntoView({ block: 'nearest' }); target.focus({ preventScroll: true }); }
+        });
+        details.appendChild(jump);
+      }
+      section.appendChild(details);
+    }
+    if (file.status === 'parsed' && !file.functions.length) {
+      const empty = document.createElement('p'); empty.textContent = 'No top-level function declaration or assigned function was found within the supported scope. This does not mean the file has no behavior.'; section.appendChild(empty);
+    }
+    $('detail').appendChild(section);
+  }
+  for (const key of guideOpenFunctions) if (!visibleKeys.has(key)) guideOpenFunctions.delete(key);
+  if (walkthroughReturnId && model.outcomes?.some(o => o.id === walkthroughReturnId)) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'return-outcome'; button.textContent = 'Return to walkthrough';
+    button.addEventListener('click', () => selectOutcome(walkthroughReturnId)); $('detail').appendChild(button);
+  }
+  const limits = document.createElement('section'); limits.className = 'detail-section';
+  limits.innerHTML = `<h3>What this explanation covers</h3><ul>${(guide?.limitations || ['Only captured source descriptions are available; there is no runtime observation.']).map(text => `<li>${escapeHtml(text)}</li>`).join('')}</ul>`;
+  $('detail').appendChild(limits);
+  appendFinishedProduct();
+}
+
 function renderOutcomes() {
   const outcomes = model.outcomes || [];
   $('outcomeHint').textContent = outcomes.length ? 'Choose an intended result to inspect its steps and recorded example.' : 'Start with one result you want the project to deliver, then choose the pieces that should build toward it.';
@@ -360,7 +438,7 @@ function renderOutcomes() {
 }
 function selectOutcome(id, inMap = false) {
   if (!model.outcomes?.some(o => o.id === id)) return;
-  selectedOutcomeId = id; walkthroughReturnId = null; mapShowsOutcome = inMap;
+  selectedOutcomeId = id; walkthroughReturnId = null; mapShowsOutcome = inMap; guidePieceId = null;
   if (!inMap && currentView !== 'walkthrough') showView('walkthrough');
   selectedGapId = null; renderGaps();
   renderOutcomes(); applyFilter(); renderOutcomeDetail(id);

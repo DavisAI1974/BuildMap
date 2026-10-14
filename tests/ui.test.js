@@ -628,6 +628,85 @@ test('map goals open a free walkthrough beside the graph with bounded briefs, re
   }
 });
 
+test('Guide code preview reads scanned functions safely, follows refresh and returns to the full free inspector offline or live', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-code-preview-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, '.buildmap'));
+  const file = path.join(root, 'main.js');
+  const initial = `export function first(input) { return service['<img onerror=evil()>'](input); }`;
+  fs.writeFileSync(file, initial);
+  for (const offline of [false, true]) {
+    fs.writeFileSync(file, initial);
+    const input = scanProject(root), original = JSON.stringify(input), ui = await client(input, offline);
+    const card = () => ui.get('nodeLayer').children.find(n => n.dataset.id === 'file:main.js');
+    card().click(); ui.get('fitButton').click();
+    const open = () => ui.get('detail').children.find(e => e.classes.has('guide-open'));
+    assert.ok(ui.get('detail').children.some(e => e.classes.has('task-brief')));
+    open().click(); assert.match(ui.get('detail').innerHTML, /BUILDMAP GUIDE · CODE PREVIEW/);
+    assert.equal(ui.get('mapShell').hidden, false);
+    const source = () => ui.get('detail').children.find(e => e.classes.has('code-guide'));
+    assert.match(source().children[0].innerHTML, /first/);
+    assert.match(source().children[0].innerHTML, /&lt;img onerror/);
+    assert.doesNotMatch(source().children[0].innerHTML, /<img|<script>/);
+    assert.match(source().children[0].innerHTML, /target not resolved/);
+    assert.match(source().innerHTML, /SHA-256/);
+    assert.equal(ui.get('detail').children.at(-1).classes.has('finished-product'), true);
+    if (!offline) {
+      fs.writeFileSync(file, 'export function second(value) { return { output: value + 1 }; }');
+      ui.setModel(scanProject(root)); await ui.refresh();
+      assert.match(ui.get('detail').innerHTML, /CODE PREVIEW/); assert.match(source().children[0].innerHTML, /second/);
+      assert.doesNotMatch(source().children[0].innerHTML, /first/);
+    } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+    ui.get('detail').children.find(e => e.classes.has('guide-back')).click();
+    assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
+    assert.ok(ui.get('detail').children.some(e => e.classes.has('task-brief')));
+    assert.equal(ui.get('fitButton').attributes['aria-pressed'], 'true');
+    assert.ok(card().classes.has('selected')); assert.equal(JSON.stringify(input), original);
+    assert.equal(input.project.counts.verified, 0); assert.equal(input.project.counts.live, 0);
+    if (!offline) {
+      open().click(); fs.rmSync(file); ui.setModel(scanProject(root)); await ui.refresh();
+      assert.match(ui.get('detail').innerHTML, /Piece removed/);
+    }
+  }
+});
+
+test('Guide follows resolved same-file calls, keeps current reading focus, and discards stale function controls', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-code-navigation-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const sourcePath = path.join(root, 'core.js');
+  fs.writeFileSync(sourcePath, 'export function result(input) { return twice(input.amount); }\nfunction twice(value) { return value * 2; }');
+  for (const offline of [false, true]) {
+    const input = scanProject(root), original = JSON.stringify(input), ui = await client(input, offline);
+    ui.get('nodeLayer').children.find(n => n.dataset.id === 'file:core.js').click();
+    ui.get('detail').children.find(e => e.classes.has('guide-open')).click();
+    assert.equal(ui.context.document.activeElement.classList.contains('guide-back'), true);
+    const cards = () => ui.get('detail').children.find(e => e.classes.has('code-guide')).children;
+    assert.match(cards()[0].innerHTML, /the value at input.amount/);
+    const jump = cards()[0].children.find(e => e.classes.has('guide-call'));
+    assert.equal(jump.textContent, 'Read called function: twice'); jump.click();
+    assert.equal(cards()[1].open, true); assert.equal(ui.context.document.activeElement, cards()[1]);
+    assert.equal(cards()[1].revealOptions.block, 'nearest');
+    if (!offline) {
+      const oldTarget = cards()[1]; fs.writeFileSync(path.join(root, 'support.js'), 'export const support = 1;');
+      ui.setModel(scanProject(root)); await ui.refresh();
+      assert.equal(cards()[1].open, true); assert.equal(ui.context.document.activeElement, cards()[1]);
+      oldTarget.open = false; jump.click(); assert.equal(oldTarget.open, false);
+      fs.writeFileSync(sourcePath, 'export function result(input) { return twice(input.amount); }\nfunction twice(value) { return value * 3; }');
+      ui.setModel(scanProject(root)); await ui.refresh();
+      assert.equal(cards()[1].open, false); assert.equal(ui.context.document.activeElement.classList.contains('guide-back'), true);
+      cards()[1].open = true; cards()[1].listeners.toggle();
+      fs.writeFileSync(path.join(root, 'support.js'), 'export const support = 2;'); ui.setModel(scanProject(root)); await ui.refresh();
+      assert.equal(cards()[1].open, true);
+    } else {
+      assert.match(ui.get('detail').innerHTML, /snapshot does not follow later edits/);
+      assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+    }
+    assert.equal(JSON.stringify(input), original); assert.equal(input.project.counts.verified, 0);
+    ui.get('detail').children.find(e => e.classes.has('guide-back')).click();
+    assert.equal(ui.context.document.activeElement.classList.contains('guide-open'), true);
+  }
+});
+
 test('focused free-map briefs follow the selected finding, preserve data, and copy safely with a manual fallback', async () => {
   const input = model('brief-one', [piece('a', { purpose: '<script>Project wording</script>' }), piece('__mission__', { kind: 'mission' })]);
   input.gaps = [{ id: 'wire', nodeId: 'a', kind: 'no-observed-connection', priority: 'warning', message: 'No wiring found.' },

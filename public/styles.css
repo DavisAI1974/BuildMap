@@ -106,6 +106,8 @@ code { color: #b8ddff; }
 .node { height: 224px; overflow: hidden; }
 .node-title { max-height: 32px; overflow: hidden; }
 .node.mission { height: 138px; }
+.node.mission.scope-verified { opacity: 1; border-style: solid; background: #17241f; }
+.completion-chip { white-space: normal; max-width: 105px; text-align: right; }
 .node-files { height: 62px; margin-bottom: 4px; color: #a9bad0; font-size: 9px; line-height: 1.45; }
 .node-file-count { color: #d0dce9; margin-bottom: 2px; }
 .node-file { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -12,13 +12,13 @@ Continuation base for the finished-product/local-setup pass: `e74c023afc5b098469
 
 ## BuildMap stage checkpoint
 
-The user asked to finish the BuildMap stage, then return to refinements, and to update the gap sheet to stay on track. The current free source-build scope is implemented and tracked row by row in `BUILD_GAPS.md`. No additional core source task is currently assigned. The local Chromium browser baseline now passes within the recorded scope; cloud-browser restrictions still apply; do not label the product released, deployed, fully browser-verified or live. Begin later refinement only from concrete feedback or an observed issue. This supersedes earlier “next free work” suggestions below.
+The user asked to finish the BuildMap stage, then return to refinements, and to update the gap sheet to stay on track. The current free source-build scope is implemented and tracked row by row in `BUILD_GAPS.md`. The final box now shows MVP verified for its explicit reviewed scope, backed by a current complete named four-step local example. See `docs/MVP_COMPLETION_20261013.md`. No additional core source task is currently assigned. The local Chromium browser baseline now passes within the recorded scope; cloud-browser restrictions still apply; do not label the product released, deployed, fully browser-verified or live. Begin later refinement only from concrete feedback or an observed issue. This supersedes earlier “next free work” suggestions below.
 
 ## Latest user priorities
 
 Finish the free tier's usable builder flow before expanding paid Guide work. Do not create or update HTML preview artifacts unless the user explicitly asks; this does not remove the product's existing export command. Continue source changes and appropriate checks without generating a preview each pass.
 
-A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which now has 89 passing free-tier tests. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
+A bounded JavaScript code-reading preview was written and passed 87 tests on Node 20/24, then parked on `guide/source-code-preview-20261013` at `327753325be5b1479ddfb36f76e85c85c88d3467`. Preserve it for later integration. It is not in PR #1's active free-MVP branch, which now has 92 passing free-tier tests. Do not reimplement it or claim that the active MVP already includes Guide code explanations.
 
 Guided grouping of available mapped files and planned-piece descriptions is now implemented with `--piece`; existing-piece edits and ownership/reference migration remain file-authored. Preserve existing project fields, exact file scope, source/evidence distinctions and current walkthrough authoring. Follow that with a clear review of recorded evidence and the permitted real-browser check. The free tier should let a beginner describe a project, map it, organize its pieces, follow a goal, find an unfinished point and prepare a bounded task; the wider paid roadmap can wait.
 
@@ -33,7 +33,7 @@ PR #1 stays open. The default branch does not contain the app yet. No merge, dep
 1. `NEXT_CHAT_HANDOFF.md`
 2. `docs/BUILDMAP_COMPETITIVE_STRATEGY_HANDOFF_20261013.md` (updated strategy; preserve its research caveats)
 3. `BUILD_GAPS.md`
-4. `README.md`
+4. `README.md` and `docs/MVP_COMPLETION_20261013.md` (explicit completion contract/current full example)
 5. `REVIEW_NOTES.md`
 6. `.buildmap/project.json` and `.buildmap/evidence.json`
 7. Source and tests relevant to the next change.
@@ -53,7 +53,7 @@ A captured MVP was shown in conversation and saved as BuildMap_MVP.html outside 
 - `.buildmap/evidence.json.outcomes[id]` accepts computing/verified receipts with descriptive evidence, complete participating/supporting source hashes, the current definition hash, and a named example with overall input/output plus one record per step. Every later step requires an explicit handoff description. Source imports never prove those handoffs. Outcome live receipts are unsupported.
 - Individual piece receipts do not prove an outcome, and outcome receipts do not promote pieces or the mission. Outcomes are excluded from the piece evidence index. Plan/source/selected-input changes invalidate earlier examples; raw values remain inspectable.
 - Sidebar outcome selection highlights participating/supporting pieces, opens the ordered walkthrough, shows its first unresolved point and input/output samples, and links to piece inspection and back. Live edits and offline exports use this same client. Pieces without outcome assignments produce informational scope-review findings; useful support work is not labeled unnecessary.
-- BuildMap declares "Understand the current build." A real Node 24 readIntent/scan/local-HTTP observation records selected input/output fields for its first three steps. This is explicitly a partial backend example, not a full payload or instrumented trace. Its browser step remains unobserved, so its outcome stays unproved. No browser restriction was retried or bypassed.
+- BuildMap declares "Understand the current build." A fresh Node 24/local Chromium example now records selected real input/output fields for all four intent/scan/HTTP/browser steps with explicit handoff checks. Its independent outcome is verified; a separate explicit declared-scope review lets the final box show MVP verified. It is not a full payload, instrumented trace, human comprehension study or deployment. No cloud-browser restriction was retried or bypassed.
 - New walkthrough plans can be authored with the explicit local `--walkthrough` interview; existing-plan editing and examples remain file-authored. No automatic runtime instrumentation, receipt authentication, interpretation of natural-language expected results, branching paths, or graphical outcome editor was added.
 
 ## Latest user feedback incorporated
@@ -114,7 +114,7 @@ The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/ba
 
 ## Current validation and proof state
 
-- **89/89 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
+- **92/92 tests passed on Node v20.20.2 (`node --test`) and v24.19.0 (`npm test`).**
 - Node 20 copied-dogfood CLI smoke showed that a selected `package.json` edit invalidates all four receipts without changing their implementation; current selected input bindings match.
 - Node 20 dogfood CLI JSON/server smoke passed: five mapped components, API/assets, matching CLI/API fingerprints, no live claims, clean SIGTERM exit.
 - The view-separation pass adds one retained-feature/navigation check for live and offline use, including scoped orphan claims; total tests are now 72. It preserves the original free map while presenting the paid journey separately.
@@ -125,7 +125,7 @@ The earlier paid-walkthrough idea has been superseded by Free map/walkthrough/ba
 - Public default-clone smoke with `octocat/Hello-World` recovered README intent and cleaned up.
 - Real branch/JSON smoke cloned BuildMap's PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported that exact revision, and cleaned up.
 - Offline fixture checks cover branch and tag selection, failed-ref cleanup, HTML export safety/overwrite refusal, and client live/offline logic through a DOM double.
-- Dogfood map: **five verified components from scoped, current source-bound recorded receipts with selected inputs, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence, one HTTP source reference, and the separate unproved outcome finding**. The visualizer receipt covers only the local Chromium baseline; the named partial outcome remains independent.
+- Dogfood map: **five verified components from scoped, current source-bound recorded receipts with selected inputs, no live states, no missing implementation, no unexpected plan dependencies, no unmapped evidence, one HTTP source reference, an independently accepted full named outcome, an accepted explicit MVP scope review, and no current detected gaps**. The visualizer receipt covers only the 19-case local Chromium baseline; the named four-step outcome and completion review are separate.
 
 Do not call DOM-double tests browser verification. Receipts are manually recorded claims; source hashes bind each piece's implementation and optional input hashes bind only explicitly selected dependency/test/data/config files. Complete transitive input coverage, environment identity, and continuing deployment liveness are not established.
 
@@ -133,7 +133,7 @@ Do not call DOM-double tests browser verification. Receipts are manually recorde
 
 ### Release-confidence checks
 
-1. The scoped local Chromium baseline now passes for live server/export, narrow and larger fixtures, selection/search/fit/basic keyboard, edits and failure/recovery. Remaining review covers full accessibility/keyboard usability, real devices/other browsers and a complete independently recorded outcome example. Record only what is actually observed.
+1. The scoped local Chromium baseline now passes for live server/export, narrow and larger fixtures, selection/search/fit/basic keyboard, edits and failure/recovery. Remaining review covers full accessibility/keyboard usability, real devices/other browsers. The complete named dogfood example and separate scoped review are now recorded. Record only what is actually observed.
 
 Completed release check: the full suite and CLI/server smoke passed on Node 20.20.2. No additional runtime check is currently pending.
 
@@ -148,9 +148,9 @@ Git arrival animation, continuous remote refresh, all five conceptual zoom level
 
 ## Current browser limitation
 
-The cloud browser returned `ERR_CONNECTION_REFUSED` for the workspace server. Its URL security policy also rejected local HTML-file navigation and expressly prohibited workarounds around that rejection. Those cloud restrictions remain; do not retry or bypass them. The standard Playwright browser CDN returned a 195-byte Site Unavailable HTML page instead of its archive. A standard npm-distributed local Chromium package (`@sparticuz/chromium@153.0.0`) was installed outside the product dependencies, unpacked without changing archive ownership, and launched with default Playwright settings against direct local HTTP. No cloud navigation, external tunnel, hosting or deployment was used. Chromium 153.0.8010.0 passes 18 scoped cases on Node 24.19.0 using `.buildmap/browser-check.mjs`; the export is rendered only in memory over a local test server, with no HTML preview artifact written. See `docs/BROWSER_ACCEPTANCE_20261013.md` and its JSON report. A source-bound scoped visualizer receipt is now recorded; the complete named dogfood outcome still has no browser-step I/O record. Broader accessibility, real-device and other-browser observations remain open.
+The cloud browser returned `ERR_CONNECTION_REFUSED` for the workspace server. Its URL security policy also rejected local HTML-file navigation and expressly prohibited workarounds around that rejection. Those cloud restrictions remain; do not retry or bypass them. The standard Playwright browser CDN returned a 195-byte Site Unavailable HTML page instead of its archive. A standard npm-distributed local Chromium package (`@sparticuz/chromium@153.0.0`) was installed outside the product dependencies, unpacked without changing archive ownership, and launched with default Playwright settings against direct local HTTP. No cloud navigation, external tunnel, hosting or deployment was used. Chromium 153.0.8010.0 passes 19 scoped cases on Node 24.19.0 using `.buildmap/browser-check.mjs`; the export is rendered only in memory over a local test server, with no HTML preview artifact written. See `docs/BROWSER_ACCEPTANCE_20261013.md` and its JSON report. A source-bound scoped visualizer receipt is now recorded; a complete independent four-step dogfood example and explicit MVP scope review are now recorded with the browser-step I/O. Broader accessibility, real-device and other-browser observations remain open.
 
-The current outstanding dogfood finding is its unproved outcome/browser walkthrough step. The visualizer’s scoped local Chromium receipt does not fill that independent example. Its declared server dependency now has an observed heuristic HTTP source path match with locations; this is not runtime/browser proof.
+The complete named dogfood example and scope review are now accepted, with no current detected gaps. This is scoped recorded evidence, not broad mission proof or continuing liveness. Its declared server dependency now has an observed heuristic HTTP source path match with locations; this is not runtime/browser proof.
 
 ## Resume commands
 
@@ -241,3 +241,11 @@ The user’s gap-sheet request is implemented in `BUILD_GAPS.md`: current stage 
 The user asked to get the browser working. The retained local Chromium check passes 18 scoped cases; the existing 89-test suite was rerun successfully on Node 24.19.0. No core product source was changed for browser provisioning. The gap sheet and README distinguish this baseline from complete accessibility/device coverage and the still-partial independent outcome example. Five source-bound piece receipts are now accepted, none live. Historical entries above saying browser behavior was unobserved describe earlier checkpoints and are superseded only within the new report’s explicit scope.
 
 The main workspace has paused, uncommitted `--extend-piece` refinement changes in `src/cli.js`, `src/setup.js` and `tests/server.test.js`; they were preserved and excluded from this browser checkpoint. Browser checks ran in a clean detached worktree from the current pushed free branch. Do not discard the paused work or claim it is published/tested. Resume it only when returning to scoped refinements.
+
+## Explicit completion and full MVP example — 2026-10-13
+
+The user requested both remaining steps for the final BuildMap box: a full current example including browser, and a completion display supported by that checked scope. Both are implemented and observed. Optional manifest `completion` contains a label and exact unique outcome ids. A descriptive verified `evidence.completion` review binds its current normalized scope/selected definitions and exact selected outcome receipt hashes. All selected outcomes must independently have current source-bound verified examples. Piece checks, computing/partial/failed examples, status-only/live claims and changed source/selected inputs/plans/records cannot complete the scope. Pending/invalid reviews remain inspectable. The underlying mission node stays an intent target, excluded from piece counts/index; only its separate declared-scope badge shows MVP verified. Never change it to an inferred whole-project live/done claim.
+
+92 tests pass on Node 20.20.2 and 24.19.0; three new focused regressions cover freshness/rejected claims and real-scan live/offline client rendering, links, escaping and refresh. The retained browser baseline passes 19 cases, including a disposable fixture completion lighting the box and returning to pending after a source edit. `.buildmap/record-mvp-example.mjs` was explicitly invoked after those checks and authors only BuildMap’s selected current four-step example and scope review. Actual readIntent, scanProject, local HTTP and Chromium reads supply the selected fields and handoff assertions. The live final box refresh and its checked-goal link, plus the 390px in-memory export display/link, pass. Full source and selected manifest/driver/package bindings match. The current dogfood scan has five verified piece receipts, a verified named outcome and explicit MVP review, no detected gaps, and no live state. See `docs/MVP_COMPLETION_20261013.md` and its JSON observation. Broader accessibility/device/browser/scale and independent provenance remain unobserved. Receipt/hash matching does not authenticate checks.
+
+No new user-facing HTML preview was generated for this pass; the earlier requested HTML is a captured earlier checkpoint. Generate a new snapshot only when asked. PR #1 stays open; nothing is merged, deployed or marked live. Paid Guide remains parked. Preserve the main workspace’s paused uncommitted `--extend-piece` changes (CLI/setup/server test); they were excluded from this clean-worktree completion checkpoint and are not published.

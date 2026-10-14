@@ -173,17 +173,21 @@ function renderMap() {
     el.type = 'button';
     el.className = `node ${node.status} ${node.kind === 'mission' ? 'mission' : ''}`;
     el.dataset.id = node.id;
+    const completion = node.kind === 'mission' ? model.project.completion : null;
+    const scopeVerified = completion?.status === 'verified';
+    const badge = completion ? `${completion.label} ${scopeVerified ? 'verified' : 'pending'}` : node.status;
+    el.classList.toggle('scope-verified', scopeVerified);
     el.classList.toggle('selected', node.id === selectedId);
     el.setAttribute('aria-pressed', String(node.id === selectedId));
     const findings = pieceGaps().filter(g => g.nodeId === node.id);
     el.classList.toggle('has-gap', findings.some(g => g.priority !== 'info'));
-    el.setAttribute('aria-label', `${node.name}, ${node.status}${node.kind !== 'mission' ? `, ${fileSummary(node)}` : ''}${findings.length ? `, ${findings.length} findings` : ''}`);
-    el.style.cssText += `left:${p.x}px;top:${p.y}px;--state:${stateColors[node.status]}`;
+    el.setAttribute('aria-label', `${node.name}, ${badge}${node.kind !== 'mission' ? `, ${fileSummary(node)}` : ''}${findings.length ? `, ${findings.length} findings` : ''}`);
+    el.style.cssText += `left:${p.x}px;top:${p.y}px;--state:${stateColors[scopeVerified ? 'verified' : node.status]}`;
     el.innerHTML = `
-      <div class="node-top"><div class="node-title">${escapeHtml(node.name)}</div><div class="status-chip">${node.status}</div></div>
+      <div class="node-top"><div class="node-title">${escapeHtml(node.name)}</div><div class="status-chip${completion ? ' completion-chip' : ''}">${escapeHtml(badge)}</div></div>
       <div class="node-purpose">${escapeHtml(node.purpose)}</div>
       ${node.kind !== 'mission' ? cardFiles(node) : ''}
-      ${node.kind === 'mission' ? '<div class="node-signal">Intent target · outcome unproved</div>' : findings.length ? `<div class="node-signal">${escapeHtml(signalText(findings[0]))}</div>` : '<div class="node-signal">No detected gaps</div>'}
+      ${node.kind === 'mission' ? `<div class="node-signal">${completion ? `Declared scope · ${completion.outcomeIds.length} walkthrough${completion.outcomeIds.length === 1 ? '' : 's'}` : 'Intent target · outcome unproved'}</div>` : findings.length ? `<div class="node-signal">${escapeHtml(signalText(findings[0]))}</div>` : '<div class="node-signal">No detected gaps</div>'}
       <div class="mini-viz">${miniViz(node.visual?.kind)}<span>${escapeHtml(node.visual?.label || 'work')}</span></div>`;
     el.addEventListener('click', () => selectPiece(node.id));
     nodeLayer.appendChild(el);
@@ -302,10 +306,11 @@ function renderDetail(id) {
   if (!node) return;
   const findings = pieceGaps().filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId));
   const finding = findings.find(g => g === selectedFinding()) || findings[0];
+  const completion = node.kind === 'mission' ? model.project.completion : null;
   $('detail').innerHTML = `
     <div class="eyebrow">PIECE INSPECTOR</div>
     <h2>${escapeHtml(node.name)}</h2>
-    <div class="detail-status" style="--state:${stateColors[node.status]};color:${stateColors[node.status]}">${node.kind === 'mission' ? 'Intent target · outcome unproved' : node.status}</div>
+    <div class="detail-status" style="--state:${stateColors[completion?.status === 'verified' ? 'verified' : node.status]};color:${stateColors[completion?.status === 'verified' ? 'verified' : node.status]}">${completion ? `${escapeHtml(completion.label)} ${completion.status === 'verified' ? 'verified' : 'pending'} · declared scope` : node.kind === 'mission' ? 'Intent target · outcome unproved' : node.status}</div>
     ${node.baseStatus ? `<p>Source state: ${escapeHtml(node.baseStatus)} · implementation ${escapeHtml(node.implementation)}<br>Purpose and mini-visual: ${node.source === 'discovered' ? 'inferred illustrations' : 'manifest descriptions or inferred illustrations'}</p>` : ''}
     <p>${escapeHtml(node.purpose)}</p>
     ${finding ? guidanceHtml(finding) : ''}
@@ -315,12 +320,29 @@ function renderDetail(id) {
     <div class="detail-section"><h3>Gaps to review</h3>${pieceGaps().filter(g => g.nodeId === id || (id === '__mission__' && !g.nodeId)).map(g => `<p>${escapeHtml(g.message)}</p>${Object.hasOwn(g, 'evidence') ? `<details><summary>Recorded claim</summary><pre>${escapeHtml(JSON.stringify(g.evidence, null, 2))}</pre></details>` : ''}`).join('') || '<p>No detected gaps.</p>'}</div>
     <div class="detail-section"><h3>Evidence</h3>${pieceEvidenceReview(node)}<details class="evidence-details"><summary>Recorded claims, assessment and hashes</summary><div class="evidence-box">${evidenceText(node)}</div></details></div>
   `;
+  if (completion) appendCompletion(completion);
   if (finding) appendTaskBrief(finding, node);
   if (walkthroughReturnId && model.outcomes?.some(o => o.id === walkthroughReturnId)) {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'return-outcome'; button.textContent = 'Return to walkthrough';
     button.addEventListener('click', () => selectOutcome(walkthroughReturnId)); $('detail').appendChild(button);
   }
   appendFinishedProduct();
+}
+
+function appendCompletion(completion) {
+  const panel = document.createElement('section'); panel.className = 'detail-section completion-review';
+  panel.innerHTML = `<h3>${escapeHtml(completion.label)} completion review</h3><p>${escapeHtml(completion.evidenceAssessment.reason)}</p>
+    <p>This result covers only the declared walkthroughs and their named recorded examples. It does not establish every requirement, full accessibility, other environments, or continuing live use. Piece checks alone cannot complete this scope.</p>
+    <details><summary>Recorded completion and current bindings</summary><pre>${escapeHtml(JSON.stringify(completion, null, 2))}</pre></details>`;
+  for (const id of completion.outcomeIds) {
+    const outcome = model.outcomes?.find(o => o.id === id);
+    const button = document.createElement('button'); button.type = 'button';
+    button.textContent = outcome ? `${outcome.name} · ${outcomeLabel(outcome.status)}` : `${id} · walkthrough missing`;
+    button.disabled = !outcome;
+    if (outcome) button.addEventListener('click', () => selectOutcome(id, true));
+    panel.appendChild(button);
+  }
+  $('detail').appendChild(panel);
 }
 
 function renderOutcomes() {
@@ -474,6 +496,8 @@ function selectedFinding() {
 function gapGuidance(gap, outcome) {
   const guidance = {
     'missing-intent': ['The project has no readable statement of what it should achieve.', 'Ask the owner for the intended result and write it in the README or mission. Do this before adding features.'],
+    'completion-pending': ['The declared completion scope has no current accepted review. Piece checks alone cannot complete it.', 'Inspect the named walkthrough examples and their current bindings. Repeat any missing or stale checks, then record a review for only that declared scope.'],
+    'invalid-completion': ['The completion scope is missing or malformed.', 'Use a clear completion label and exact existing outcome ids. Review the named examples before recording completion.'],
     'missing-implementation': ['A planned piece has no assigned files, or some assigned files are missing.', 'Check the file list and intended purpose. Correct an outdated path or build only the missing part needed for that purpose.'],
     'unproved': ['The code exists, but there is no accepted record showing this piece doing useful work.', 'Try one example of the intended behavior and check its result. Record only what you actually observed; investigate a failure before expanding the build.'],
     'unsupported-evidence': ['An earlier claim cannot support this piece in the current build.', 'Read the rejection reason. Resolve missing files or ownership first, then repeat the relevant observation or check before recording new evidence.'],

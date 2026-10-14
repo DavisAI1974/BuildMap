@@ -145,5 +145,11 @@
   "finishedProduct": {
     "experience": "You open your project and see a clear visual map of its pieces, files, connections and goals. Select a piece to understand its job in plain English, or select a goal to follow its steps beside the map. The wider free walkthrough shows readable steps and recorded examples, with the first unfinished point clearly visible.",
     "behavior": "Help beginner-to-intermediate builders understand how a complete application fits together, see what has actually been demonstrated, and keep coding-agent work focused on the intended result. The complete map, current goal walkthroughs and basic focused task briefs are free. Missing work and unsupported claims stay visible so progress is grounded in evidence. BuildMap Guide is proposed deeper build-and-review help; its capabilities are not implemented."
+  },
+  "completion": {
+    "label": "MVP",
+    "outcomeIds": [
+      "inspect-build"
+    ]
   }
 }

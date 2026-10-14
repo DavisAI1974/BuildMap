@@ -50,7 +50,7 @@ node src/cli.js https://github.com/owner/repository --ref feature/map
 
 This makes a shallow clone of the **default branch**, or the branch/tag named by `--ref`, into a temporary folder. `--ref` accepts branch/tag names, including names with slashes; raw commit SHAs and GitHub `/tree/` URL paths are not supported. It applies only to GitHub URL input and never checks out a local working tree. It is a read-only snapshot, not a live view of later GitHub pushes. Restart to fetch a new snapshot. Temporary clones are removed on normal exit, Ctrl+C, or SIGTERM; force-killing the process can leave one behind. Repository URLs with branch paths, queries, or fragments are not supported. For private repositories or commit-level local checkout, clone with your usual credentials, check out the revision locally, and pass its path. GitHub snapshots report their URL, selected ref, and cloned commit in `project.source` and the UI; this metadata does not grant evidence states or deployment proof.
 
-The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 89 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Scoped real-browser checks now pass in local headless Chromium 153.0.8010.0 on Node 24.19.0: live map/goal navigation, desktop and 390px layout, search/focus/fit/scroll, clipboard permission and fallback, a 30-piece fixture, source changes and failure/recovery. The self-contained export was rendered in memory through a local HTTP test server and made no asset/API/polling requests. The cloud browser’s loopback and local-file restrictions remain in place; no blocked cloud navigation was retried. Full accessibility review, real devices and other browsers remain untested. See [the browser observation](docs/BROWSER_ACCEPTANCE_20261013.md) for scope and rerun instructions. DOM harness tests remain separate from these browser checks.
+The review exercised public clone/JSON mode against `octocat/Hello-World`, recovered its README intent, and confirmed cleanup. A branch-specific smoke also cloned BuildMap’s PR branch at `705ff1f3a523297e7c96474252bebb3ffc6e0a3f`, mapped its five components, reported the exact revision, and confirmed cleanup. Offline fixture tests cover both branch and tag selection and cleanup after a missing ref. All 92 tests pass on Node v20.20.2 and v24.19.0. A Node 20 dogfood smoke also exercised CLI JSON output, CLI server startup, API/assets, and clean SIGTERM exit. Local HTTP serving and live source edits are covered by tests. Scoped real-browser checks now pass in local headless Chromium 153.0.8010.0 on Node 24.19.0: live map/goal navigation, desktop and 390px layout, search/focus/fit/scroll, clipboard permission and fallback, a 30-piece fixture, source changes and failure/recovery. The self-contained export was rendered in memory through a local HTTP test server and made no asset/API/polling requests. The cloud browser’s loopback and local-file restrictions remain in place; no blocked cloud navigation was retried. Full accessibility review, real devices and other browsers remain untested. See [the browser observation](docs/BROWSER_ACCEPTANCE_20261013.md) for scope and rerun instructions. DOM harness tests remain separate from these browser checks.
 
 ## Describe a new project with four questions
 
@@ -212,7 +212,34 @@ BuildMap does not execute target code, compare actual values with natural-langua
 
 Outcome proof never promotes a piece, proves the mission, or changes the piece evidence index. The API exposes `outcomes`, their source/definition hashes and assessments, each step's state/record, and `firstGap`; nodes expose declared `outcomeIds`. Outcome findings carry `outcomeId` so agents can inspect the goal and the specific unresolved point before expanding work.
 
-BuildMap declares its own "Understand the current build" outcome. A partial read-only backend example records selected intent/scanner/HTTP input and output fields; it is labeled as selected fields, not a full payload capture or instrumented trace. Its browser step remains unobserved under the documented browser restrictions, so the outcome remains unproved even when individual backend pieces have current test receipts.
+BuildMap declares its own "Understand the current build" outcome. A complete current local Node/Chromium example records selected intent/scanner/HTTP/browser input and output fields and all four handoffs. Actual browser reads locate a piece, its purpose/files/evidence, and the free goal’s steps, reported samples, next review point and destination. This is an automated content/visibility check with selected fields, not a full payload capture, instrumented trace, authenticated provenance or human comprehension study. The named example is verified independently of the piece receipts. See [the completion observation](docs/MVP_COMPLETION_20261013.md).
+
+## Show a reviewed completion scope
+
+The final project box can show **MVP verified** for an explicitly declared milestone. Click it to inspect the scope review, current bindings and named checked walkthroughs. Without a declared scope, the box remains an intent target. A pending scope explains the missing, changed or unaccepted review; verified pieces alone do not finish it.
+
+Declare the scope in `.buildmap/project.json`:
+
+```json
+{ "completion": { "label": "MVP", "outcomeIds": ["inspect-build"] } }
+```
+
+Use your actual outcome ids. Each named goal needs its own current, source-bound **verified** example covering every step and handoff. After actually checking those examples and reviewing this exact scope, record `.buildmap/evidence.json.completion`:
+
+```json
+{
+  "completion": {
+    "status": "verified",
+    "note": "Describe the scope you actually checked and its limits.",
+    "definitionHash": "<current project.completion.definitionHash>",
+    "outcomeEvidenceHashes": { "inspect-build": "<current project.completion.outcomeEvidenceHashes.inspect-build>" }
+  }
+}
+```
+
+The hashes shown in `/api/map` or JSON output are identity bindings, not proof that anything ran. Copy them only after the actual checks and review. The placeholders reject the claim. The declaration needs a nonempty label and a nonempty list of unique exact ids; every id must refer to a valid goal. Completion accepts only a descriptive verified review, the current definition and exact selected outcome records, and independently accepted source-bound verified examples. It never accepts computing/partial/failed examples, status-only or live claims. Changes to scope, selected plans, participating/supporting source, selected inputs or outcome records return the display to pending. Repeat the needed checks and review before recording new bindings.
+
+The badge covers only those declared goals and named examples. It does not assert every future requirement, full accessibility, other environments or live deployment. The API mission state remains an intent target; `project.completion` carries the separate scoped review and does not alter piece states or the evidence-index denominator. BuildMap’s own current MVP review is supported by the complete local example above and the scoped browser baseline. No service is deployed or marked live.
 
 ## Evidence states
 
@@ -416,7 +443,7 @@ npm test
 
 Tests cover intent fallback, planned/partial implementation, declared versus observed wiring, explicit evidence and source/selected-input freshness, unmapped/file-only claims, explicit-plan drift, parser-backed JS/imports/assets and HTTP path provenance/ambiguity/method/scope checks, Git ignores/tracked files/subtrees, malformed config, path containment, CLI arguments/JSON mode, branch/tag selection and clone provenance, HTML export safety and overwrite refusal, HTTP endpoints/live edits, and live/offline client rendering/selection/filtering/refresh through a DOM double. They do not replace browser layout or deployment verification. See [REVIEW_NOTES.md](REVIEW_NOTES.md) for review findings and [BUILD_GAPS.md](BUILD_GAPS.md) for the current remaining work, with release checks separated from later capabilities.
 
-BuildMap dogfoods its own manifest and source-bound test receipts with selected dependency/test-input hashes. Its visualizer now has a source-bound receipt for scoped local Chromium checks. This does not prove the whole declared outcome, complete accessibility, every browser or continuing live use. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
+BuildMap dogfoods its own manifest and source-bound test receipts with selected dependency/test-input hashes. Its visualizer now has a source-bound receipt for scoped local Chromium checks. The separate complete named outcome and explicit MVP review are also recorded; neither the piece checks nor that limited scope establish complete accessibility, every browser or continuing live use. Future work should improve language parsers, runtime/CI receipts, and capability-level navigation before adding decoration.
 
 The current free BuildMap source-build stage is implemented within its documented local CLI/map/walkthrough scope. The local Chromium acceptance baseline has been observed; broader accessibility and device/browser review remain open. [BUILD_GAPS.md](BUILD_GAPS.md) tracks implemented stage requirements, that acceptance boundary, and refinements to revisit after review. Guide work remains parked separately; no paid launch or deployment is claimed.
 

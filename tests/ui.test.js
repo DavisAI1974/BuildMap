@@ -748,3 +748,47 @@ test('the declared finished product ends both explanations, refreshes safely, an
   assert.match(ui.get('detail').children.at(-1).innerHTML, /intended result is not documented/);
   assert.doesNotMatch(ui.get('detail').children.at(-1).innerHTML, /Unknown placeholder/);
 });
+
+test('the final box shows only reviewed scope completion, links its evidence and becomes pending after a source change', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-completion-ui-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true })); fs.mkdirSync(path.join(root, '.buildmap'));
+  fs.writeFileSync(path.join(root, 'result.js'), 'export const result = 1;');
+  const label = 'MVP <img onerror=evil()>';
+  const plan = { name: 'Build fixture', mission: 'Show one result.', completion: { label, outcomeIds: ['result'] },
+    outcomes: [{ id: 'result', name: 'Review result', goal: 'Read the result.', steps: [{ id: 'show', nodeId: 'file:result.js', label: 'Show result', expected: 'A visible result.' }] }] };
+  fs.writeFileSync(path.join(root, '.buildmap/project.json'), JSON.stringify(plan));
+  const initial = scanProject(root); const goal = initial.outcomes[0];
+  const evidence = { outcomes: { result: { status: 'verified', note: 'Authored visible-result fixture.', definitionHash: goal.definitionHash, sourceHashes: goal.sourceHashes,
+    example: { name: 'One result', input: 0, output: 1, steps: [{ stepId: 'show', result: 'observed', input: 0, output: 1 }] } } } };
+  const save = () => fs.writeFileSync(path.join(root, '.buildmap/evidence.json'), JSON.stringify(evidence)); save();
+  const unreviewed = scanProject(root);
+  evidence.completion = { status: 'verified', note: 'Reviewed this scope.', definitionHash: unreviewed.project.completion.definitionHash,
+    outcomeEvidenceHashes: unreviewed.project.completion.outcomeEvidenceHashes }; save();
+  const checked = scanProject(root);
+  const counts = structuredClone(checked.project.counts);
+  for (const offline of [false, true]) {
+    const ui = await client(checked, offline);
+    const mission = () => ui.get('nodeLayer').children.find(n => n.dataset.id === '__mission__');
+    assert.match(mission().innerHTML, /MVP &lt;img onerror=evil\(\)&gt; verified/);
+    assert.doesNotMatch(mission().innerHTML, /<img/);
+    assert.equal(mission().classes.has('scope-verified'), true); mission().click();
+    const review = ui.get('detail').children.find(n => n.classes.has('completion-review'));
+    assert.match(review.innerHTML, /current verified walkthrough examples/);
+    assert.match(review.innerHTML, /does not establish every requirement/);
+    assert.match(review.innerHTML, /Recorded completion and current bindings/);
+    assert.doesNotMatch(review.innerHTML, /<img/);
+    review.children[0].click(); assert.equal(ui.get('mapViewButton').attributes['aria-pressed'], 'true');
+    assert.match(ui.get('detail').innerHTML, /Review result/);
+    assert.deepEqual(checked.project.counts, counts);
+    assert.equal(checked.nodes.find(n => n.kind === 'mission').status, 'planned');
+    if (!offline) {
+      mission().click(); fs.writeFileSync(path.join(root, 'result.js'), 'export const result = 2;');
+      const changed = scanProject(root); ui.setModel(changed); await ui.refresh();
+      assert.match(mission().innerHTML, /pending/); assert.equal(mission().classes.has('scope-verified'), false);
+      assert.match(ui.get('detail').innerHTML, /pending/);
+      const pending = ui.get('detail').children.find(n => n.classes.has('completion-review'));
+      assert.match(pending.innerHTML, /current, source-bound verified example/);
+      fs.writeFileSync(path.join(root, 'result.js'), 'export const result = 1;');
+    } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+  }
+});

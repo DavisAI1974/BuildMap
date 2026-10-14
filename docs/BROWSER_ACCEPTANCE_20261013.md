@@ -1,6 +1,6 @@
 # Local browser observation — October 13, 2026
 
-The local browser environment is working. **18 scoped checks pass** in headless Chromium **153.0.8010.0**, driven by Playwright on Node **24.19.0**. The clean free-MVP source checkpoint was `a96489d29c5054eeda4abd882f9e0cde46f5b3c9`. No core application source changed for this observation. The existing suite also passed **89/89** on Node 24; the previously recorded Node 20 result remains separate.
+The local browser environment is working. **19 scoped checks pass** in headless Chromium **153.0.8010.0**, driven by Playwright on Node **24.19.0**. The completion pass starts from `c3e7d389d29325636c31fd830eddb3c8d6b028b2` and checks the actual changed source/input hashes in the JSON observation. The full suite passes **92/92** on Node 20.20.2 and 24.19.0.
 
 The retained driver is [browser-check.mjs](../.buildmap/browser-check.mjs). The [JSON observation](BROWSER_ACCEPTANCE_20261013.json) records the browser/runtime, revision, actual check results, visualizer source hashes and selected input hashes. This is a manually recorded local check, not independently authenticated CI evidence.
 
@@ -15,17 +15,18 @@ The retained driver is [browser-check.mjs](../.buildmap/browser-check.mjs). The 
 | Narrow layout | 390×844 viewport, reachable map/goal controls and no document-width overflow. Screenshots of desktop walkthrough and narrow map were inspected. This is viewport emulation, not a physical mobile device. |
 | Copy briefs | Exact task text copied with clipboard read/write permission granted. Without permission, selectable text opens. With clipboard unavailable in a separate context, the complete text is focused and selected. |
 | Export | The production `snapshotHtml` output renders in memory over a temporary local HTTP server. Search, goal and fit work; only the document is requested, with no external assets, API calls or polling over the observed interval. No HTML preview file was written. Local-file navigation was not tested. |
+| Completion | A disposable fixture’s explicit reviewed scope lights the final box and opens its checked goal. Changing its source returns the display to pending. |
 | Changes | Actual fixture source edit produces a new fetched fingerprint while preserving selected-card focus. Deleting declared source updates the card and inspector to planned/missing. |
 | Failure and recovery | Intercepted HTTP 500 during polling retains the last map and shows stale feedback, then recovers. An initial API failure reports retry and subsequently loads the map. |
 | Browser errors | No uncaught page JavaScript errors on the pages exercised by the driver. Expected API failures are intentional test conditions. |
 
-The driver edits only a disposable project fixture, closes its temporary servers and browser, and removes that fixture. It reads the mapped checkout. No core source bug was found in these checks.
+The driver edits only a disposable project fixture, closes its temporary servers and browser, and removes that fixture. It reads the mapped checkout. The completion behavior was added for the user’s final-box request and checked in a disposable fixture; no other core source bug was found in this pass.
 
 ## What remains open
 
 This baseline does not establish complete accessibility, screen-reader behavior, an exhaustive keyboard-only workflow, touch usability on real devices, Firefox/Safari or other Chromium builds, large-repository performance, every export transport/origin, or continuing deployment liveness. Fit can make a larger map's cards small; actual size and search remain the inspection path. There is no scale benchmark.
 
-The new visualizer receipt covers only these passing checks and their selected bindings. Existing piece receipts remain separate. The named dogfood outcome still contains its earlier partial backend example: this browser driver did not insert a fourth input/output record or claim to authenticate its ordered handoffs. The whole outcome and mission remain unproved; no piece is live.
+The new visualizer receipt covers only these passing checks and their selected bindings. Existing piece receipts remain separate. The independent dogfood example is recorded by a separate explicitly invoked driver, covering all four steps and its declared scope review; see [completion observation](MVP_COMPLETION_20261013.md). This baseline driver does not author project evidence. The mission remains an intent target with a separate scoped completion badge; no piece is live.
 
 ## Environment and rerun
 

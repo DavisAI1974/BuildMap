@@ -166,3 +166,71 @@ test('walkthrough data safely round-trips in a standalone export', t => {
   const data = html.match(/<script id="buildmapSnapshot" type="application\/json">([\s\S]*?)<\/script>/)[1];
   assert.deepEqual(JSON.parse(data).outcomes, map.outcomes);
 });
+
+function completionReceipt(map) {
+  return { status: 'verified', note: 'Reviewed this declared scope against the named current example.',
+    definitionHash: map.project.completion.definitionHash, outcomeEvidenceHashes: map.project.completion.outcomeEvidenceHashes };
+}
+
+test('explicit completion review binds the scope and exact verified examples without promoting mission or pieces', t => {
+  const f = fixture(t);
+  f.manifest.completion = { label: 'MVP', outcomeIds: ['order'] }; f.save();
+  const proof = receipt(scanProject(f.root)); f.record(proof);
+  const before = scanProject(f.root);
+  assert.equal(before.outcomes[0].status, 'verified');
+  assert.equal(before.project.completion.status, 'pending'); // A goal check alone is not a completion review.
+  const review = completionReceipt(before);
+  const save = () => f.write('.buildmap/evidence.json', { outcomes: { order: proof }, completion: review }); save();
+  const current = scanProject(f.root);
+  assert.equal(current.project.completion.status, 'verified');
+  assert.equal(current.nodes.find(n => n.kind === 'mission').status, 'planned');
+  assert.equal(current.project.counts.verified, 0); assert.equal(current.project.counts.live, 0);
+  assert.deepEqual(current.edges, before.edges);
+  const html = snapshotHtml(current);
+  const captured = JSON.parse(html.match(/<script id="buildmapSnapshot" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.deepEqual(captured.project.completion, current.project.completion);
+  proof.example.name = 'A different recorded example'; save();
+  assert.equal(scanProject(f.root).outcomes[0].status, 'verified');
+  assert.equal(scanProject(f.root).project.completion.status, 'pending'); // Review is bound to the actual record.
+  proof.example.name = 'Two items at three each'; save();
+  f.manifest.completion.label = 'A larger release'; f.save();
+  assert.equal(scanProject(f.root).project.completion.status, 'pending');
+  f.manifest.completion.label = 'MVP'; f.save();
+  f.plan.steps[1].expected = 'A more detailed confirmation'; f.save();
+  assert.equal(scanProject(f.root).project.completion.status, 'pending');
+  f.plan.steps[1].expected = 'A confirmation containing the total.'; f.save();
+  f.write('support.js', 'export const check = false;');
+  assert.equal(scanProject(f.root).project.completion.status, 'pending');
+  f.write('support.js', 'export const check = true;');
+  f.write('input.json', '{"quantity":2}');
+  proof.inputHashes = { 'input.json': crypto.createHash('sha256').update('{"quantity":2}').digest('hex') }; f.record(proof);
+  const inputReview = completionReceipt(scanProject(f.root));
+  f.write('.buildmap/evidence.json', { outcomes: { order: proof }, completion: inputReview });
+  assert.equal(scanProject(f.root).project.completion.status, 'verified');
+  f.write('input.json', '{"quantity":3}');
+  assert.equal(scanProject(f.root).project.completion.status, 'pending');
+});
+
+test('piece verification, computing or incomplete examples, invalid scopes and unsupported completion claims stay pending', t => {
+  const f = fixture(t); f.manifest.completion = { label: 'MVP', outcomeIds: ['order'] }; f.save();
+  const map = scanProject(f.root);
+  const components = Object.fromEntries(map.nodes.filter(n => n.kind !== 'mission').map(n => [n.id, { status: 'verified', note: 'Piece check.', sourceHashes: n.sourceHashes }]));
+  f.write('.buildmap/evidence.json', { components });
+  const pieces = scanProject(f.root); assert.equal(pieces.project.counts.verified, 3); assert.equal(pieces.project.completion.status, 'pending');
+  const proof = receipt(pieces); f.record(proof); const review = completionReceipt(scanProject(f.root));
+  for (const invalid of [{ ...review, status: 'live' }, { ...review, note: '' }, { ...review, outcomeEvidenceHashes: {} }]) {
+    f.write('.buildmap/evidence.json', { outcomes: { order: proof }, completion: invalid });
+    assert.equal(scanProject(f.root).project.completion.status, 'pending');
+  }
+  for (const change of [p => { p.status = 'computing'; }, p => { p.example.steps.pop(); }, p => { p.example.steps[1].result = 'failed'; }]) {
+    const partial = receipt(map); change(partial); f.record(partial);
+    f.write('.buildmap/evidence.json', { outcomes: { order: partial }, completion: completionReceipt(scanProject(f.root)) });
+    assert.equal(scanProject(f.root).project.completion.status, 'pending');
+  }
+  for (const scope of [false, { label: 'MVP', outcomeIds: [] }, { label: 'MVP', outcomeIds: ['order', 'order'] }, { label: 'MVP', outcomeIds: ['missing'] }]) {
+    f.manifest.completion = scope; f.save();
+    assert.equal(scanProject(f.root).project.completion.status, 'pending');
+  }
+  delete f.manifest.completion; f.save();
+  f.write('.buildmap/evidence.json', {}); assert.equal(scanProject(f.root).project.completion, null);
+});

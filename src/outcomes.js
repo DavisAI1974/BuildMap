@@ -62,6 +62,48 @@ export function buildOutcomes(definitions, receipts, nodes, assessEvidence) {
   return { outcomes, diagnostics };
 }
 
+// A declared completion scope is a review of named, independently checked
+// outcomes. It never promotes the mission or infers completion from piece states.
+export function buildCompletion(definition, receipt, outcomes) {
+  const diagnostics = [];
+  if (definition === undefined && receipt === undefined) return { completion: null, diagnostics };
+  const text = v => typeof v === 'string' && Boolean(v.trim());
+  const valid = definition && typeof definition === 'object' && !Array.isArray(definition) && text(definition.label) &&
+    Array.isArray(definition.outcomeIds) && definition.outcomeIds.length > 0 && definition.outcomeIds.every(text) &&
+    new Set(definition.outcomeIds).size === definition.outcomeIds.length;
+  const label = valid ? definition.label : 'Completion scope';
+  const selected = valid ? definition.outcomeIds.map(id => outcomes.find(o => o.id === id)) : [];
+  const digest = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  const definitionHash = valid ? digest({ label, outcomeIds: definition.outcomeIds,
+    outcomes: selected.map((o, i) => ({ id: definition.outcomeIds[i], definitionHash: o?.definitionHash || null })) }) : null;
+  const outcomeEvidenceHashes = valid ? Object.fromEntries(selected.map((o, i) => [definition.outcomeIds[i], o ? digest(o.evidence) : null])) : {};
+  let reason, binding = 'unrecorded';
+  if (!valid) {
+    reason = 'Declare a completion label and a nonempty list of unique outcomeIds before reviewing this scope.';
+    binding = 'invalid';
+    diagnostics.push({ code: 'invalid-completion', message: reason, priority: 'blocker', evidence: receipt ?? null });
+  } else if (selected.some(o => !o)) reason = 'The completion scope names a walkthrough that is missing or invalid.';
+  else if (!receipt) reason = 'No completion review recorded for this declared scope.';
+  else if (typeof receipt !== 'object' || Array.isArray(receipt) || receipt.status !== 'verified' ||
+    !['note', 'command', 'proof'].some(k => text(receipt[k]))) {
+    reason = 'Completion requires a descriptive verified review; a status alone or live claim cannot complete this scope.'; binding = 'invalid';
+  } else if (receipt.definitionHash !== definitionHash) {
+    reason = 'The completion scope or a selected walkthrough plan has changed. Repeat the checks and review the current scope.'; binding = 'stale';
+  } else if (!receipt.outcomeEvidenceHashes || typeof receipt.outcomeEvidenceHashes !== 'object' || Array.isArray(receipt.outcomeEvidenceHashes) ||
+    Object.keys(outcomeEvidenceHashes).some(id => receipt.outcomeEvidenceHashes[id] !== outcomeEvidenceHashes[id]) ||
+    Object.keys(receipt.outcomeEvidenceHashes).some(id => !Object.hasOwn(outcomeEvidenceHashes, id))) {
+    reason = 'The selected walkthrough records are unbound or changed. Review their current examples before recording completion.'; binding = 'stale';
+  } else if (selected.some(o => o.status !== 'verified' || !o.evidenceAssessment.accepted || o.evidenceAssessment.binding !== 'current')) {
+    reason = 'Every selected walkthrough needs a current, source-bound verified example, including all steps and handoffs.'; binding = 'stale';
+  } else { reason = 'Recorded completion matches the declared scope and its current verified walkthrough examples.'; binding = 'current'; }
+  const accepted = binding === 'current';
+  if (valid && !accepted) diagnostics.push({ code: 'completion-pending', nodeId: '__mission__', message: `${label}: ${reason}`,
+    priority: 'info', evidence: receipt ?? null });
+  return { completion: { label, outcomeIds: valid ? [...definition.outcomeIds] : [], status: accepted ? 'verified' : 'pending',
+    definitionHash, outcomeEvidenceHashes, evidence: receipt ?? null,
+    evidenceAssessment: { accepted, binding, reason } }, diagnostics };
+}
+
 function validPlans(value, add) {
   if (value === undefined) return [];
   if (!Array.isArray(value)) { add('invalid-outcome', 'Manifest outcomes must be an array.', { priority: 'blocker' }); return []; }

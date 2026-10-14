@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readIntent, readFinishedProduct } from './intent.js';
 import { sourceReferences, resolveImport } from './imports.js';
-import { buildOutcomes } from './outcomes.js';
+import { buildOutcomes, buildCompletion } from './outcomes.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -124,6 +124,8 @@ export function scanProject(root, { source = null } = {}) {
   const outcomeMap = buildOutcomes(manifest.outcomes, rawEvidence.outcomes, nodes,
     (receipt, complete, hashes) => assessEvidence(receipt, complete, hashes, readInputHash));
   diagnostics.push(...outcomeMap.diagnostics);
+  const completionMap = buildCompletion(manifest.completion, rawEvidence.completion, outcomeMap.outcomes);
+  diagnostics.push(...completionMap.diagnostics);
   const counts = Object.fromEntries(STATES.map(s => [s, nodes.filter(n => n.status === s).length]));
   const progress = nodes.length ? Math.round(nodes.reduce((sum,n) => sum + WEIGHTS[n.status], 0) / nodes.length) : 0;
   const gaps = findGaps(nodes, edges, diagnostics, intent);
@@ -135,7 +137,7 @@ export function scanProject(root, { source = null } = {}) {
     files: [], presentFiles: [], missingFiles: [], status: 'planned', purpose: intent.text, contributes: '',
     visual: { kind: 'goal', label: 'Intended outcome' }, plannedDependencies: [], evidence: null, source: intent.source || 'interview-needed' });
   for (const node of nodes) if (node.contributes) edges.push({ from: node.id, to: '__mission__', type: 'contributes' });
-  const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, finishedProduct, progress,
+  const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, finishedProduct, completion: completionMap.completion, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
     states: STATES, nodes, edges: uniqueEdges(edges), outcomes: outcomeMap.outcomes, gaps, diagnostics,
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,

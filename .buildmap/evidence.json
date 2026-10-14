@@ -3,8 +3,8 @@
     "intent": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Intent extraction/fallback checks passed on Node v20.20.2 and v24.19.0. Selected check/package/lockfile inputs are explicitly bound. Finished-product attribution/validation/unknown fallback, real scan-to-client ending placement/escaping/refresh with unchanged proof, and actual guided local CLI setup/defaults/preservation/refusal/incomplete-input checks passed on both runtimes. Real browser checks remain pending.",
-      "recordedAt": "2026-10-13T21:48:05.164863+00:00",
+      "note": "All 92 tests passed on Node v20.20.2 and v24.19.0 against this implementation and the named selected dependency/test/package inputs. Existing free map/walkthrough/briefs, authoring, discovery, evidence scope/freshness, ownership, APIs, exports and client DOM checks remain covered. Three new regressions cover explicit completion review bound to scope and exact current verified outcome records, rejection of piece-only/computing/partial/failed/live claims, plan/source/selected-input changes, and escaped live/offline final-box display, review navigation and refresh. DOM tests do not establish browser layout. Separate current Chromium checks are recorded on the visualizer; complete transitive input coverage, authenticated provenance and continuing live use are not established.",
+      "recordedAt": "2026-10-14T00:21:50.256163+00:00",
       "sourceHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786"
       },
@@ -17,13 +17,13 @@
     "scanner": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "Source/evidence/ownership/freshness/drift/inventory checks and Acorn JS imports/regex/templates plus bounded HTTP path/method/provenance/ambiguity/mock/response checks passed on Node v20.20.2 and v24.19.0. HTTP matches are source syntax, not runtime proof. Named dependency/check/package/lockfile inputs are selected explicitly. Outcome plan/example/source/support/selected-input freshness, whole-journey versus piece-state separation, scope review, partial/failed handoffs, safe sample rendering/export, outcome navigation/refresh, and API plan edits passed on both runtimes. The actual authored fixture example executed; browser checks remain pending. Selection pressed states and project-specific plain-English explanation/illustration escaping and definition freshness passed in the existing tests on both runtimes. Browser appearance remains unverified. Free-map/paid-walkthrough separation, original feature retention, independent/scoped findings, orphan claim inspection, preserved map/goal navigation, and unchanged evidence data passed in the shared DOM harness on both runtimes; real browser checks remain pending. Finished-product attribution/validation/unknown fallback, real scan-to-client ending placement/escaping/refresh with unchanged proof, and actual guided local CLI setup/defaults/preservation/refusal/incomplete-input checks passed on both runtimes. Real browser checks remain pending. Current strategy integration keeps the complete map, current walkthrough and basic task briefs free. Goal selection beside the graph, participant highlighting through search, brief fallback, refresh/focus, clear-focus scale/search retention, piece/goal navigation, removed goals and offline operation pass shared-client DOM-double checks. Export labels are checked; real browser layout/accessibility/integration remains unobserved. Guided free piece-authoring checks pass on Node 20.20.2 and 24.19.0: complete reviewed append, existing/planned/empty file scopes, preserved fields/source/evidence/goals, file-only versus component proof, orphan-id avoidance, ownership/direct-walkthrough/path/mode/cancellation/incomplete-input refusals, concurrent edits/new receipt collisions and actual CLI init-to-piece-to-file-arrival-to-walkthrough flow through the DOM double. Browser behavior remains unobserved. Guide work stays parked separately. Plain-English free evidence review passes two scan-to-client DOM-double regressions on Node 20.20.2 and 24.19.0: captured file facts and attributed recorded descriptions, accepted/stale/invalid-input/unbound/file-only/missing scope, escaping, refresh/offline contexts, and absent/partial/failed/accepted/stale-plan examples with unchanged piece proof. Recording guidance does not execute/authenticate observations or change evidence states. Browser behavior remains unobserved.",
-      "recordedAt": "2026-10-13T23:40:42.439Z",
+      "note": "All 92 tests passed on Node v20.20.2 and v24.19.0 against this implementation and the named selected dependency/test/package inputs. Existing free map/walkthrough/briefs, authoring, discovery, evidence scope/freshness, ownership, APIs, exports and client DOM checks remain covered. Three new regressions cover explicit completion review bound to scope and exact current verified outcome records, rejection of piece-only/computing/partial/failed/live claims, plan/source/selected-input changes, and escaped live/offline final-box display, review navigation and refresh. DOM tests do not establish browser layout. Separate current Chromium checks are recorded on the visualizer; complete transitive input coverage, authenticated provenance and continuing live use are not established.",
+      "recordedAt": "2026-10-14T00:21:50.256163+00:00",
       "sourceHashes": {
-        "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+        "src/scan.js": "464f36646cb19de48da5a3db55751b0db2f0cd0c11552c6d162b1e05c05c8048",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
-        "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a"
+        "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017"
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
@@ -31,16 +31,16 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/intent.test.js": "b0f3b5c2c5dd3b70e179fd437b1844023bac3348756f874a0fad3ad87bea592a",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-        ".buildmap/project.json": "b776d7fa83da777b9492afe5ff01db8aff3592e092b97856555d6d3542734c5f",
+        ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "tests/outcomes.test.js": "71a781f64c98919061c4dcc843dd9084edff22f66d2ec3b506e2c8390630cc26"
+        "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f"
       }
     },
     "server": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "All 89 tests passed on Node v20.20.2 and v24.19.0. CLI/API/export/ref/cleanup and explicit local setup are checked. Guided walkthrough authoring checks cover reviewed append, preservation of source/evidence/existing plans, planned and repeated pieces, orphan-id avoidance, cancellation, incomplete input, invalid choices/modes/plans, linked paths, concurrent plan edits and new receipt collisions. Shared live/export client empty-state guidance, refresh and retained free features pass DOM-double checks only; real browser layout/accessibility/integration remains unobserved. Selected dependencies, assets, tests, package and lockfile inputs are bound; no complete transitive coverage or receipt authentication is claimed. Current strategy integration keeps the complete map, current walkthrough and basic task briefs free. Goal selection beside the graph, participant highlighting through search, brief fallback, refresh/focus, clear-focus scale/search retention, piece/goal navigation, removed goals and offline operation pass shared-client DOM-double checks. Export labels are checked; real browser layout/accessibility/integration remains unobserved. Guided free piece-authoring checks pass on Node 20.20.2 and 24.19.0: complete reviewed append, existing/planned/empty file scopes, preserved fields/source/evidence/goals, file-only versus component proof, orphan-id avoidance, ownership/direct-walkthrough/path/mode/cancellation/incomplete-input refusals, concurrent edits/new receipt collisions and actual CLI init-to-piece-to-file-arrival-to-walkthrough flow through the DOM double. Browser behavior remains unobserved. Guide work stays parked separately. Plain-English free evidence review passes two scan-to-client DOM-double regressions on Node 20.20.2 and 24.19.0: captured file facts and attributed recorded descriptions, accepted/stale/invalid-input/unbound/file-only/missing scope, escaping, refresh/offline contexts, and absent/partial/failed/accepted/stale-plan examples with unchanged piece proof. Recording guidance does not execute/authenticate observations or change evidence states. Browser behavior remains unobserved.",
-      "recordedAt": "2026-10-13T23:40:42.440Z",
+      "note": "All 92 tests passed on Node v20.20.2 and v24.19.0 against this implementation and the named selected dependency/test/package inputs. Existing free map/walkthrough/briefs, authoring, discovery, evidence scope/freshness, ownership, APIs, exports and client DOM checks remain covered. Three new regressions cover explicit completion review bound to scope and exact current verified outcome records, rejection of piece-only/computing/partial/failed/live claims, plan/source/selected-input changes, and escaped live/offline final-box display, review navigation and refresh. DOM tests do not establish browser layout. Separate current Chromium checks are recorded on the visualizer; complete transitive input coverage, authenticated provenance and continuing live use are not established.",
+      "recordedAt": "2026-10-14T00:21:50.256163+00:00",
       "sourceHashes": {
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "e67cf08a90716904b639ad2a057fbacbae3856ec17975764907c0a213dc61d91",
@@ -48,114 +48,155 @@
         "src/setup.js": "910c81ce7771f1d3b1693795e2c1b2ad22c53159958d499ea32d7a3b75fb38ef"
       },
       "inputHashes": {
-        "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+        "src/scan.js": "464f36646cb19de48da5a3db55751b0db2f0cd0c11552c6d162b1e05c05c8048",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
         "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
-        "public/app.js": "02e3d28a73a61fa90c6797e6700f9c3ecef8fc279995c1568ce965ba6216cec5",
-        "public/styles.css": "3fd0e1526283a657020f17f4922a8df5806525c51116c734df1f4769d5646515",
+        "public/app.js": "fa9008cef5077fc277314e621ac527e46d9c446db94446c7d5b3bd85763b3a10",
+        "public/styles.css": "5d874eb2bcab055aa7d3f27c0f08e9baabe6045326bef9fee936baa12bbd387f",
         "tests/server.test.js": "6d3d8cd05ef2e8c201ed615d1a83a58672220d6b835bacf18467ee470bf65a27",
         "tests/export.test.js": "17e0588cc6a20d6ded9081071f7ec95a9094a78631a0cf358ce414d67ff436d2",
-        "tests/ui.test.js": "20ce7defb9f86fd1b9d85b080bbae35ea1a54a0576131eb2e78c1cad242b7ad4",
+        "tests/ui.test.js": "6b681d4a24e186e3743b9f2c6df079c738ce857d45a1ea190fa199ce3c942d70",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-        ".buildmap/project.json": "b776d7fa83da777b9492afe5ff01db8aff3592e092b97856555d6d3542734c5f",
+        ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
-        "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a"
+        "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017"
       }
     },
     "verification": {
       "status": "verified",
       "command": "node --test (Node v20.20.2); npm test (Node v24.19.0)",
-      "note": "All 89 tests passed on Node v20.20.2 and v24.19.0 after locked installation. Coverage includes source/evidence scope, ownership, source/selected-input freshness, discovery and HTTP source provenance, architecture drift, actual authored fixture execution, Git inventory, CLI/API/live edits, ref/clone cleanup, export safety, guided descriptions and walkthrough authoring. Guided walkthrough checks retain existing plans/source/evidence, avoid orphan receipt ids, handle planned/repeated pieces, cancellation and incomplete input, invalid modes/plans/linked paths, concurrent edits and receipt collisions. Shared-client checks use a DOM double and include empty guidance/refresh, free-map/paid-view retention, search/navigation, samples and task-copy fallbacks. Real browser layout/clipboard/accessibility/integration and deployment remain unobserved; selected inputs are explicit, not complete transitive bindings. Current strategy integration keeps the complete map, current walkthrough and basic task briefs free. Goal selection beside the graph, participant highlighting through search, brief fallback, refresh/focus, clear-focus scale/search retention, piece/goal navigation, removed goals and offline operation pass shared-client DOM-double checks. Export labels are checked; real browser layout/accessibility/integration remains unobserved. Guided free piece-authoring checks pass on Node 20.20.2 and 24.19.0: complete reviewed append, existing/planned/empty file scopes, preserved fields/source/evidence/goals, file-only versus component proof, orphan-id avoidance, ownership/direct-walkthrough/path/mode/cancellation/incomplete-input refusals, concurrent edits/new receipt collisions and actual CLI init-to-piece-to-file-arrival-to-walkthrough flow through the DOM double. Browser behavior remains unobserved. Guide work stays parked separately. Plain-English free evidence review passes two scan-to-client DOM-double regressions on Node 20.20.2 and 24.19.0: captured file facts and attributed recorded descriptions, accepted/stale/invalid-input/unbound/file-only/missing scope, escaping, refresh/offline contexts, and absent/partial/failed/accepted/stale-plan examples with unchanged piece proof. Recording guidance does not execute/authenticate observations or change evidence states. Browser behavior remains unobserved.",
-      "recordedAt": "2026-10-13T23:40:42.440Z",
+      "note": "All 92 tests passed on Node v20.20.2 and v24.19.0 against this implementation and the named selected dependency/test/package inputs. Existing free map/walkthrough/briefs, authoring, discovery, evidence scope/freshness, ownership, APIs, exports and client DOM checks remain covered. Three new regressions cover explicit completion review bound to scope and exact current verified outcome records, rejection of piece-only/computing/partial/failed/live claims, plan/source/selected-input changes, and escaped live/offline final-box display, review navigation and refresh. DOM tests do not establish browser layout. Separate current Chromium checks are recorded on the visualizer; complete transitive input coverage, authenticated provenance and continuing live use are not established.",
+      "recordedAt": "2026-10-14T00:21:50.256163+00:00",
       "sourceHashes": {
         "tests/scan.test.js": "3893de2b53ac005f9dd5cd101258df26b154ed0e9cec1779f9b3a73ce2520a60",
         "tests/intent.test.js": "b0f3b5c2c5dd3b70e179fd437b1844023bac3348756f874a0fad3ad87bea592a",
         "tests/server.test.js": "6d3d8cd05ef2e8c201ed615d1a83a58672220d6b835bacf18467ee470bf65a27",
-        "tests/ui.test.js": "20ce7defb9f86fd1b9d85b080bbae35ea1a54a0576131eb2e78c1cad242b7ad4",
+        "tests/ui.test.js": "6b681d4a24e186e3743b9f2c6df079c738ce857d45a1ea190fa199ce3c942d70",
         "tests/export.test.js": "17e0588cc6a20d6ded9081071f7ec95a9094a78631a0cf358ce414d67ff436d2",
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
-        "tests/outcomes.test.js": "71a781f64c98919061c4dcc843dd9084edff22f66d2ec3b506e2c8390630cc26"
+        "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f"
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
-        "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+        "src/scan.js": "464f36646cb19de48da5a3db55751b0db2f0cd0c11552c6d162b1e05c05c8048",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "e67cf08a90716904b639ad2a057fbacbae3856ec17975764907c0a213dc61d91",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
         "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
-        "public/app.js": "02e3d28a73a61fa90c6797e6700f9c3ecef8fc279995c1568ce965ba6216cec5",
-        "public/styles.css": "3fd0e1526283a657020f17f4922a8df5806525c51116c734df1f4769d5646515",
+        "public/app.js": "fa9008cef5077fc277314e621ac527e46d9c446db94446c7d5b3bd85763b3a10",
+        "public/styles.css": "5d874eb2bcab055aa7d3f27c0f08e9baabe6045326bef9fee936baa12bbd387f",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
-        ".buildmap/project.json": "b776d7fa83da777b9492afe5ff01db8aff3592e092b97856555d6d3542734c5f",
+        ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
-        "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a",
+        "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/setup.js": "910c81ce7771f1d3b1693795e2c1b2ad22c53159958d499ea32d7a3b75fb38ef"
       }
     },
     "visualizer": {
       "status": "verified",
       "command": "node .buildmap/browser-check.mjs (separate Playwright Core; local Chromium 153.0.8010.0; Node v24.19.0)",
-      "note": "18 scoped local headless Chromium checks passed against the recorded implementation. Direct local live map and free goals, desktop/390px layout, assigned-file search, native Tab/Enter/Escape and focus, fit/scroll, evidence review, step inspection/return, clipboard permission-granted exact copy and unavailable fallback, self-contained export rendered in memory without API/assets/polling, a disposable 30-piece fixture, fetched source-change fingerprint, deletion-to-planned state, initial/polling HTTP failure and recovery, and no uncaught page JavaScript errors. Selected driver, manifest, backend/parser/export and package inputs are bound; this is not complete transitive input coverage or authenticated provenance. See docs/BROWSER_ACCEPTANCE_20261013.md and its JSON observation. Full accessibility, physical devices, other browsers and the complete named dogfood outcome were not established. No local-file navigation, deployment or live claim.",
-      "recordedAt": "2026-10-14T00:00:16.365Z",
+      "note": "19 scoped local Chromium checks passed. Live dogfood map/goals, desktop/390px layout, file/name search and native Tab/Enter/Escape/focus, fit/scroll, evidence and goal/piece return, fixture clipboard exact copy with permission and manual fallback, self-contained in-memory export without API/assets/polling, 30-piece fixture, explicit reviewed completion display and goal link, source-change completion invalidation, deletion-to-planned state and API failure/recovery were observed with no uncaught page errors. Selected inputs are bound; no complete accessibility/device/browser coverage, authenticated provenance or live deployment is claimed. The named full dogfood example is a separate receipt.",
+      "recordedAt": "2026-10-14T00:21:50.256163+00:00",
       "sourceHashes": {
         "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
-        "public/app.js": "02e3d28a73a61fa90c6797e6700f9c3ecef8fc279995c1568ce965ba6216cec5",
-        "public/styles.css": "3fd0e1526283a657020f17f4922a8df5806525c51116c734df1f4769d5646515"
+        "public/app.js": "fa9008cef5077fc277314e621ac527e46d9c446db94446c7d5b3bd85763b3a10",
+        "public/styles.css": "5d874eb2bcab055aa7d3f27c0f08e9baabe6045326bef9fee936baa12bbd387f"
       },
       "inputHashes": {
-        ".buildmap/browser-check.mjs": "959e5a80cd26dad5142ddc5e7d13d006382a2fa24ae4f8d31a1d557272becda2",
-        ".buildmap/project.json": "b776d7fa83da777b9492afe5ff01db8aff3592e092b97856555d6d3542734c5f",
+        ".buildmap/browser-check.mjs": "3de9a45c248f5ebfc2f7983b8e25a3b1cc2ff552e7cfc16a1d204f34dad23ac4",
+        ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
-        "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+        "src/scan.js": "464f36646cb19de48da5a3db55751b0db2f0cd0c11552c6d162b1e05c05c8048",
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
-        "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a",
+        "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/BROWSER_ACCEPTANCE_20261013.json": "63216c18074db016481fa53bdfbf4cde2a56d26c3059a1b5af9e2de5f3717df5"
+        "docs/BROWSER_ACCEPTANCE_20261013.json": "d289e76d45c4ab8b7463c0870a8afef62702176c859c2ab55347f33ae3007ead"
       }
     }
   },
   "outcomes": {
     "inspect-build": {
-      "status": "computing",
-      "recordedAt": "2026-10-13T23:40:42.672Z",
-      "command": "Read-only intent/scan/HTTP smoke on Node v24.19.0",
-      "note": "Recorded selected input/output fields from readIntent, scanProject and a real local GET /api/map. These are read-only backend observations, not an instrumented runtime trace or full payload capture. The browser step was not observed, so this partial example cannot prove the whole outcome.",
+      "status": "verified",
+      "recordedAt": "2026-10-14T00:21:51.562Z",
+      "command": "node .buildmap/record-mvp-example.mjs (Node v24.19.0; local Chromium 153.0.8010.0)",
+      "note": "A current local intent-to-scan-to-HTTP-to-browser example passed. Selected input/output fields were captured from real calls and browser DOM reads. ReadIntent and scanning read the same manifest; HTTP and browser responses matched the scanner fingerprint and selected fields. The browser located the visualizer, checked its purpose/files/evidence headings, and read the free goal steps, existing reported samples, next review point and intended destination. These are automated visibility/content checks, not a human comprehension study, an instrumented execution trace, independent receipt authentication, exhaustive accessibility/device coverage or live deployment.",
       "definitionHash": "ec9bc63293e38ac5116b5665682edf78c4953ccc652000dea7707d6e6a980c7a",
       "sourceHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
-        "src/scan.js": "0ef32b67b117a14504ba20f0c9a701e374235733f25d63fc49b83e1b48284f29",
+        "src/scan.js": "464f36646cb19de48da5a3db55751b0db2f0cd0c11552c6d162b1e05c05c8048",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "192b3eec83fe0a6e18f211d32b46b53f6427e07878c1d198869d56b89da430f2",
-        "src/outcomes.js": "f6375690c897cafb808cb9cfb00f32b15311adc6c8c7353a5ebfaa4ed478849a",
+        "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/server.js": "05fff19d692ef4ecf4dea0a5f24ac2e5e7127e46ed6d2c3187d8ba0f57766e68",
         "src/cli.js": "e67cf08a90716904b639ad2a057fbacbae3856ec17975764907c0a213dc61d91",
         "src/export.js": "4a80b57a2adabe9f84fb713bb9e444ce96128863945c82347470cbfb4817948a",
         "src/setup.js": "910c81ce7771f1d3b1693795e2c1b2ad22c53159958d499ea32d7a3b75fb38ef",
         "public/index.html": "17c9505aacc3909575f388676aacce4d9f5a5f28944ba9a92b82892ac139c6e2",
-        "public/app.js": "02e3d28a73a61fa90c6797e6700f9c3ecef8fc279995c1568ce965ba6216cec5",
-        "public/styles.css": "3fd0e1526283a657020f17f4922a8df5806525c51116c734df1f4769d5646515",
+        "public/app.js": "fa9008cef5077fc277314e621ac527e46d9c446db94446c7d5b3bd85763b3a10",
+        "public/styles.css": "5d874eb2bcab055aa7d3f27c0f08e9baabe6045326bef9fee936baa12bbd387f",
         "tests/scan.test.js": "3893de2b53ac005f9dd5cd101258df26b154ed0e9cec1779f9b3a73ce2520a60",
         "tests/intent.test.js": "b0f3b5c2c5dd3b70e179fd437b1844023bac3348756f874a0fad3ad87bea592a",
         "tests/server.test.js": "6d3d8cd05ef2e8c201ed615d1a83a58672220d6b835bacf18467ee470bf65a27",
-        "tests/ui.test.js": "20ce7defb9f86fd1b9d85b080bbae35ea1a54a0576131eb2e78c1cad242b7ad4",
+        "tests/ui.test.js": "6b681d4a24e186e3743b9f2c6df079c738ce857d45a1ea190fa199ce3c942d70",
         "tests/export.test.js": "17e0588cc6a20d6ded9081071f7ec95a9094a78631a0cf358ce414d67ff436d2",
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
-        "tests/outcomes.test.js": "71a781f64c98919061c4dcc843dd9084edff22f66d2ec3b506e2c8390630cc26"
+        "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f"
+      },
+      "inputHashes": {
+        ".buildmap/project.json": "dcd9d2368f6a195c3ecd5cbff552aa07fe7f11613f1ae39dcac5e00dd809cb1d",
+        ".buildmap/record-mvp-example.mjs": "467933064c258f8dc38c331ca93453c980a85053ec76c1618cb88ba160aafa38",
+        ".buildmap/browser-check.mjs": "3de9a45c248f5ebfc2f7983b8e25a3b1cc2ff552e7cfc16a1d204f34dad23ac4",
+        "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
+        "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f"
       },
       "example": {
-        "name": "Inspect BuildMap: backend fields captured, browser step pending",
+        "name": "Open the current local BuildMap MVP and review its visualizer and goal",
         "input": {
           "mission": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome."
         },
-        "output": null,
+        "output": {
+          "piece": {
+            "name": "Interactive visualizer",
+            "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces.",
+            "files": [
+              "public/index.html",
+              "public/app.js",
+              "public/styles.css"
+            ]
+          },
+          "evidenceReview": {
+            "fileFactsVisible": true,
+            "recordDescriptionVisible": true,
+            "bindingReviewVisible": true,
+            "limitsVisible": true
+          },
+          "walkthrough": {
+            "name": "Understand the current build",
+            "labels": [
+              "Agree on the goal",
+              "Check what's built",
+              "Make the results available",
+              "Review what works"
+            ],
+            "recordedSamplesVisible": [
+              true,
+              true,
+              true,
+              false
+            ],
+            "nextPointShown": "NEXT POINT TO REVIEW\n\nAgree on the goal · Example out of date"
+          },
+          "destinationVisible": true,
+          "pageErrors": []
+        },
         "steps": [
           {
             "stepId": "intent",
@@ -168,16 +209,17 @@
               "source": ".buildmap/project.json",
               "confidence": "declared"
             },
-            "note": "Selected manifest input field; actual readIntent result."
+            "note": "Actual readIntent result from the current declared manifest."
           },
           {
             "stepId": "scan",
             "result": "observed",
-            "handoff": "Confirmed that the scanner snapshot contains the same recovered intent.",
+            "handoff": "The scanner read the same root and recovered intent equal to the prior readIntent result; selected snapshot fields were checked.",
             "input": {
-              "root": "/workspace/scratch/77e2d3a3bcf7/BuildMap"
+              "root": "/workspace/scratch/77e2d3a3bcf7/BuildMap-browser/"
             },
             "output": {
+              "fingerprint": "b6e3e1a475a4",
               "intent": {
                 "text": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome.",
                 "source": ".buildmap/project.json",
@@ -189,51 +231,109 @@
                 "source": ".buildmap/project.json",
                 "confidence": "declared"
               },
+              "counts": {
+                "planned": 0,
+                "coded": 0,
+                "connected": 0,
+                "computing": 0,
+                "verified": 5,
+                "live": 0
+              },
               "pieces": [
                 {
                   "id": "intent",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "src/intent.js"
+                  ],
+                  "purpose": "Start from available intent evidence — README, docs, manifest, or an owner description — without blocking the map."
                 },
                 {
                   "id": "scanner",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "src/scan.js",
+                    "src/imports.js",
+                    "src/javascript.js",
+                    "src/outcomes.js"
+                  ],
+                  "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior."
                 },
                 {
                   "id": "server",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "src/server.js",
+                    "src/cli.js",
+                    "src/export.js",
+                    "src/setup.js"
+                  ],
+                  "purpose": "Serve current maps and actionable gaps, export an offline HTML snapshot, or guide explicitly requested local project descriptions, piece grouping and walkthrough plans."
                 },
                 {
                   "id": "visualizer",
-                  "status": "connected"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "public/index.html",
+                    "public/app.js",
+                    "public/styles.css"
+                  ],
+                  "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces."
                 },
                 {
                   "id": "verification",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "tests/scan.test.js",
+                    "tests/intent.test.js",
+                    "tests/server.test.js",
+                    "tests/ui.test.js",
+                    "tests/export.test.js",
+                    "tests/inventory.test.js",
+                    "tests/outcomes.test.js"
+                  ],
+                  "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation."
+                }
+              ],
+              "outcomes": [
+                {
+                  "id": "inspect-build",
+                  "status": "unproved",
+                  "stepCount": 4,
+                  "firstGap": "Agree on the goal"
                 }
               ],
               "gaps": [
                 {
-                  "kind": "unproved",
-                  "nodeId": "visualizer"
-                },
-                {
                   "kind": "unproved-outcome",
                   "nodeId": null,
                   "outcomeId": "inspect-build"
+                },
+                {
+                  "kind": "completion-pending",
+                  "nodeId": "__mission__",
+                  "outcomeId": null
                 }
               ]
             },
-            "note": "Selected snapshot fields, not the complete scanner return value."
+            "note": "Actual scanProject result, selected fields only."
           },
           {
             "stepId": "serve",
             "result": "observed",
-            "handoff": "Requested the map API and checked that its fingerprint and selected fields match the scanner snapshot.",
+            "handoff": "GET /api/map on the local server returned a rescanned snapshot whose fingerprint and selected fields equaled the prior scan.",
             "input": {
-              "method": "GET",
-              "url": "http://127.0.0.1:45243/api/map"
+              "url": "http://127.0.0.1:45249/api/map",
+              "method": "GET"
             },
             "output": {
+              "httpStatus": 200,
+              "fingerprint": "b6e3e1a475a4",
               "intent": {
                 "text": "Make software construction visible: show what each piece does, what is actually connected, what is still missing, and how every verified piece moves the system toward the intended outcome.",
                 "source": ".buildmap/project.json",
@@ -245,44 +345,155 @@
                 "source": ".buildmap/project.json",
                 "confidence": "declared"
               },
+              "counts": {
+                "planned": 0,
+                "coded": 0,
+                "connected": 0,
+                "computing": 0,
+                "verified": 5,
+                "live": 0
+              },
               "pieces": [
                 {
                   "id": "intent",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "src/intent.js"
+                  ],
+                  "purpose": "Start from available intent evidence — README, docs, manifest, or an owner description — without blocking the map."
                 },
                 {
                   "id": "scanner",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "src/scan.js",
+                    "src/imports.js",
+                    "src/javascript.js",
+                    "src/outcomes.js"
+                  ],
+                  "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior."
                 },
                 {
                   "id": "server",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "src/server.js",
+                    "src/cli.js",
+                    "src/export.js",
+                    "src/setup.js"
+                  ],
+                  "purpose": "Serve current maps and actionable gaps, export an offline HTML snapshot, or guide explicitly requested local project descriptions, piece grouping and walkthrough plans."
                 },
                 {
                   "id": "visualizer",
-                  "status": "connected"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "public/index.html",
+                    "public/app.js",
+                    "public/styles.css"
+                  ],
+                  "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces."
                 },
                 {
                   "id": "verification",
-                  "status": "verified"
+                  "status": "verified",
+                  "baseStatus": "connected",
+                  "files": [
+                    "tests/scan.test.js",
+                    "tests/intent.test.js",
+                    "tests/server.test.js",
+                    "tests/ui.test.js",
+                    "tests/export.test.js",
+                    "tests/inventory.test.js",
+                    "tests/outcomes.test.js"
+                  ],
+                  "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation."
+                }
+              ],
+              "outcomes": [
+                {
+                  "id": "inspect-build",
+                  "status": "unproved",
+                  "stepCount": 4,
+                  "firstGap": "Agree on the goal"
                 }
               ],
               "gaps": [
                 {
-                  "kind": "unproved",
-                  "nodeId": "visualizer"
-                },
-                {
                   "kind": "unproved-outcome",
                   "nodeId": null,
                   "outcomeId": "inspect-build"
+                },
+                {
+                  "kind": "completion-pending",
+                  "nodeId": "__mission__",
+                  "outcomeId": null
                 }
               ]
             },
-            "note": "Actual HTTP 200 response; selected JSON fields only. The temporary server was closed after observation."
+            "note": "Actual HTTP 200 and selected response fields."
+          },
+          {
+            "stepId": "inspect",
+            "result": "observed",
+            "handoff": "The browser fetched /api/map from that same local origin. Its response fingerprint and selected fields matched the prior HTTP observation; the rendered UI was then inspected.",
+            "input": {
+              "fingerprint": "b6e3e1a475a4",
+              "pieceId": "visualizer",
+              "outcomeId": "inspect-build"
+            },
+            "output": {
+              "piece": {
+                "name": "Interactive visualizer",
+                "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces.",
+                "files": [
+                  "public/index.html",
+                  "public/app.js",
+                  "public/styles.css"
+                ]
+              },
+              "evidenceReview": {
+                "fileFactsVisible": true,
+                "recordDescriptionVisible": true,
+                "bindingReviewVisible": true,
+                "limitsVisible": true
+              },
+              "walkthrough": {
+                "name": "Understand the current build",
+                "labels": [
+                  "Agree on the goal",
+                  "Check what's built",
+                  "Make the results available",
+                  "Review what works"
+                ],
+                "recordedSamplesVisible": [
+                  true,
+                  true,
+                  true,
+                  false
+                ],
+                "nextPointShown": "NEXT POINT TO REVIEW\n\nAgree on the goal · Example out of date"
+              },
+              "destinationVisible": true,
+              "pageErrors": []
+            },
+            "note": "Actual Chromium DOM reads and content assertions; reported samples were read, not re-executed by the viewer."
           }
         ]
       }
+    }
+  },
+  "completion": {
+    "status": "verified",
+    "recordedAt": "2026-10-14T00:21:51.562Z",
+    "note": "Reviewed only the declared MVP scope against its current complete named inspect-build example. The local browser baseline and visibility/content check support that scoped result; broader roadmap, full accessibility, other devices/browsers and live use are outside this review.",
+    "definitionHash": "1a4df3a201d3eca6c23ca05a2306484b40bc44910f01cce60ce432c50c00a119",
+    "outcomeEvidenceHashes": {
+      "inspect-build": "dd2b9a024434851dedab495a6d25295e1ffffcdd12227086b773d7c9db9cd946"
     }
   }
 }

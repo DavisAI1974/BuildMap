@@ -201,6 +201,8 @@ export function evaluateAnalysis(document, calculations = [], checkBinding = () 
     if (!object(r.identity) || runtimeKeys.some(k => !text(r.identity[k]))) throw Error('Runtime observations require source/calculation/workload/environment/metric-scope identities.');
     if (r.counters !== undefined && !object(r.counters) || r.metrics !== undefined && !object(r.metrics)) throw Error('Counters and metrics must be objects.');
     if (r.accounting !== undefined && r.accounting !== 'eligible=completed+remaining') throw Error('Unsupported accounting declaration.');
+    if (r.calculation !== undefined && (!object(r.calculation) || !text(r.calculation.path) || !text(r.calculation.name) ||
+      r.calculation.sourceHash !== undefined && !/^[a-f0-9]{64}$/.test(r.calculation.sourceHash))) throw Error('Calculation reference requires path, name and an optional lowercase SHA-256 sourceHash.');
     const parsedCounters = Object.fromEntries(counters.map(k => [k, r.counters?.[k] == null ? null : count(r.counters[k])]));
     const parsedMetrics = Object.fromEntries(metrics.map(k => {
       const v = r.metrics?.[k];
@@ -214,14 +216,29 @@ export function evaluateAnalysis(document, calculations = [], checkBinding = () 
       if ([e,c,n].some(v => v === null) || BigInt(e) !== BigInt(c) + BigInt(n)) throw Error('Declared eligible=completed+remaining accounting does not match the supplied counters.');
     }
     return { id: r.id, identity: r.identity, stageId: text(r.stageId) ? r.stageId : null, baselineId: text(r.baselineId) ? r.baselineId : null,
+      calculationReference: r.calculation || null,
       counters: parsedCounters, metrics: parsedMetrics, freshness: bindingStatus(r.bindings), execution: 'reported-not-observed-by-buildmap' };
   });
+  for (const r of result.observations) {
+    const ref = r.calculationReference, stage = stages.get(r.stageId);
+    const candidates = ref ? calculations.filter(c => c.source.path === ref.path && c.name === ref.name)
+      : calculations.filter(c => stage?.calculationId && c.id === stage.calculationId);
+    const stale = candidates.length === 1 && ref?.sourceHash && candidates[0].source.sourceHash !== ref.sourceHash;
+    r.calculationMatch = { status: stale ? 'stale-source' : candidates.length === 1 ? 'candidate-source-match' : ref || r.stageId ? 'unresolved' : 'not-supplied',
+      basis: ref ? 'explicit-observation-reference' : r.stageId ? 'declared-stage-calculation' : 'not-supplied',
+      calculationId: !stale && candidates.length === 1 ? candidates[0].id : null,
+      source: !stale && candidates.length === 1 ? candidates[0].source : null };
+    if (stale || ref && candidates.length !== 1) result.diagnostics.push({ section: 'runtime', id: r.id,
+      message: stale ? 'Explicit calculation source hash differs; navigation and comparisons refused.' : 'Explicit calculation reference has no unique analyzed declaration; no target guessed.' });
+  }
   for (const r of result.observations) {
     if (r.stageId && !stages.has(r.stageId)) result.diagnostics.push({ section: 'runtime', id: r.id, message: 'Reported stage has no accepted declaration.' });
     if (!r.baselineId) continue;
     const baseline = result.observations.find(x => x.id === r.baselineId);
     const reason = !baseline || baseline === r ? 'Baseline missing, ambiguous or self-referencing.'
       : r.freshness.status !== 'current' || baseline.freshness.status !== 'current' ? 'Both observations need current bound receipts.'
+      : [r,baseline].some(x => x.calculationReference && x.calculationMatch.status !== 'candidate-source-match') ? 'Explicit calculation reference is unresolved or stale.'
+      : (r.calculationReference || baseline.calculationReference) && r.calculationMatch.calculationId !== baseline.calculationMatch.calculationId ? 'Explicit calculation references do not resolve to the same declaration.'
       : canonical(r.identity) !== canonical(baseline.identity) || r.stageId !== baseline.stageId ? 'Source, calculation, workload, environment, metric scope or stage differ.' : null;
     result.comparisons.push({ observationId: r.id, baselineId: r.baselineId, status: reason ? 'refused' : 'comparable-reported-observations', reason,
       counterDifferences: reason ? null : Object.fromEntries(counters.map(k => [k, r.counters[k] === null || baseline.counters[k] === null ? null : String(BigInt(r.counters[k]) - BigInt(baseline.counters[k]))])),

@@ -24,6 +24,7 @@ test('Multi-stage source yields source-bound calculations, possible shared produ
   const root = fixture(t), map = scanProject(root), w = map.workflow;
   assert.equal(w.files[0].status, 'parsed');
   assert.equal(w.basis, 'static-source-syntax');
+  assert.equal(w.coverage.pythonFiles,1);assert.equal(w.coverage.parsedPythonFiles,1);assert.equal(w.coverage.unreviewedPython.length,0);
   const prepare = w.calculations.find(c => c.name === 'prepare'), search = w.calculations.find(c => c.name === 'search');
   assert.deepEqual(search.inputs, ['cells', 'transforms', 'series']);
   assert.equal(prepare.source.sourceHash, hash(example));

@@ -156,6 +156,7 @@ export function scanProject(root, { source = null, workflowFiles = null } = {}) 
     requestedFiles: workflowFiles === null ? null : [...new Set(workflowFiles)].sort(),
     unavailableFiles: workflowFiles === null ? [] : [...new Set(workflowFiles)].filter(f => !fileSet.has(f) || path.extname(f).toLowerCase() !== '.py').sort() };
   result.workflow.review = readAnalysis(root, result.workflow.calculations);
+  result.workflow.coverage.inventoryMode = inventory.mode;
   result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence: rawEvidence });
   return result;
 }

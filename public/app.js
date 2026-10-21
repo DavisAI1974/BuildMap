@@ -496,7 +496,16 @@ function appendWorkflowReview(node) {
       }); section.appendChild(button);
     }
   };
-  appendWorkflowEvidence(panel, all ? workflow.review : null, (workflow.checkpoints || []).filter(c => all || ids.has(c.calculationId)), sourceButtons);
+  if (all && workflow.coverage) {
+    const coverage = workflow.coverage, section = document.createElement('details'); section.className = 'workflow-scan-coverage';
+    section.innerHTML = `<summary>Scan coverage · ${coverage.parsedPythonFiles}/${coverage.pythonFiles} Python files parsed · ${coverage.outsideAdapter.length} inventory files outside risk adapter</summary>
+      <p>${escapeHtml(coverage.inventoryMode)} inventory · ${coverage.inventoryFiles} discovered/declared files. ${escapeHtml(coverage.boundary)}</p>
+      <p>Python status counts: ${Object.entries(coverage.statuses).map(([s,n]) => `${escapeHtml(s)}: ${n}`).join('; ') || 'no Python files discovered'}.</p>
+      <h4>Python files still unreviewed</h4><ul>${coverage.unreviewedPython.map(f => `<li>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</li>`).join('') || '<li>None in this bounded inventory. This does not establish complete workflow coverage.</li>'}</ul>
+      <h4>Inventory outside this risk adapter</h4><ul>${coverage.outsideAdapter.map(f => `<li>${escapeHtml(f.path)} · ${escapeHtml(f.reason)}</li>`).join('') || '<li>None in this inventory.</li>'}</ul>`;
+    panel.appendChild(section);
+  }
+  appendWorkflowEvidence(panel, all ? workflow.review : null, (workflow.checkpoints || []).filter(c => all || ids.has(c.calculationId)), sourceButtons, calculationById);
   const relationships = (workflow.relationships || []).filter(r => all || ids.has(r.from) || ids.has(r.to));
   if (relationships.length || workflow.callCoverage) {
     const connections = document.createElement('details'); connections.className = 'workflow-connections';
@@ -565,7 +574,7 @@ function appendWorkflowReview(node) {
   panel.appendChild(limits); $('detail').appendChild(panel);
 }
 
-function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons) {
+function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons, calculationById) {
   if (checkpoints.length) {
     const section = document.createElement('details'); section.className = 'workflow-checkpoints';
     section.innerHTML = `<summary>Saved products and restart · ${checkpoints.length} source site(s)</summary><p>Compatibility, ownership and restart completeness remain unverified. Nearby checks may belong to other paths.</p>`;
@@ -610,10 +619,12 @@ function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons) {
     const item = document.createElement('details'); item.className = 'workflow-observation';
     item.innerHTML = `<summary>Reported workload: ${escapeHtml(observation.id)} · ${escapeHtml(observation.freshness.status)}</summary>
       <p>Jobs and directional pair comparisons are counted separately. Missing values remain unknown. Current receipt bytes do not authenticate the report or prove its source identities.</p>
+      <p>Calculation reference: ${escapeHtml(observation.calculationMatch?.status || 'not-supplied')} · ${escapeHtml(observation.calculationMatch?.basis || 'not-supplied')} · ${escapeHtml(calculationById.get(observation.calculationMatch?.calculationId)?.name || 'no target selected')}. A source candidate does not prove this calculation produced these metrics.</p>
       <ul>${Object.entries(observation.identity).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(typeof v === 'string' ? v : JSON.stringify(v))}</li>`).join('')}</ul>
       <ul>${Object.entries(observation.counters).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(v ?? 'unknown')}</li>`).join('')}</ul>
       <ul>${Object.entries(observation.metrics).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(String(v ?? 'unknown'))}</li>`).join('')}</ul>
       <ul>${observation.freshness.files.map(f => `<li>${escapeHtml(f.path)}: ${escapeHtml(f.reason)}</li>`).join('')}</ul>`;
+    if (observation.calculationMatch?.source) sourceButtons(item, [observation.calculationMatch.source]);
     section.appendChild(item);
   }
   for (const comparison of review.comparisons) {

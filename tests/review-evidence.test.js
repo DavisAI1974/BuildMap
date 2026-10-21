@@ -155,3 +155,32 @@ def run(jobs, identity):
   assert.equal(w.checkpoints.filter(c=>c.literalPath==='checkpoint.npy'&&c.operation==='save').length,1);
   assert.ok(w.findings.every(f=>f.sources.every(s=>s.sourceHash&&s.line>0)));assert.equal(fs.existsSync(path.join(root,'checkpoint.npy')),false);
 });
+
+test('coverage distinguishes parsed, excluded, invalid, oversized and other-language inventory without claiming complete workflow analysis', t => {
+  const root=fixture(t);
+  for(const [name,source] of Object.entries({'good.py':'def run():\n    return 1\n','not-selected.py':'def skip():\n    pass\n','broken.py':'def invalid(:','large.py':'#'.repeat(1_000_001),'launch.sh':'# syntax only, never execute\n'}))fs.writeFileSync(path.join(root,name),source);
+  const map=scanProject(root,{workflowFiles:['good.py','broken.py','large.py']}), c=map.workflow.coverage;
+  assert.equal(c.inventoryFiles,5);assert.equal(c.pythonFiles,4);assert.equal(c.parsedPythonFiles,1);
+  assert.deepEqual(c.statuses,{'not-selected':1,'parse-error':1,parsed:1,'size-limit':1});
+  assert.deepEqual(c.outsideAdapter.map(f=>f.path),['launch.sh']);assert.equal(c.unreviewedPython.length,3);
+  assert.match(c.boundary,/Ignored.*may be absent/);assert.ok(c.inventoryMode);
+  assert.equal(map.project.counts.verified,0);
+});
+
+test('reported observations resolve explicit or stage calculation references; ambiguity and stale hashes never guess a target', () => {
+  const source={path:'flow.py',sourceHash:'b'.repeat(64),line:1,column:1};
+  const calculations=[{id:'calc-one',name:'run',source},{id:'calc-two',name:'other',source:{...source,line:3}}];
+  const before=runtime('before'),after=runtime('after');after.baselineId='before';
+  before.stageId=after.stageId='run';after.calculation={path:'flow.py',name:'run',sourceHash:source.sourceHash};
+  const doc={version:1,stages:[{id:'run',calculation:{path:'flow.py',name:'run'}}],runtime:[before,after]};
+  let review=evaluateAnalysis(doc,calculations,current);
+  assert.equal(review.observations[0].calculationMatch.basis,'declared-stage-calculation');
+  assert.equal(review.observations[1].calculationMatch.basis,'explicit-observation-reference');
+  assert.deepEqual(review.observations[1].calculationMatch.source,source);assert.equal(review.comparisons[0].status,'comparable-reported-observations');
+  after.calculation.sourceHash='c'.repeat(64);review=evaluateAnalysis(doc,calculations,current);
+  assert.equal(review.observations[1].calculationMatch.status,'stale-source');assert.equal(review.observations[1].calculationMatch.source,null);assert.equal(review.comparisons[0].status,'refused');
+  delete after.calculation.sourceHash;after.calculation.name='other';assert.equal(evaluateAnalysis(doc,calculations,current).comparisons[0].status,'refused');
+  after.calculation.name='run';review=evaluateAnalysis(doc,[...calculations,calculations[0]],current);
+  assert.equal(review.observations[1].calculationMatch.status,'unresolved');assert.equal(review.observations[1].calculationMatch.calculationId,null);
+  after.calculation.name='absent';review=evaluateAnalysis(doc,calculations,current);assert.equal(review.observations[1].calculationMatch.source,null);
+});

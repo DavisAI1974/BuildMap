@@ -114,8 +114,14 @@ export function buildWorkflow(guides) {
   const links = calculationLinks(calculations, guides);
   const resources = inspectResources(calculations);
   findings.push(...resources.findings);
+  const statuses = Object.fromEntries([...new Set(files.map(f => f.status))].sort().map(status => [status, files.filter(f => f.status === status).length]));
+  const outsideAdapter = [...guides.values()].filter(g => !g.path.toLowerCase().endsWith('.py')).map(g => ({ path: g.path,
+    reason: 'Outside the Python calculation/risk adapter. Other source/import or JavaScript Guide support does not establish a workflow risk review.' }));
   return { version: 1, basis: 'static-source-syntax', files, calculations, dataProducts: [...products.values()], ...links,
     checkpoints: resources.checkpoints,
+    coverage: { inventoryFiles: guides.size, pythonFiles: files.length, parsedPythonFiles: statuses.parsed || 0,
+      statuses, unreviewedPython: files.filter(f => f.status !== 'parsed'), outsideAdapter,
+      boundary: 'Counts cover discovered/explicitly declared inventory only. Ignored, excluded, deleted, unreadable and unlisted files may be absent. Parsing does not establish reachable execution or complete semantic coverage.' },
     findings: findings.sort((a, b) => a.type.localeCompare(b.type) || a.id.localeCompare(b.id)), limitations: WORKFLOW_LIMITS };
 }
 

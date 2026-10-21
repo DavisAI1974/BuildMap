@@ -1002,6 +1002,28 @@ test('coverage and reported workload remain readable, escaped and unverified wit
   }
 });
 
+test('runtime calculation navigation follows captured source and stale references lose navigation live or offline', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-runtime-link-ui-'));
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}));fs.mkdirSync(path.join(root,'.buildmap'));
+  const source='def measured():\n    return 1\n';
+  for(const offline of [false,true]) {
+    fs.writeFileSync(path.join(root,'flow.py'),source);
+    const base=scanProject(root),analysis=JSON.parse(fs.readFileSync(new URL('./fixtures/workflow-analysis.json',import.meta.url),'utf8'));
+    analysis.runtime=analysis.runtime.slice(0,1);analysis.runtime[0].calculation={path:'flow.py',name:'measured',sourceHash:base.workflow.files[0].sourceHash};
+    fs.writeFileSync(path.join(root,'.buildmap/analysis.json'),JSON.stringify(analysis));
+    const ui=await client(scanProject(root),offline);
+    const controls=()=>{const all=[],stack=[...ui.get('detail').children];while(stack.length){const e=stack.pop();all.push(e);stack.push(...e.children);}return all;};
+    const open=()=>{ui.get('nodeLayer').children.find(n=>n.dataset.id==='__mission__').click();ui.get('detail').children.find(e=>e.classes.has('guide-open')).click();};open();
+    let report=controls().find(e=>e.classes.has('workflow-observation'));assert.match(report.innerHTML,/candidate-source-match.*explicit-observation-reference.*measured/s);
+    const staleButton=report.children[0];staleButton.click();assert.ok(controls().find(e=>e.classes.has('code-function')&&e.open&&e.innerHTML.includes('measured')));
+    if(!offline) {
+      open();fs.writeFileSync(path.join(root,'flow.py'),'def measured():\n    return 2\n');ui.setModel(scanProject(root));await ui.refresh();
+      report=controls().find(e=>e.classes.has('workflow-observation'));assert.match(report.innerHTML,/stale-source/);assert.equal(report.children.length,0);
+      staleButton.click();assert.equal(controls().some(e=>e.classes.has('code-function')&&e.open),false);
+    }else assert.deepEqual(ui.counts(),{requests:0,polls:0});
+  }
+});
+
 test('calculation source candidates navigate across files and stale links cannot revive removed targets', async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-connections-ui-'));
   t.after(()=>fs.rmSync(root,{recursive:true,force:true}));

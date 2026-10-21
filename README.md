@@ -20,6 +20,8 @@ The workflow-inspection development branch adds a general-purpose calculation an
 
 The inspector also reviews saved-product loads/guards, whole-result memory risks, collection retention and possible per-iteration waits, while showing existing cache/chunk/pool/release cues. Optional `.buildmap/analysis.json` adds exact contract-based row/column coverage and extension plans, declared stage checks and reported workload counters. Rolling plans retain declared input overlap; stateful partial extension stays blocked. Comparable current receipt-bound observations can show measured differences; no static savings are invented. Products are never modified or certified safe to resume. Jobs and directional pair comparisons remain separate.
 
+The project-wide **Scan coverage** panel names files left unreviewed and languages outside the Python risk adapter. Optional runtime calculation references link reported measurements to the captured calculation for inspection; stale or ambiguous references cannot select a target or justify a comparison.
+
 Dynamic paths, nested/inherited methods, shell/YAML execution, SQL and runtime call tracing remain outside the syntax adapter. Accounts, billing and outside-customer expansion are deferred. See [review records, schemas, limits and examples](docs/WORKFLOW_REVIEW.md) and [the roadmap inventory and remaining scope](docs/ROADMAP_REVIEW_20261021.md).
 
 ## Quick start

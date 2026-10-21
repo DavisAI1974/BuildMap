@@ -471,6 +471,7 @@ function appendWorkflowReview(node) {
   const files = workflow.files.filter(f => all || node.files.includes(f.path));
   if (!all && !files.length) return;
   const fingerprint = model.fingerprint;
+  const calculationById = new Map(workflow.calculations.map(c => [c.id, c]));
   const panel = document.createElement('section'); panel.className = 'detail-section workflow-review';
   panel.innerHTML = `<h3>Before you run · Python risk review</h3>
     <p>${all ? 'Project-wide' : 'This piece’s'} static review: ${files.filter(f => f.status === 'parsed').length}/${files.length} Python files parsed; ${findings.length} review finding(s). No findings is not clearance to run. Actual jobs, pair comparisons, reads, remaining work and savings are unknown.</p>
@@ -495,6 +496,27 @@ function appendWorkflowReview(node) {
       }); section.appendChild(button);
     }
   };
+  const relationships = (workflow.relationships || []).filter(r => all || ids.has(r.from) || ids.has(r.to));
+  if (relationships.length || workflow.callCoverage) {
+    const connections = document.createElement('details'); connections.className = 'workflow-connections';
+    connections.innerHTML = `<summary>Calculation connections · ${relationships.length} source candidate(s)</summary>
+      <p>These links connect written calls to possible declarations. They do not establish execution order, scheduling, parameter values or runtime data flow. A planned walkthrough remains a declared plan.</p>
+      <p>${escapeHtml(String(workflow.callCoverage?.unresolvedCallSites ?? 'unknown'))} call sites have no supported source link across this review. External libraries, dynamic dispatch, decorators, shadowing and excluded files may explain them; this is not proof of missing wiring.</p>`;
+    for (const relation of relationships) {
+      const item = document.createElement('details'); item.className = 'workflow-connection';
+      item.innerHTML = `<summary>${escapeHtml(calculationById.get(relation.from)?.name || relation.from)} → ${escapeHtml(calculationById.get(relation.to)?.name || relation.to)}</summary>
+        <p>Source candidate · ${escapeHtml(relation.basis)}. Execution unobserved; data flow unverified.</p>
+        <p>Written argument expressions: ${escapeHtml(relation.arguments.join('; ') || 'none')}. Actual values and inputs/outputs between stages remain unknown.</p>`;
+      sourceButtons(item, [relation.source, relation.targetSource]); connections.appendChild(item);
+    }
+    const unresolved = (workflow.unresolvedCalls || []).filter(r => all || ids.has(r.calculationId));
+    for (const call of unresolved) {
+      const item = document.createElement('details'); item.className = 'workflow-unresolved-call';
+      item.innerHTML = `<summary>Unresolved local-source candidate: ${escapeHtml(call.target)}</summary><p>${escapeHtml(call.reason)}</p>`;
+      sourceButtons(item, [call.source]); connections.appendChild(item);
+    }
+    panel.appendChild(connections);
+  }
   for (const finding of findings) {
     const section = document.createElement('details'); section.className = 'workflow-finding';
     section.innerHTML = `<summary>${escapeHtml(finding.confidence)} · ${escapeHtml(finding.title)}</summary>
@@ -509,15 +531,19 @@ function appendWorkflowReview(node) {
     sourceButtons(section, finding.sources); panel.appendChild(section);
   }
   for (const calc of calculations) {
+    const callers = (workflow.relationships || []).filter(r => r.to === calc.id);
+    const callees = (workflow.relationships || []).filter(r => r.from === calc.id);
     const section = document.createElement('details'); section.className = 'workflow-calculation';
     section.innerHTML = `<summary>What is ${escapeHtml(calc.name)} building? · ${escapeHtml(`${calc.source.path}:${calc.source.line}`)}</summary>
       <p>${escapeHtml(calc.purpose)}</p><h4>Why does this run?</h4><p>${escapeHtml(calc.why)}</p>
       <p>Declared inputs: ${escapeHtml(calc.inputs.join(', ') || 'none; other dependencies may exist')}.</p>
       <p>Return expressions: ${escapeHtml(calc.outputs.map(o => o.summary).join('; ') || 'none found; side effects may exist')}.</p>
+      <p>Possible callers in analyzed source: ${escapeHtml(callers.map(r => calculationById.get(r.from)?.name || r.from).join(', ') || 'none matched; this does not establish unused code')}.</p>
+      <p>Calls linked to analyzed declarations: ${escapeHtml(callees.map(r => calculationById.get(r.to)?.name || r.to).join(', ') || 'none matched; dynamic and external targets remain unknown')}.</p>
       <h4>Assignments and transformations written in this scope</h4>${calc.transformations.length ? `<ul>${calc.transformations.map(t => `<li>${escapeHtml(t.summary)} · line ${t.source.line}</li>`).join('')}</ul>` : '<p>No supported assignment syntax found; calls and other effects may exist.</p>'}
       ${(calc.comprehensions || []).length ? `<h4>Comprehension expansion</h4><ul>${calc.comprehensions.map(c => `<li>${escapeHtml(c.kind)} · ${escapeHtml(c.evaluation)} · ${escapeHtml(c.axes.map(a => `${a.target} in ${a.iterable}${a.filters.length ? ` if ${a.filters.join(' and ')}` : ''}`).join(' × '))} · line ${c.source.line}. Actual jobs, pairs and allocation unknown.</li>`).join('')}</ul>` : ''}
       <h4>Possible file inputs / outputs / saved state</h4>${calc.io.length ? `<ul>${calc.io.map(io => `<li>${escapeHtml(io.operation)} ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} · line ${io.source.line}. Written call syntax; schema, coverage and checkpoint identity unknown.</li>`).join('')}</ul>` : '<p>No supported literal file I/O found. Dynamic paths and other storage remain unknown.</p>'}`;
-    sourceButtons(section, [calc.source]); panel.appendChild(section);
+    sourceButtons(section, [calc.source, ...callers.map(r => r.source), ...callees.map(r => r.targetSource)]); panel.appendChild(section);
   }
   const products = workflow.dataProducts.filter(p => all || [...p.producers, ...p.consumers].some(s => ids.has(s.calculationId)));
   for (const product of products) {

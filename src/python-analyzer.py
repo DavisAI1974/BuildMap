@@ -1,5 +1,6 @@
 """BuildMap's trusted, isolated syntax reader. Never imports the mapped project."""
 import ast
+from collections import Counter
 import json
 import sys
 
@@ -60,20 +61,53 @@ def analyze(source):
         elif isinstance(node, ast.ClassDef):
             definitions.extend((node.name + '.' + method.name, method, 'method') for method in node.body
                                if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)))
+    bindings = Counter()
+    mutated_roots = set()
+    star_import = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            bindings[node.id] += 1
+        elif isinstance(node, ast.arg):
+            bindings[node.arg] += 1
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bindings[node.name] += 1
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                star_import |= alias.name == '*'
+                bindings[alias.asname or (alias.name.split('.')[0] if isinstance(node, ast.Import) else alias.name)] += 1
+        elif isinstance(node, ast.ExceptHandler) and node.name:
+            bindings[node.name] += 1
+        elif type(node).__name__ in ('MatchAs', 'MatchStar') and node.name:
+            bindings[node.name] += 1
+        if isinstance(node, ast.Attribute) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            root = name(node).split('.')[0]
+            if root:
+                mutated_roots.add(root)
+    linkable = {qualified for qualified, node, kind in definitions
+                if kind == 'function' and bindings[qualified] == 1 and not node.decorator_list and not star_import}
+    import_bindings = {}
     imports = {}
     for n in tree.body:
         if isinstance(n, ast.Import):
             for a in n.names:
-                imports[a.asname or a.name.split('.')[0]] = a.name
-        if isinstance(n, ast.ImportFrom) and n.module and not n.level:
+                local = a.asname or a.name.split('.')[0]
+                imports[local] = a.name
+                import_bindings[local] = {"module": a.name, "level": 0, "symbol": None,
+                                          "prefix": [] if a.asname else a.name.split('.')[1:], **location(n)}
+        if isinstance(n, ast.ImportFrom) and n.module:
             for a in n.names:
-                imports[a.asname or a.name] = n.module + "." + a.name
+                local = a.asname or a.name
+                if not n.level:
+                    imports[local] = n.module + "." + a.name
+                import_bindings[local] = {"module": n.module, "level": n.level, "symbol": a.name, "prefix": [], **location(n)}
+    import_bindings = {k: v for k, v in import_bindings.items()
+                       if bindings[k] == 1 and k not in mutated_roots and not star_import and k != '*'}
     # Conservatively suppress library recognition for any binding/reassignment,
     # including one in another scope. This avoids claiming a shadowed call is I/O.
     bound = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del))}
     bound.update(n.arg for n in ast.walk(tree) if isinstance(n, ast.arg))
     bound.update(n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)))
-    imports = {k: v for k, v in imports.items() if k not in bound}
+    imports = {k: v for k, v in imports.items() if k not in bound and bindings[k] == 1 and k not in mutated_roots and not star_import}
 
     def canonical(target):
         root, *rest = target.split('.')
@@ -174,10 +208,21 @@ def analyze(source):
         def visit_Call(self, node):
             target = name(node.func) or "computed callable"
             resolved = canonical(target)
-            self.calls.append({"target": target, "kind": "call", "argumentCount": len(node.args) + len(node.keywords),
+            call = {"target": target, "kind": "call", "argumentCount": len(node.args) + len(node.keywords),
                                "arguments": [expr(a) for a in node.args] + [(k.arg or '**') + '=' + expr(k.value) for k in node.keywords],
-                               "resolution": "unresolved-source-reference", **location(node)})
-            if any(word in resolved.lower() for word in ('cache', 'couplingjobs', 'celljobsubset', 'checkpoint', 'receipt', 'indexed', 'fft', 'reuse')):
+                               "resolution": "unresolved-source-reference", **location(node)}
+            parts = target.split('.')
+            if len(parts) == 1 and target in linkable:
+                call['bindingReference'] = {"kind": 'local-function', "targetName": target}
+            elif parts[0] in import_bindings:
+                binding = import_bindings[parts[0]]
+                member = parts[1:]
+                if binding['symbol'] is not None and not member:
+                    call['bindingReference'] = {"kind": 'imported-function', "targetName": binding['symbol'], **binding}
+                elif binding['symbol'] is None and member[:len(binding['prefix'])] == binding['prefix'] and len(member) == len(binding['prefix']) + 1:
+                    call['bindingReference'] = {"kind": 'imported-function', "targetName": member[-1], **binding}
+            self.calls.append(call)
+            if any(word in resolved.lower() for word in ('cache', 'lazy', 'subset', 'scheduler', 'checkpoint', 'receipt', 'indexed', 'fft', 'reuse')):
                 self.cues.append({"expression": expr(node), "basis": "name-only; behavior unverified", **location(node)})
             product = operation = None
             root = target.split('.')[0]
@@ -213,7 +258,8 @@ def analyze(source):
         args = fn.args if fn else None
         parameters = ([a.arg for a in args.posonlyargs + args.args] + (["*" + args.vararg.arg] if args.vararg else []) + [a.arg for a in args.kwonlyargs] + (["**" + args.kwarg.arg] if args.kwarg else [])) if args else []
         decorators = [{"expression": expr(d), "basis": "decorator syntax; effect unverified", **location(d)} for d in fn.decorator_list] if fn else []
-        records.append({"name": function_name, "language": "Python", "scopeKind": scope_kind, "exported": False, "async": isinstance(fn, ast.AsyncFunctionDef), "generator": reader.yields > 0,
+        records.append({"name": function_name, "language": "Python", "scopeKind": scope_kind, "sourceLinkable": function_name in linkable,
+                        "exported": False, "async": isinstance(fn, ast.AsyncFunctionDef), "generator": reader.yields > 0,
                         "parameters": parameters, "calls": reader.calls, "returns": reader.returns,
                         "conditions": reader.conditions, "loops": reader.loops, "throws": reader.throws,
                         "line": fn.lineno if fn else 1, "column": fn.col_offset + 1 if fn else 1, "endLine": fn.end_lineno if fn else len(source.splitlines()),

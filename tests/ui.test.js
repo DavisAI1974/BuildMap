@@ -979,3 +979,37 @@ def search():
     assert.equal(ui.get('mapShell').hidden, false); assert.equal(map.project.counts.verified, 0); assert.equal(map.project.counts.live, 0);
   }
 });
+
+test('calculation source candidates navigate across files and stale links cannot revive removed targets', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-connections-ui-'));
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'pipeline.py'),'from worker import publish\ndef run(value):\n    return publish(value)\n');
+  fs.writeFileSync(path.join(root,'worker.py'),'def publish(value):\n    return value\n');
+  for (const offline of [false,true]) {
+    fs.writeFileSync(path.join(root,'worker.py'),'def publish(value):\n    return value\n');
+    const input=scanProject(root), original=JSON.stringify(input), ui=await client(input,offline);
+    const controls=()=>{const all=[],stack=[...ui.get('detail').children];while(stack.length){const e=stack.pop();all.push(e);stack.push(...e.children);}return all;};
+    ui.get('nodeLayer').children.find(n=>n.dataset.id==='file:pipeline.py').click();
+    ui.get('detail').children.find(e=>e.classes.has('guide-open')).click();
+    let link=controls().find(e=>e.classes.has('workflow-connection'));
+    assert.match(link.innerHTML,/run.*publish/);assert.match(link.innerHTML,/Execution unobserved; data flow unverified/);
+    const stale=link.children.at(-1);
+    stale.click();
+    assert.ok(controls().find(e=>e.classes.has('code-function')&&e.open&&e.innerHTML.includes('publish')));
+    const publisher=controls().find(e=>e.classes.has('workflow-calculation')&&e.innerHTML.includes('What is publish'));
+    assert.match(publisher.innerHTML,/Possible callers.*run/);
+    publisher.children.at(-1).click();
+    assert.ok(controls().find(e=>e.classes.has('code-function')&&e.open&&e.innerHTML.includes('run')));
+    if(!offline){
+      fs.writeFileSync(path.join(root,'worker.py'),'def replacement(value):\n    return value\n');
+      ui.setModel(scanProject(root));await ui.refresh();
+      assert.equal(controls().some(e=>e.classes.has('workflow-connection')),false);
+      assert.ok(controls().some(e=>e.classes.has('workflow-unresolved-call')));
+      stale.click();
+      assert.equal(controls().some(e=>e.classes.has('code-function')&&e.innerHTML.includes('replacement')),false);
+    }else assert.deepEqual(ui.counts(),{requests:0,polls:0});
+    assert.equal(JSON.stringify(input),original);assert.equal(input.project.counts.verified,0);
+    ui.get('detail').children.find(e=>e.classes.has('guide-back')).click();
+    assert.match(ui.get('detail').innerHTML,/PIECE INSPECTOR/);assert.equal(ui.get('mapShell').hidden,false);
+  }
+});

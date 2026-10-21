@@ -11,7 +11,7 @@ import { pythonGuides } from '../src/workflow.js';
 import { startServer } from '../src/server.js';
 import { snapshotHtml } from '../src/export.js';
 
-const example = fs.readFileSync(new URL('./fixtures/frankie-workflow.py', import.meta.url), 'utf8');
+const example = fs.readFileSync(new URL('./fixtures/workflow-pipeline.py', import.meta.url), 'utf8');
 function fixture(t, source = example) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-workflow-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -20,7 +20,7 @@ function fixture(t, source = example) {
 }
 const hash = source => crypto.createHash('sha256').update(source).digest('hex');
 
-test('Frankie-like source yields source-bound calculations, possible shared products and cautious risks without execution', t => {
+test('Multi-stage source yields source-bound calculations, possible shared products and cautious risks without execution', t => {
   const root = fixture(t), map = scanProject(root), w = map.workflow;
   assert.equal(w.files[0].status, 'parsed');
   assert.equal(w.basis, 'static-source-syntax');
@@ -37,8 +37,8 @@ test('Frankie-like source yields source-bound calculations, possible shared prod
   const reads = w.findings.find(f => f.type === 'potential-repeated-read');
   assert.equal(reads.confidence, 'Needs runtime evidence'); assert.equal(reads.sources.length, 2);
   assert.match(reads.impact, /Actual bytes.*unknown/);
-  assert.ok(reads.reuseCues.some(c => c.expression.includes('CouplingJobs')));
-  assert.ok(reads.reuseCues.some(c => c.expression.includes('CellJobSubset')));
+  assert.ok(reads.reuseCues.some(c => c.expression.includes('LazyJobs')));
+  assert.ok(reads.reuseCues.some(c => c.expression.includes('JobSubset')));
   assert.ok(reads.reuseCues.some(c => c.expression.includes('partner_fft_cache')));
   assert.ok(reads.reuseCues.some(c => c.expression.includes('exact_pair_reuse')));
   assert.ok(reads.reuseCues.some(c => c.expression.includes('load_restart_receipt')));
@@ -256,4 +256,89 @@ test('explicit Python review scope retains all free files and imports and disclo
   assert.equal(selected.workflow.calculations.some(c => c.name === 'other'), false);
   assert.notEqual(selected.fingerprint, full.fingerprint);
   assert.throws(() => scanProject(root, {workflowFiles:'workflow.py'}), /array/);
+});
+
+test('source-call links connect calculations across modules without inventing execution order or data propagation', t => {
+  const root = fixture(t, `from stages.prepare import build as prepare
+import stages.transform as transforms
+from stages.transform import finish as publish
+def run(source):
+    prepared = prepare(source)
+    measured = transforms.measure(prepared)
+    return publish(measured)
+`);
+  fs.mkdirSync(path.join(root, 'stages'));
+  fs.writeFileSync(path.join(root, 'stages/prepare.py'), 'def build(source):\n    return source + 1\n');
+  fs.writeFileSync(path.join(root, 'stages/transform.py'), 'def measure(value):\n    return value * 2\ndef finish(value):\n    return value\n');
+  const map = scanProject(root), w = map.workflow;
+  assert.equal(w.relationships.length, 3);
+  const names = new Map(w.calculations.map(c => [c.id,c.name]));
+  assert.deepEqual(w.relationships.map(r => names.get(r.to)), ['build','measure','finish']);
+  assert.deepEqual(w.relationships[1].arguments, ['prepared']);
+  for (const r of w.relationships) {
+    assert.equal(r.kind, 'candidate-source-call'); assert.equal(r.execution, 'unobserved'); assert.equal(r.dataFlow, 'unverified');
+    assert.equal(r.source.path, 'workflow.py'); assert.ok(r.targetSource.sourceHash); assert.ok(r.importSource.line > 0);
+  }
+  assert.ok(map.nodes.every(n => !['computing','verified','live'].includes(n.status)));
+  assert.equal(map.edges.some(e => e.type === 'candidate-source-call'), false);
+  assert.equal(w.callCoverage.totalCallSites, 3); assert.equal(w.callCoverage.unresolvedCallSites, 0);
+});
+
+test('unique same-file and relative imports link source declarations; dynamic method dispatch stays unresolved', t => {
+  const root = fixture(t, `def helper(value):
+    return value
+def run(value):
+    return helper(value)
+class Runner:
+    def perform(self, value):
+        return self.helper(value)
+    def helper(self, value):
+        return value
+`);
+  // A method with the same name conservatively prevents a bare-name match.
+  assert.equal(scanProject(root).workflow.relationships.length, 0);
+  fs.writeFileSync(path.join(root,'workflow.py'), 'def helper(value):\n    return value\ndef run(value):\n    return helper(value)\n');
+  let w = scanProject(root).workflow;
+  assert.equal(w.relationships.length, 1); assert.equal(w.relationships[0].basis, 'unique-same-file-declaration');
+  fs.mkdirSync(path.join(root,'pkg'));
+  fs.writeFileSync(path.join(root,'pkg/entry.py'), 'from .worker import execute as work\ndef start(value):\n    return work(value)\n');
+  fs.writeFileSync(path.join(root,'pkg/worker.py'), 'def execute(value):\n    return value\n');
+  w = scanProject(root).workflow;
+  assert.ok(w.relationships.some(r => r.source.path === 'pkg/entry.py' && r.targetSource.path === 'pkg/worker.py'));
+});
+
+test('shadowed, reassigned, duplicated, decorated, mutated and star-imported targets do not gain source links', t => {
+  const root = fixture(t);
+  fs.writeFileSync(path.join(root, 'worker.py'), 'def execute(value):\n    return value\n');
+  const cases = [
+    'import worker\ndef run(worker):\n    return worker.execute(1)\n',
+    'import worker\nworker = replacement\ndef run():\n    return worker.execute(1)\n',
+    'import worker\nworker.execute = replacement\ndef run():\n    return worker.execute(1)\n',
+    'import worker as task\nimport another as task\ndef run():\n    return task.execute(1)\n',
+    'from worker import *\ndef run():\n    return execute(1)\n',
+    'def helper(value):\n    return value\ndef run(helper):\n    return helper(1)\n'
+  ];
+  for (const source of cases) {
+    fs.writeFileSync(path.join(root,'workflow.py'), source);
+    assert.deepEqual(scanProject(root).workflow.relationships, [], source);
+  }
+  fs.writeFileSync(path.join(root,'workflow.py'), 'from worker import execute\ndef run():\n    return execute(1)\n');
+  fs.writeFileSync(path.join(root,'worker.py'), '@decorate\ndef execute(value):\n    return value\n');
+  const w=scanProject(root).workflow;
+  assert.deepEqual(w.relationships, []); assert.match(w.unresolvedCalls[0].reason,/undecorated/);
+});
+
+test('ambiguous and unselected modules remain visible without guessed targets or expanded review scope', t => {
+  const root = fixture(t, 'value=1\n');
+  fs.mkdirSync(path.join(root,'pkg'));
+  fs.writeFileSync(path.join(root,'pkg/entry.py'), 'import worker\ndef run():\n    return worker.execute(1)\n');
+  fs.writeFileSync(path.join(root,'worker.py'), 'def execute(value):\n    return value\n');
+  fs.writeFileSync(path.join(root,'pkg/worker.py'), 'def execute(value):\n    return value\n');
+  let w=scanProject(root).workflow;
+  assert.deepEqual(w.relationships, []); assert.equal(w.unresolvedCalls[0].candidateFiles.length,2);
+  assert.match(w.unresolvedCalls[0].reason,/Multiple/);
+  fs.rmSync(path.join(root,'worker.py'));
+  w=scanProject(root,{workflowFiles:['pkg/entry.py']}).workflow;
+  assert.deepEqual(w.relationships, []); assert.match(w.unresolvedCalls[0].reason,/unselected/);
+  assert.equal(w.files.find(f=>f.path==='pkg/worker.py').status,'not-selected');
 });

@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 export const WORKFLOW_LIMITS = [
   'Static Python syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
-  'Adapter covers module bodies, top-level functions, direct methods of top-level classes and comprehension axes/filters. Nested functions/classes, inheritance/dispatch, shell/YAML execution, dynamic paths, SQL and cross-file call/argument resolution remain unknown.',
+  'Adapter covers module bodies, top-level functions, direct methods of top-level classes and comprehension axes/filters. Source-call candidates link unique undecorated functions through supported local imports; argument/data propagation, nested functions/classes, inheritance/dispatch, shell/YAML execution, dynamic paths and SQL remain unknown.',
+  'Call links identify possible source declarations, not execution, scheduling, actual parameter values or runtime data flow. Rebindings, star imports and decorated targets are excluded conservatively; dynamic mutation, re-exports and runtime import paths remain unresolved.',
   'Eager comprehensions construct containers if reached; generator expressions defer their body, which may never be consumed. Neither syntax proves end-to-end lazy scheduling. Filters, dependent iterables and callers can change work. Generator-body I/O is not inferred.',
   'A literal filename match is only a possible shared product. Working directories, source identity, schema, axes, coverage, checkpoint compatibility and actual reuse are unverified.',
   'Nested loops describe possible fan-out, not a job or pair counter. Literal range products assume every iteration reaches the inner body; guards, breaks, exceptions and dependent bounds can change actual work. AB/BA equivalence is never assumed.',
@@ -45,8 +47,8 @@ export function buildWorkflow(guides) {
     for (const fn of file.functions) {
       const id = `${file.path}:${fn.line}:${fn.column}`;
       const at = source(file, fn);
-      const calc = { id, name: fn.name, scopeKind: fn.scopeKind, generator: fn.generator, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
-        calls: fn.calls, outputs: fn.returns, transformations: fn.transformations.map(t => ({ ...t, source: source(file, t) })),
+      const calc = { id, name: fn.name, scopeKind: fn.scopeKind, sourceLinkable: fn.sourceLinkable, generator: fn.generator, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
+        calls: fn.calls.map(c => ({ ...c, source: source(file, c) })), outputs: fn.returns, transformations: fn.transformations.map(t => ({ ...t, source: source(file, t) })),
         io: fn.io.map(io => ({ ...io, source: source(file, io) })),
         loopPaths: fn.loopPaths, comprehensions: fn.comprehensions.map(c => ({ ...c, source: source(file, c) })),
         reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
@@ -107,6 +109,56 @@ export function buildWorkflow(guides) {
       requiredVerification: ['Measure actual reads and effective cache/restart reuse on a small input.', 'Check producer/consumer paths, source identities and checkpoint compatibility.'],
       reuseCues: calculations.filter(c => calculationIds.includes(c.id)).flatMap(c => c.reuseCues) });
   }
-  return { version: 1, basis: 'static-source-syntax', files, calculations, dataProducts: [...products.values()],
+  const links = calculationLinks(calculations, guides);
+  return { version: 1, basis: 'static-source-syntax', files, calculations, dataProducts: [...products.values()], ...links,
     findings: findings.sort((a, b) => a.type.localeCompare(b.type) || a.id.localeCompare(b.id)), limitations: WORKFLOW_LIMITS };
+}
+
+// Link declarations already read by this scanner. Never load additional target
+// files, execute imports, resolve dynamic methods, or turn spelling into proof.
+function calculationLinks(calculations, guides) {
+  const declarations = new Map();
+  for (const c of calculations.filter(c => c.sourceLinkable)) {
+    const key = JSON.stringify([c.source.path, c.name]);
+    if (!declarations.has(key)) declarations.set(key, []);
+    declarations.get(key).push(c);
+  }
+  const relationships = [], unresolvedCalls = [];
+  let totalCallSites = 0;
+  for (const calculation of calculations) for (const call of calculation.calls) {
+    totalCallSites++;
+    const ref = call.bindingReference;
+    if (!ref) continue;
+    const modules = ref.kind === 'local-function' ? [calculation.source.path] : moduleCandidates(calculation.source.path, ref, guides);
+    const targets = modules.length === 1 ? declarations.get(JSON.stringify([modules[0], ref.targetName])) || [] : [];
+    if (targets.length !== 1) {
+      unresolvedCalls.push({ calculationId: calculation.id, target: call.target, source: call.source,
+        reason: modules.length > 1 ? 'Multiple local module paths match; no target selected.'
+          : 'No unique analyzed undecorated declaration. Target may be external, unselected, re-exported or unsupported.',
+        candidateFiles: modules });
+      continue;
+    }
+    const target = targets[0];
+    relationships.push({ id: `${calculation.id}:call:${call.line}:${call.column}`, kind: 'candidate-source-call',
+      basis: ref.kind === 'local-function' ? 'unique-same-file-declaration' : 'supported-import-and-unique-declaration',
+      from: calculation.id, to: target.id, target: call.target, source: call.source, targetSource: target.source,
+      ...(ref.kind === 'imported-function' ? { importSource: { path: calculation.source.path, sourceHash: calculation.source.sourceHash, line: ref.line, column: ref.column } } : {}),
+      arguments: call.arguments, execution: 'unobserved', dataFlow: 'unverified' });
+  }
+  return { relationships, unresolvedCalls, callCoverage: { totalCallSites, linkedCallSites: relationships.length,
+    unresolvedCallSites: totalCallSites - relationships.length } };
+}
+
+function moduleCandidates(importer, ref, guides) {
+  const parts = path.posix.dirname(importer).split('/').filter(p => p && p !== '.');
+  let bases;
+  if (ref.level) {
+    if (ref.level - 1 > parts.length) return [];
+    bases = [parts.slice(0, parts.length - ref.level + 1).join('/')];
+  } else bases = ['', parts.join('/')];
+  const module = ref.module.replaceAll('.', '/');
+  return [...new Set(bases.flatMap(base => {
+    const stem = path.posix.join(base, module);
+    return [`${stem}.py`, `${stem}/__init__.py`];
+  }).filter(file => guides.has(file)))];
 }

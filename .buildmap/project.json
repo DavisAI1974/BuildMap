@@ -94,7 +94,7 @@
         "tests/outcomes.test.js",
         "tests/guide-tasks.test.js",
         "tests/workflow.test.js",
-        "tests/fixtures/frankie-workflow.py"
+        "tests/fixtures/workflow-pipeline.py"
       ],
       "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
       "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",

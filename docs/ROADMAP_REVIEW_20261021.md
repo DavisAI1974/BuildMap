@@ -1,8 +1,8 @@
-# Frankie-priority roadmap review — 2026-10-21
+# BuildMap roadmap review — 2026-10-21
 
 Source: supplied `BuildMap_Codex_Project_Roadmap_20261021.docx`. Reviewed app base: PR #1, `feat/buildmap-v1-living-map` at `3298e79ca0ff8f9d48eea064e463bb1ea6e31108`. Default `main` is the initial commit `5375ceb`; it is not the app baseline. All 106 existing Node tests pass on Node 24.19.0 before changes. Prior browser checks are historical, not rerun evidence.
 
-Work is isolated in local-only branch `private/frankie-inspector-risk-20261021`, worktree `/workspace/BuildMap-frankie`. The upstream PR and other branches are preserved. This public repository cannot provide a private remote branch; this branch stays local. Unpushed edits in another session are not visible here and must be reconciled before integration.
+Work is isolated in local-only branch `private/workflow-inspector-risk-20261021`, repository `/workspace/BuildMap`. The upstream PR and other branches are preserved. This public repository cannot provide a private remote branch; this branch stays local. Unpushed edits in another session are not visible here and must be reconciled before integration.
 
 ## Inventory before implementation
 
@@ -47,10 +47,10 @@ BM-01, BM-02, BM-03, BM-04, BM-05 and BM-12 are now **Partial**. BM-09/BM-10 rem
 - `src/python-analyzer.py`: isolated standard-library Python AST reader for module bodies/top-level functions/direct class methods, parameters, calls, returns, assignments, supported literal I/O, nested loops and comprehensions. Syntax is not a business-purpose explanation or observed execution. Python AST columns use one-based UTF-8 byte offsets.
 - `src/workflow.js` and `src/scan.js`: existing scan integration, bounded optional parser, source-linked calculations, possible data products, evidence-linked warnings and explicit unknowns. The `workflow` record is included in the existing JSON/API/export snapshot, separately from the free evidence/gap contract.
 - `public/app.js`: per-piece calculation/product review and project-wide mission-card pre-run report; expandable findings, correctness/validation guidance and captured-source navigation. Existing Guide/free navigation, basic briefs and proof states stay intact.
-- `tests/fixtures/frankie-workflow.py`, `tests/workflow.test.js`, `tests/ui.test.js`: small non-executing synthetic regression pack. Tests cover possible shared preparation, 99-layer expansion, symbolic dimensions, arbitrary-precision potential iteration counts, distinct AB/BA calls, optimization cues, unknown checkpoint compatibility, false-positive suppression, stale source, parser availability/coverage limits, CLI/API/export and shared-client navigation/refresh.
+- `tests/fixtures/workflow-pipeline.py`, `tests/workflow.test.js`, `tests/ui.test.js`: small non-executing synthetic regression pack. Tests cover possible shared preparation, 99-layer expansion, symbolic dimensions, arbitrary-precision potential iteration counts, distinct AB/BA calls, optimization cues, unknown checkpoint compatibility, false-positive suppression, stale source, parser availability/coverage limits, CLI/API/export and shared-client navigation/refresh.
 - `.buildmap/project.json`: new files belong to the existing scanner and verification pieces; no competing engine or new paid entitlement system.
 
-Validation: **119/119 Node tests pass on Node 24.19.0** with Python 3.12.14. **Eight scoped Chromium 154.0.8037.57 browser checks pass**, including project-wide review, escaped products and source navigation, 390px width, return to the free inventory, self-contained export without API/assets/polling, live source refresh and visible parse failure. No page errors. The browser driver is `.buildmap/workflow-browser-check.mjs`; Playwright is separately provisioned, not a product dependency. Example rerun:
+Validation: **124/124 Node tests pass on Node 24.19.0** with Python 3.12.14. **Nine scoped Chromium 154.0.8037.57 browser checks pass**, including project-wide review, escaped products and source navigation, 390px width, return to the free inventory, self-contained export without API/assets/polling, live source refresh and visible parse failure. No page errors. The browser driver is `.buildmap/workflow-browser-check.mjs`; Playwright is separately provisioned, not a product dependency. Example rerun:
 
 ```bash
 npm test
@@ -59,8 +59,12 @@ BUILDMAP_PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs node .bui
 
 Node 20, the earlier full 30-case browser suite, physical devices, exhaustive accessibility and real Frankie source have not been revalidated in this slice. Current synthetic browser checks do not renew the old whole-MVP end-to-end scope claim. No user project, production dataset/checkpoint, remote branch, PR or deployment was changed.
 
-Resume from `/workspace/BuildMap-frankie` on `private/frankie-inspector-risk-20261021`. Fetch/reconcile any newer audit work before integration; do not push this branch to the public repository if privacy is required. No evidence-history subsystem is needed. Next useful step is read-only analysis of the current Frankie source, then grounded workload counters and compatible checkpoint/reuse analysis.
+Resume from `/workspace/BuildMap` on `private/workflow-inspector-risk-20261021`. Fetch/reconcile any newer audit work before integration; do not push this branch to the public repository if privacy is required. No evidence-history subsystem is needed. Next useful step is read-only analysis of the current Frankie source, then grounded workload counters and compatible checkpoint/reuse analysis.
 
-Current `.buildmap/evidence.json` replaces the superseded component records with the actual 119-test checks and the scoped eight-case browser observation. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
+Current `.buildmap/evidence.json` replaces the superseded component records with the actual 124-test checks and the scoped nine-case browser observation. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
 
-The current one-day Frankie audit is waiting for the recent source branch. October 6 and October 14 checkouts are not used as current-run evidence. Generic class-method/comprehension/scoped-review support is built and tested; no current Frankie findings or workflow verdict is issued from those older sources.
+Validation against Frankie's complete current workflow is waiting for the recent source branch. The active Search work and one-day run are individual parts, not the review boundary. October 6 and October 14 checkouts are not used as current-run evidence. Generic class-method/comprehension/scoped-review support is built and tested; no current Frankie findings or workflow verdict is issued from those older sources.
+
+BuildMap is project-agnostic. All product code, tests and documentation are in the BuildMap Git repository on the separate branch. No analyzer rules name Frankie-specific schedulers or stages. The renamed `tests/fixtures/workflow-pipeline.py` uses generic lazy-job/subset/cache examples.
+
+Source-call candidates now connect unique undecorated top-level Python functions within a file or through supported direct module, alias and relative imports. Call sites carry both source identities and locations; shadowed, reassigned, decorated, mutated, ambiguous, re-exported, external or unselected targets remain unresolved. The inspector navigates to callees and back to callers in live/captured maps; changed fingerprints disable detached links. Connections are source candidates, not runtime execution, scheduling or data-flow proof. No edges or upper proof states are added to the free map.

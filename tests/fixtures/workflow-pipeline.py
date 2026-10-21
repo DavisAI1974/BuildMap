@@ -1,4 +1,4 @@
-"""Synthetic source ONLY. No Frankie data, services or production code."""
+"""Synthetic multi-stage source only. No external data, services or production code."""
 raise RuntimeError("This fixture must never be executed or imported")
 
 import pandas as pd
@@ -17,8 +17,8 @@ def saved_preparation():
 
 
 def search(cells, transforms, series):
-    jobs = CouplingJobs(cells, transforms, series)
-    subset = CellJobSubset(jobs)
+    jobs = LazyJobs(cells, transforms, series)
+    subset = JobSubset(jobs)
     receipt = load_restart_receipt('indexed-v1')
     for cell in cells:
         for transform in transforms:

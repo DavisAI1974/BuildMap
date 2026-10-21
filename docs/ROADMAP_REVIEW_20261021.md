@@ -58,13 +58,13 @@ npm test
 BUILDMAP_PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs node .buildmap/workflow-browser-check.mjs
 ```
 
-Node 20, the earlier full 30-case browser suite, physical devices, exhaustive accessibility and real current Frankie source have not been revalidated. Current synthetic browser checks do not renew the old whole-MVP end-to-end scope claim. No user project, production dataset/checkpoint, PR merge or deployment is changed by this implementation.
+The complete local test suite has not been rerun on Node 20; a real AWS whole-code scan did run successfully on Node 20.20.2. The earlier full 30-case browser suite, physical devices, exhaustive accessibility and real scientific end-to-end execution have not been revalidated. Current synthetic browser checks do not renew the old whole-MVP end-to-end scope claim. No user project, production dataset/checkpoint, PR merge or deployment is changed by this implementation.
 
 Resume from `/workspace/BuildMap` on `private/workflow-inspector-risk-20261021`. The next application-specific step is read-only validation against the current complete Frankie workflow, using genuine contracts and observations rather than the synthetic example. No evidence-history subsystem is needed.
 
 Current `.buildmap/evidence.json` replaces superseded component records after the actual final checks. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
 
-The current private AWS source checkout has now been located read-only, including the newer calculation commit. Whole-code and beginning-to-end workflow inspection is in progress using explicit whole-project batching; no full runtime verdict is claimed. The active Search work and one-day run are individual parts, not the review boundary. October 6 and October 14 checkouts are not used as current-run evidence. Generic class-method/comprehension/scoped-review support is built and tested; no current Frankie findings or workflow verdict is issued from those older sources.
+The current private AWS source checkout has now been located read-only, including the newer calculation commit. The whole-code scan completed against a stable current source commit: 1,856 files inventoried and all 1,469 Python files parsed, with no Python files skipped. The sequential beginning-to-end workflow handoff review remains in progress; no full runtime verdict is claimed. The active Search work and one-day run are individual parts, not the review boundary. October 6 and October 14 checkouts are not used as current-run evidence. Generic class-method/comprehension/scoped-review support is built and tested; no current Frankie findings or workflow verdict is issued from those older sources.
 
 BuildMap is project-agnostic. All product code, tests and documentation are in the BuildMap Git repository on the separate branch. No analyzer rules name Frankie-specific schedulers or stages. The renamed `tests/fixtures/workflow-pipeline.py` uses generic lazy-job/subset/cache examples.
 

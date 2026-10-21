@@ -7,6 +7,7 @@ import { sourceReferences, resolveImport } from './imports.js';
 import { buildOutcomes, buildCompletion } from './outcomes.js';
 import { CODE_GUIDE_LIMITS } from './code-guide.js';
 import { pythonGuides, buildWorkflow, WORKFLOW_LIMITS } from './workflow.js';
+import { readAnalysis } from './review-evidence.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -154,6 +155,7 @@ export function scanProject(root, { source = null, workflowFiles = null } = {}) 
   result.workflow.scope = { mode: workflowFiles === null ? 'bounded-inventory' : 'selected-files',
     requestedFiles: workflowFiles === null ? null : [...new Set(workflowFiles)].sort(),
     unavailableFiles: workflowFiles === null ? [] : [...new Set(workflowFiles)].filter(f => !fileSet.has(f) || path.extname(f).toLowerCase() !== '.py').sort() };
+  result.workflow.review = readAnalysis(root, result.workflow.calculations);
   result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence: rawEvidence });
   return result;
 }

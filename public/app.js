@@ -474,7 +474,7 @@ function appendWorkflowReview(node) {
   const calculationById = new Map(workflow.calculations.map(c => [c.id, c]));
   const panel = document.createElement('section'); panel.className = 'detail-section workflow-review';
   panel.innerHTML = `<h3>Before you run · Python risk review</h3>
-    <p>${all ? 'Project-wide' : 'This piece’s'} static review: ${files.filter(f => f.status === 'parsed').length}/${files.length} Python files parsed; ${findings.length} review finding(s). No findings is not clearance to run. Actual jobs, pair comparisons, reads, remaining work and savings are unknown.</p>
+    <p>${all ? 'Project-wide' : 'This piece’s'} static review: ${files.filter(f => f.status === 'parsed').length}/${files.length} Python files parsed; ${findings.length} review finding(s). No findings is not clearance to run. Static syntax does not measure actual jobs, pair comparisons, reads, remaining work or savings. Supplied observations are shown separately.</p>
     ${files.map(f => `<p>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</p>`).join('')}
     ${workflow.scope?.unavailableFiles?.length ? `<p>Requested files unavailable for Python analysis: ${workflow.scope.unavailableFiles.map(escapeHtml).join(', ')}.</p>` : ''}
     <p>Source locations below open their captured calculation. Read-only analysis does not launch or modify this project.</p>`;
@@ -496,6 +496,7 @@ function appendWorkflowReview(node) {
       }); section.appendChild(button);
     }
   };
+  appendWorkflowEvidence(panel, all ? workflow.review : null, (workflow.checkpoints || []).filter(c => all || ids.has(c.calculationId)), sourceButtons);
   const relationships = (workflow.relationships || []).filter(r => all || ids.has(r.from) || ids.has(r.to));
   if (relationships.length || workflow.callCoverage) {
     const connections = document.createElement('details'); connections.className = 'workflow-connections';
@@ -543,6 +544,12 @@ function appendWorkflowReview(node) {
       <h4>Assignments and transformations written in this scope</h4>${calc.transformations.length ? `<ul>${calc.transformations.map(t => `<li>${escapeHtml(t.summary)} · line ${t.source.line}</li>`).join('')}</ul>` : '<p>No supported assignment syntax found; calls and other effects may exist.</p>'}
       ${(calc.comprehensions || []).length ? `<h4>Comprehension expansion</h4><ul>${calc.comprehensions.map(c => `<li>${escapeHtml(c.kind)} · ${escapeHtml(c.evaluation)} · ${escapeHtml(c.axes.map(a => `${a.target} in ${a.iterable}${a.filters.length ? ` if ${a.filters.join(' and ')}` : ''}`).join(' × '))} · line ${c.source.line}. Actual jobs, pairs and allocation unknown.</li>`).join('')}</ul>` : ''}
       <h4>Possible file inputs / outputs / saved state</h4>${calc.io.length ? `<ul>${calc.io.map(io => `<li>${escapeHtml(io.operation)} ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} · line ${io.source.line}. Written call syntax; schema, coverage and checkpoint identity unknown.</li>`).join('')}</ul>` : '<p>No supported literal file I/O found. Dynamic paths and other storage remain unknown.</p>'}`;
+    const controls = (calc.facts || []).filter(f => ['worker-pool','execution-control','bounded-read-cue','collection-release'].includes(f.kind));
+    if (controls.length) {
+      const cues = document.createElement('details'); cues.className = 'workflow-resource-cues';
+      cues.innerHTML = `<summary>Existing resource and sequencing cues · ${controls.length}</summary><ul>${controls.map(f => `<li>${escapeHtml(f.kind)}: ${escapeHtml(f.expression)}${f.workersExpression ? ` · workers ${escapeHtml(f.workersExpression)}` : ''} · line ${f.line}. ${escapeHtml(f.basis)}</li>`).join('')}</ul>`;
+      section.appendChild(cues);
+    }
     sourceButtons(section, [calc.source, ...callers.map(r => r.source), ...callees.map(r => r.targetSource)]); panel.appendChild(section);
   }
   const products = workflow.dataProducts.filter(p => all || [...p.producers, ...p.consumers].some(s => ids.has(s.calculationId)));
@@ -556,6 +563,70 @@ function appendWorkflowReview(node) {
   }
   const limits = document.createElement('details'); limits.innerHTML = `<summary>Coverage and uncertainty</summary><ul>${workflow.limitations.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
   panel.appendChild(limits); $('detail').appendChild(panel);
+}
+
+function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons) {
+  if (checkpoints.length) {
+    const section = document.createElement('details'); section.className = 'workflow-checkpoints';
+    section.innerHTML = `<summary>Saved products and restart · ${checkpoints.length} source site(s)</summary><p>Compatibility, ownership and restart completeness remain unverified. Nearby checks may belong to other paths.</p>`;
+    for (const checkpoint of checkpoints) {
+      const item = document.createElement('details');
+      item.innerHTML = `<summary>${escapeHtml(checkpoint.operation)} · ${escapeHtml(checkpoint.pathExpression)}</summary>
+        <p>${escapeHtml(checkpoint.basis)}. ${escapeHtml(checkpoint.note)}</p>
+        <p>Branch guards: ${checkpoint.guards.map(g => `${escapeHtml(g.branch)} ${escapeHtml(g.test)}`).join('; ') || 'none recognized'}.</p>
+        <p>Nearby existence checks: ${checkpoint.existenceChecks.map(g => escapeHtml(g.expression)).join('; ') || 'none recognized'}.</p>
+        <p>Nearby identity comparisons: ${checkpoint.identityComparisons.map(g => escapeHtml(g.expression)).join('; ') || 'none recognized'}.</p>`;
+      sourceButtons(item, [checkpoint.source]); section.appendChild(item);
+    }
+    panel.appendChild(section);
+  }
+  if (!review) return;
+  const section = document.createElement('section'); section.className = 'workflow-evidence';
+  section.innerHTML = `<h4>Coverage, stage contracts and measured workload</h4><p>Review records: ${escapeHtml(review.status)}. These are supplied contracts and observations, not execution observed by BuildMap.</p>`;
+  if (review.status === 'not-supplied') {
+    const hint = document.createElement('p'); hint.textContent = 'No coverage contracts or runtime observations were supplied. Saved-product compatibility, measured work and performance changes remain unknown.'; section.appendChild(hint);
+  }
+  const rows = r => `[${r.start}, ${r.end})`;
+  for (const product of review.products) {
+    const item = document.createElement('details'); item.className = 'workflow-coverage';
+    item.innerHTML = `<summary>${escapeHtml(product.id)} · ${escapeHtml(product.status)}</summary>
+      <p>Required cells: ${escapeHtml(product.requiredCells)}; reusable under supplied contracts: ${escapeHtml(product.reusableCells)}; missing: ${escapeHtml(product.missingCells)}. Product bytes and correctness are unverified.</p>
+      <p>Extension: ${escapeHtml(product.extensionStatus)}. ${escapeHtml(product.contract.semantics.kind)} semantics. No files will be changed.</p>
+      <h4>Compatible source declarations</h4><ul>${product.compatibleSources.map(s => `<li>${escapeHtml(s.id)} · ${escapeHtml(s.freshness.status)}</li>`).join('') || '<li>none</li>'}</ul>
+      <h4>Excluded sources</h4><ul>${product.excludedSources.map(s => `<li>${escapeHtml(s.id)} · ${escapeHtml(s.reason)}</li>`).join('') || '<li>none</li>'}</ul>
+      <h4>Reuse exact existing coverage</h4><ul>${product.reusable.map(m => `<li>${escapeHtml(m.column)}: ${rows(m.rows)}</li>`).join('') || '<li>none</li>'}</ul>
+      <h4>Missing output and required input</h4><ul>${product.extension.map(m => `<li>${escapeHtml(m.column)} output ${rows(m.rows)} · input ${m.inputRows ? rows(m.inputRows) : 'blocked: domain boundary state required'}</li>`).join('') || '<li>No extension planned.</li>'}</ul>
+      <ul>${product.verification.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
+    section.appendChild(item);
+  }
+  for (const stage of review.stages) {
+    const item = document.createElement('details'); item.className = 'workflow-stage';
+    item.innerHTML = `<summary>Stage: ${escapeHtml(stage.name)}</summary><p>Declared dependencies: ${stage.dependsOn.map(escapeHtml).join(', ') || 'none'}. Execution unobserved.</p>
+      <p>Inputs: ${stage.inputs.map(escapeHtml).join(', ') || 'unspecified'}. Outputs: ${stage.outputs.map(escapeHtml).join(', ') || 'unspecified'}. Checkpoints: ${stage.checkpointProducts.map(escapeHtml).join(', ') || 'unspecified'}.</p>
+      <p>Calculation match: ${escapeHtml(stage.calculationId || 'no unique analyzed declaration')}. This does not establish runtime sequencing.</p>`;
+    section.appendChild(item);
+  }
+  for (const observation of review.observations) {
+    const item = document.createElement('details'); item.className = 'workflow-observation';
+    item.innerHTML = `<summary>Reported workload: ${escapeHtml(observation.id)} · ${escapeHtml(observation.freshness.status)}</summary>
+      <p>Jobs and directional pair comparisons are counted separately. Missing values remain unknown. Current receipt bytes do not authenticate the report or prove its source identities.</p>
+      <ul>${Object.entries(observation.identity).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(typeof v === 'string' ? v : JSON.stringify(v))}</li>`).join('')}</ul>
+      <ul>${Object.entries(observation.counters).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(v ?? 'unknown')}</li>`).join('')}</ul>
+      <ul>${Object.entries(observation.metrics).map(([k,v]) => `<li>${escapeHtml(k)}: ${escapeHtml(String(v ?? 'unknown'))}</li>`).join('')}</ul>
+      <ul>${observation.freshness.files.map(f => `<li>${escapeHtml(f.path)}: ${escapeHtml(f.reason)}</li>`).join('')}</ul>`;
+    section.appendChild(item);
+  }
+  for (const comparison of review.comparisons) {
+    const item = document.createElement('details'); item.className = 'workflow-comparison';
+    item.innerHTML = `<summary>Comparison: ${escapeHtml(comparison.observationId)} against ${escapeHtml(comparison.baselineId)} · ${escapeHtml(comparison.status)}</summary>
+      <p>${escapeHtml(comparison.reason || 'Differences are current minus baseline, computed from supplied observations. Negative time/byte differences indicate reductions; no static savings estimate is made.')}</p>
+      ${comparison.counterDifferences ? `<ul>${Object.entries({ ...comparison.counterDifferences, ...comparison.metricDifferences }).map(([k,v]) => `<li>${escapeHtml(k)} difference: ${escapeHtml(String(v ?? 'unknown'))}</li>`).join('')}</ul>` : ''}`;
+    section.appendChild(item);
+  }
+  for (const diagnostic of review.diagnostics) {
+    const item = document.createElement('p'); item.className = 'workflow-evidence-issue'; item.textContent = `${diagnostic.section} ${diagnostic.id || ''}: ${diagnostic.message}`; section.appendChild(item);
+  }
+  const limits = document.createElement('p'); limits.textContent = review.limitations.join(' '); section.appendChild(limits); panel.appendChild(section);
 }
 
 function taskControls() {

@@ -1,4 +1,4 @@
-Current general-purpose workflow-inspection work is described in [the October 21 roadmap review](docs/ROADMAP_REVIEW_20261021.md). It adds the initial Python calculation/risk slice with 124 current Node tests and nine scoped browser checks. Earlier completion/browser descriptions below describe the PR baseline; the private branch’s broader completion scope is pending.
+Current general-purpose workflow-inspection work is described in [the October 21 roadmap review](docs/ROADMAP_REVIEW_20261021.md) and [the review-record schema](docs/WORKFLOW_REVIEW.md). It adds calculation connections, pre-run resource/restart risks, conditional table coverage/extension, declared stage checks and reported workload comparisons. Current validation is recorded in the roadmap review. Earlier completion/browser descriptions below describe the PR baseline; the broader whole-MVP completion scope is pending.
 
 # BuildMap stage and remaining gaps
 

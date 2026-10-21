@@ -2,7 +2,7 @@
 
 Source: supplied `BuildMap_Codex_Project_Roadmap_20261021.docx`. Reviewed app base: PR #1, `feat/buildmap-v1-living-map` at `3298e79ca0ff8f9d48eea064e463bb1ea6e31108`. Default `main` is the initial commit `5375ceb`; it is not the app baseline. All 106 existing Node tests pass on Node 24.19.0 before changes. Prior browser checks are historical, not rerun evidence.
 
-Work is isolated in local-only branch `private/workflow-inspector-risk-20261021`, repository `/workspace/BuildMap`. The upstream PR and other branches are preserved. This public repository cannot provide a private remote branch; this branch stays local. Unpushed edits in another session are not visible here and must be reconciled before integration.
+Work is isolated in branch `private/workflow-inspector-risk-20261021`, repository `/workspace/BuildMap`. The user confirmed the other BuildMap audit finished and authorized committing/pushing this separate branch. The repository is public; the branch name indicates isolation, not access control. The upstream PR and other branches are preserved. A fresh fetch found no newer upstream app changes beyond the reviewed base.
 
 ## Inventory before implementation
 
@@ -31,37 +31,38 @@ Pre-run findings cover repeated literal read sites and nested-loop fan-out. Each
 
 Keep the full free map/evidence/goal/basic-brief contract. The deeper inspector remains an accessible Guide development preview, with no invented paid enforcement. Current check records can replace superseded records once the new observation supports the same scope. Evidence history, lineage and comparison are not deliverables; only current source support and honest scope matter.
 
-## Follow-up order
+## Completed follow-up implementation
 
-1. Inspect a user-provided current Frankie source checkout and entry points without running its workflow; distinguish already-solved optimizations from open questions.
-2. Add exact call/argument/path resolution and checkpoint identity/guard analysis before suggesting reuse.
-3. Support workload dimensions with actual original/eligible/completed/remaining job counters, separately from directional pair comparisons.
-4. Add scientifically valid partial table coverage, then optional user-authorized runtime measurements.
+1. Source-call candidates connect supported unique declarations, with arguments retained as written expressions. Persistence/load helpers, nearby guards and identity checks are reviewable without claiming compatible restart state.
+2. Resource findings cover whole-result allocations, collection retention and possible per-iteration waits. Existing pool/chunk/release controls remain visible; utilization and actual bottlenecks need observations.
+3. Optional small review records supply separate original/eligible/completed/remaining jobs, directional pairs and resource metrics. Current bound receipts and identical identities allow signed reported before/after differences; invalid comparisons are refused.
+4. Exact contract-based coverage plans preserve per-column holes and rolling input overlap. Stateful extension stays blocked without a domain boundary-state policy. Declared stage contracts reveal missing references, cycles, producer conflicts and ordering questions.
 
 The roadmap's October audit figures (161 GB, 99 layers, 32/6 GB indexes) are context, not current production measurements. No Frankie production command, dataset/checkpoint write, AWS access, deployment or remote merge is authorized by this implementation slice.
 
-## Implemented first slice and current status
+## Implemented review capabilities and current status
 
-BM-01, BM-02, BM-03, BM-04, BM-05 and BM-12 are now **Partial**. BM-09/BM-10 remain **Partial**; BM-06/BM-07/BM-08/BM-11 remain **Missing**. No full roadmap item is claimed Existing yet. BM-12 has synthetic regression coverage, not a real current Frankie repository audit.
+All BM-01 through BM-12 are now **Partial** against the full roadmap acceptance scope. No item is claimed fully Existing. BM-06 adds persistence/guard inspection, BM-07 conditional exact coverage/extension plans, BM-08 resource syntax risks and optional metrics, and BM-11 bounded reported observations/comparisons. BM-09 also checks declared stage contracts. Domain-specific compatibility policies, automatic semantic data propagation, live telemetry integration and current full Frankie validation are not implemented or claimed.
 
 - `src/python-analyzer.py`: isolated standard-library Python AST reader for module bodies/top-level functions/direct class methods, parameters, calls, returns, assignments, supported literal I/O, nested loops and comprehensions. Syntax is not a business-purpose explanation or observed execution. Python AST columns use one-based UTF-8 byte offsets.
 - `src/workflow.js` and `src/scan.js`: existing scan integration, bounded optional parser, source-linked calculations, possible data products, evidence-linked warnings and explicit unknowns. The `workflow` record is included in the existing JSON/API/export snapshot, separately from the free evidence/gap contract.
 - `public/app.js`: per-piece calculation/product review and project-wide mission-card pre-run report; expandable findings, correctness/validation guidance and captured-source navigation. Existing Guide/free navigation, basic briefs and proof states stay intact.
 - `tests/fixtures/workflow-pipeline.py`, `tests/workflow.test.js`, `tests/ui.test.js`: small non-executing synthetic regression pack. Tests cover possible shared preparation, 99-layer expansion, symbolic dimensions, arbitrary-precision potential iteration counts, distinct AB/BA calls, optimization cues, unknown checkpoint compatibility, false-positive suppression, stale source, parser availability/coverage limits, CLI/API/export and shared-client navigation/refresh.
 - `.buildmap/project.json`: new files belong to the existing scanner and verification pieces; no competing engine or new paid entitlement system.
+- `src/workflow-risk.js`, `src/review-evidence.js`, `tests/review-evidence.test.js`: saved-state/resource review, bounded read-only optional contracts, interval algebra, stage diagnostics, exact counters and comparable reports. [Schema, examples and operational limits](WORKFLOW_REVIEW.md) describe what is conditional, unbound, stale or blocked.
 
-Validation: **124/124 Node tests pass on Node 24.19.0** with Python 3.12.14. **Nine scoped Chromium 154.0.8037.57 browser checks pass**, including project-wide review, escaped products and source navigation, 390px width, return to the free inventory, self-contained export without API/assets/polling, live source refresh and visible parse failure. No page errors. The browser driver is `.buildmap/workflow-browser-check.mjs`; Playwright is separately provisioned, not a product dependency. Example rerun:
+Validation: **137/137 Node tests pass on Node 24.19.0**, with Python 3.12.14. **12/12 scoped Chromium 154.0.8037.57 browser checks pass**, with no page errors. These cover navigation, escaped input, 390px layout, free inventory return, offline export without API/assets/polling, live source/receipt refresh, parse failures, rolling coverage, declared stages and reported job/pair counters/comparisons. The browser driver is `.buildmap/workflow-browser-check.mjs`; Playwright is separately provisioned, not a product dependency. Example rerun:
 
 ```bash
 npm test
 BUILDMAP_PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs node .buildmap/workflow-browser-check.mjs
 ```
 
-Node 20, the earlier full 30-case browser suite, physical devices, exhaustive accessibility and real Frankie source have not been revalidated in this slice. Current synthetic browser checks do not renew the old whole-MVP end-to-end scope claim. No user project, production dataset/checkpoint, remote branch, PR or deployment was changed.
+Node 20, the earlier full 30-case browser suite, physical devices, exhaustive accessibility and real current Frankie source have not been revalidated. Current synthetic browser checks do not renew the old whole-MVP end-to-end scope claim. No user project, production dataset/checkpoint, PR merge or deployment is changed by this implementation.
 
-Resume from `/workspace/BuildMap` on `private/workflow-inspector-risk-20261021`. Fetch/reconcile any newer audit work before integration; do not push this branch to the public repository if privacy is required. No evidence-history subsystem is needed. Next useful step is read-only analysis of the current Frankie source, then grounded workload counters and compatible checkpoint/reuse analysis.
+Resume from `/workspace/BuildMap` on `private/workflow-inspector-risk-20261021`. The next application-specific step is read-only validation against the current complete Frankie workflow, using genuine contracts and observations rather than the synthetic example. No evidence-history subsystem is needed.
 
-Current `.buildmap/evidence.json` replaces the superseded component records with the actual 124-test checks and the scoped nine-case browser observation. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
+Current `.buildmap/evidence.json` replaces superseded component records after the actual final checks. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
 
 Validation against Frankie's complete current workflow is waiting for the recent source branch. The active Search work and one-day run are individual parts, not the review boundary. October 6 and October 14 checkouts are not used as current-run evidence. Generic class-method/comprehension/scoped-review support is built and tested; no current Frankie findings or workflow verdict is issued from those older sources.
 

@@ -956,7 +956,7 @@ def search():
     const open = id => { ui.get('nodeLayer').children.find(n => n.dataset.id === id).click(); ui.get('detail').children.find(e => e.classes.has('guide-open')).click(); };
     open('__mission__');
     let panel = ui.get('detail').children.find(e => e.classes.has('workflow-review'));
-    assert.match(panel.innerHTML, /Project-wide.*1\/1.*2 review finding/);
+    assert.match(panel.innerHTML, /Project-wide.*1\/1.*3 review finding/);
     const read = controls().find(e => e.classes.has('workflow-finding') && e.innerHTML.includes('possible repeated reads'));
     assert.match(read.innerHTML, /Needs runtime evidence/); assert.match(read.innerHTML, /&lt;img/); assert.doesNotMatch(read.innerHTML, /<img/);
     const sourceButton = read.children[0]; sourceButton.click();
@@ -977,6 +977,28 @@ def search():
     ui.get('detail').children.find(e => e.classes.has('guide-back')).click();
     assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
     assert.equal(ui.get('mapShell').hidden, false); assert.equal(map.project.counts.verified, 0); assert.equal(map.project.counts.live, 0);
+  }
+});
+
+test('coverage and reported workload remain readable, escaped and unverified without Python source, live and offline', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-review-ui-'));
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}));fs.mkdirSync(path.join(root,'.buildmap'));
+  const analysis=JSON.parse(fs.readFileSync(new URL('./fixtures/workflow-analysis.json',import.meta.url),'utf8'));
+  analysis.products[0].id='<img onerror=evil()>';analysis.runtime[1].identity.workloadIdentity='<script>changed</script>';
+  fs.writeFileSync(path.join(root,'.buildmap/analysis.json'),JSON.stringify(analysis));
+  for(const offline of [false,true]) {
+    const map=scanProject(root),before=JSON.stringify(map),ui=await client(map,offline);
+    const controls=()=>{const all=[],stack=[...ui.get('detail').children];while(stack.length){const e=stack.pop();all.push(e);stack.push(...e.children);}return all;};
+    ui.get('nodeLayer').children.find(n=>n.dataset.id==='__mission__').click();ui.get('detail').children.find(e=>e.classes.has('guide-open')).click();
+    const coverage=controls().find(e=>e.classes.has('workflow-coverage'));
+    assert.match(coverage.innerHTML,/&lt;img.*partial-under-supplied-contracts/);assert.doesNotMatch(coverage.innerHTML,/<img/);
+    assert.match(coverage.innerHTML,/input \[5, 10\)/);
+    const report=controls().find(e=>e.classes.has('workflow-observation')&&e.innerHTML.includes('synthetic-after'));
+    assert.match(report.innerHTML,/&lt;script&gt;/);assert.match(report.innerHTML,/remainingJobs: 0/);assert.match(report.innerHTML,/bytesRead: unknown/);
+    assert.match(controls().find(e=>e.classes.has('workflow-comparison')).innerHTML,/refused/);
+    assert.equal(map.project.counts.verified,0);assert.equal(JSON.stringify(map),before);
+    if(offline)assert.deepEqual(ui.counts(),{requests:0,polls:0});
+    else {fs.unlinkSync(path.join(root,'.buildmap/analysis.json'));ui.setModel(scanProject(root));await ui.refresh();assert.equal(controls().some(e=>e.classes.has('workflow-coverage')),false);fs.writeFileSync(path.join(root,'.buildmap/analysis.json'),JSON.stringify(analysis));}
   }
 });
 

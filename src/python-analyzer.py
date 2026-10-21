@@ -119,6 +119,20 @@ def analyze(source):
             self.conditions = self.loops = self.throws = 0
             self.yields = 0
             self.comprehensions = []
+            self.facts = []
+            self.guards = []
+            self.collections = {}
+
+        def fact(self, node, kind, **details):
+            self.facts.append({"kind": kind, "expression": expr(node), "loopDepth": len(self.stack),
+                               "loops": list(self.stack), "guards": list(self.guards), **details, **location(node)})
+
+        def path_value(self, node):
+            if literal(node) is not None:
+                return literal(node)
+            if isinstance(node, ast.Call) and canonical(name(node.func)) == 'pathlib.Path' and node.args:
+                return literal(node.args[0])
+            return None
 
         def visit_FunctionDef(self, node):
             pass  # Nested bodies/defaults/decorators belong to a different scope.
@@ -183,8 +197,25 @@ def analyze(source):
 
         def visit_If(self, node):
             self.conditions += 1
+            self.visit(node.test)
+            guard = {"test": expr(node.test), **location(node)}
+            self.guards.append({**guard, "branch": 'then'})
+            for statement in node.body:
+                self.visit(statement)
+            self.guards.pop()
+            self.guards.append({**guard, "branch": 'else'})
+            for statement in node.orelse:
+                self.visit(statement)
+            self.guards.pop()
+
+        def visit_IfExp(self, node):
+            self.conditions += 1
             self.generic_visit(node)
-        visit_IfExp = visit_If
+
+        def visit_Compare(self, node):
+            if any(part in expr(node).lower() for part in ('identity', 'sha256', 'source_hash', 'schema', 'fingerprint', 'version')):
+                self.fact(node, 'identity-comparison', basis='comparison syntax; compatibility policy unverified')
+            self.generic_visit(node)
 
         def visit_Raise(self, node):
             self.throws += 1
@@ -201,6 +232,21 @@ def analyze(source):
 
         def visit_Assign(self, node):
             self.transformations.append({"summary": expr(node), "kind": type(node).__name__, **location(node)})
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            value = node.value
+            for target in targets:
+                if not isinstance(target, ast.Name):
+                    continue
+                container = type(value).__name__ if isinstance(value, (ast.List, ast.Dict, ast.Set)) else None
+                bounded = False
+                if isinstance(value, ast.Call) and canonical(name(value.func)) == 'collections.deque':
+                    container = 'deque'
+                    bounded = any(k.arg == 'maxlen' and isinstance(k.value, ast.Constant) and type(k.value.value) is int and k.value.value > 0 for k in value.keywords)
+                if container:
+                    self.collections[target.id] = {"container": container, "bounded": bounded, "initializationLoopDepth": len(self.stack)}
+                    self.fact(node, 'collection-initialization', receiver=target.id, **self.collections[target.id])
+                elif target.id in self.collections:
+                    del self.collections[target.id]
             self.generic_visit(node)
         visit_AnnAssign = visit_Assign
         visit_AugAssign = visit_Assign
@@ -222,6 +268,48 @@ def analyze(source):
                 elif binding['symbol'] is None and member[:len(binding['prefix'])] == binding['prefix'] and len(member) == len(binding['prefix']) + 1:
                     call['bindingReference'] = {"kind": 'imported-function', "targetName": member[-1], **binding}
             self.calls.append(call)
+            keywords = {k.arg: k.value for k in node.keywords if k.arg is not None}
+            member = node.func.attr if isinstance(node.func, ast.Attribute) else None
+            receiver_node = node.func.value if isinstance(node.func, ast.Attribute) else None
+            receiver = name(receiver_node)
+            # Facts retain syntax and guards. An unknown receiver is never
+            # treated as a verified file, checkpoint, executor or live worker.
+            if member in ('read_bytes', 'read_text', 'write_bytes', 'write_text'):
+                operation = 'load' if member.startswith('read') else 'save'
+                self.fact(node, 'persistence', operation=operation, pathExpression=expr(receiver_node),
+                          literalPath=self.path_value(receiver_node), basis='member-call syntax; receiver type unverified')
+                if operation == 'load':
+                    self.fact(node, 'whole-materialization', basis='whole-value read method syntax; size unknown')
+            if member in ('exists', 'is_file'):
+                self.fact(node, 'existence-check', pathExpression=expr(receiver_node), literalPath=self.path_value(receiver_node),
+                          basis='member-call syntax; existence alone does not prove identity or completeness')
+            persistence_calls = {'pickle.load': 'load', 'pickle.dump': 'save', 'json.load': 'load', 'json.dump': 'save',
+                                 'torch.load': 'load', 'torch.save': 'save', 'numpy.load': 'load', 'numpy.save': 'save'}
+            if resolved in persistence_calls and parts[0] in imports:
+                operation = persistence_calls[resolved]
+                index = 1 if operation == 'save' and resolved != 'numpy.save' else 0
+                operand = node.args[index] if len(node.args) > index else keywords.get('file')
+                self.fact(node, 'persistence', operation=operation, pathExpression=expr(operand), literalPath=self.path_value(operand),
+                          basis='recognized imported persistence call; handle/path identity unverified')
+            if any(word in target.lower() for word in ('checkpoint', 'save_state', 'load_state', 'restore_state', 'receipt')):
+                self.fact(node, 'checkpoint-helper', operation='load' if any(w in target.lower() for w in ('load', 'restore', 'read')) else 'save' if any(w in target.lower() for w in ('save', 'write')) else 'unknown',
+                          pathExpression=expr(node.args[0]) if node.args else 'unknown', literalPath=None,
+                          basis='helper name only; inspect its implementation and checkpoint policy')
+            if member in ('append', 'extend', 'update', 'add') and receiver in self.collections:
+                self.fact(node, 'collection-growth', receiver=receiver, **self.collections[receiver])
+            if member in ('pop', 'clear', 'popleft') and receiver:
+                self.fact(node, 'collection-release', receiver=receiver, basis='release-call syntax; execution/retention unknown')
+            if (target in ('list', 'tuple', 'set', 'dict', 'sorted') and target not in bound and target not in imports and node.args) or (member in ('read', 'readlines', 'fetchall') and not node.args and not node.keywords):
+                self.fact(node, 'whole-materialization', basis='whole-result construction/read syntax; size and type unknown')
+            if resolved in ('pandas.read_csv', 'pandas.read_parquet') and parts[0] in imports:
+                chunked = 'chunksize' in keywords and not (isinstance(keywords['chunksize'], ast.Constant) and keywords['chunksize'].value is None)
+                self.fact(node, 'bounded-read-cue' if chunked else 'whole-materialization', basis='chunk parameter supplied; bounds unverified' if chunked else 'table-reader syntax; result size unknown')
+            if resolved in ('concurrent.futures.ThreadPoolExecutor', 'concurrent.futures.ProcessPoolExecutor', 'multiprocessing.Pool') and parts[0] in imports:
+                workers = keywords.get('max_workers', keywords.get('processes', node.args[0] if node.args else None))
+                self.fact(node, 'worker-pool', workersExpression=expr(workers), basis='recognized pool constructor; runtime worker topology unknown')
+            if member in ('submit', 'result', 'join', 'wait', 'map', 'imap', 'imap_unordered') or resolved in ('subprocess.run', 'concurrent.futures.wait', 'os.sched_setaffinity'):
+                self.fact(node, 'execution-control', target=target, member=member or resolved.rsplit('.', 1)[-1], receiver=receiver,
+                          basis='control-call syntax; blocking, independence and actual scheduling unverified')
             if any(word in resolved.lower() for word in ('cache', 'lazy', 'subset', 'scheduler', 'checkpoint', 'receipt', 'indexed', 'fft', 'reuse')):
                 self.cues.append({"expression": expr(node), "basis": "name-only; behavior unverified", **location(node)})
             product = operation = None
@@ -244,6 +332,8 @@ def analyze(source):
             if product is not None and operation:
                 self.io.append({"pathExpression": product, "operation": operation, "call": target,
                                 "basis": "literal-path-call-syntax", "loopDepth": len(self.stack), **location(node)})
+                self.fact(node, 'persistence', operation='load' if operation == 'read' else 'save' if operation == 'write' else 'load-save',
+                          pathExpression=product, literalPath=product, basis='literal file-I/O call syntax; saved-product semantics unknown')
             self.generic_visit(node)
 
     records = []
@@ -265,7 +355,7 @@ def analyze(source):
                         "line": fn.lineno if fn else 1, "column": fn.col_offset + 1 if fn else 1, "endLine": fn.end_lineno if fn else len(source.splitlines()),
                         "summary": f"{function_name} declares {len(parameters)} parameters, {len(reader.calls)} call sites and {reader.loops} loop constructs. Paths and branches may never run.",
                         "io": reader.io, "loopPaths": reader.loop_paths, "reuseCues": reader.cues, "decorators": decorators,
-                        "transformations": reader.transformations, "comprehensions": reader.comprehensions})
+                        "transformations": reader.transformations, "comprehensions": reader.comprehensions, "facts": reader.facts})
     return {"status": "parsed", "reason": "Parsed Python source syntax using isolated standard-library AST; target code was not executed.", "functions": records}
 
 

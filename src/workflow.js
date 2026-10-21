@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { inspectResources } from './workflow-risk.js';
 
 export const WORKFLOW_LIMITS = [
   'Static Python syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
@@ -50,6 +51,7 @@ export function buildWorkflow(guides) {
       const calc = { id, name: fn.name, scopeKind: fn.scopeKind, sourceLinkable: fn.sourceLinkable, generator: fn.generator, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
         calls: fn.calls.map(c => ({ ...c, source: source(file, c) })), outputs: fn.returns, transformations: fn.transformations.map(t => ({ ...t, source: source(file, t) })),
         io: fn.io.map(io => ({ ...io, source: source(file, io) })),
+        facts: (fn.facts || []).map(f => ({ ...f, source: source(file, f) })),
         loopPaths: fn.loopPaths, comprehensions: fn.comprehensions.map(c => ({ ...c, source: source(file, c) })),
         reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
         purpose: 'Written function/module syntax; business purpose and whether this path runs need review.',
@@ -110,7 +112,10 @@ export function buildWorkflow(guides) {
       reuseCues: calculations.filter(c => calculationIds.includes(c.id)).flatMap(c => c.reuseCues) });
   }
   const links = calculationLinks(calculations, guides);
+  const resources = inspectResources(calculations);
+  findings.push(...resources.findings);
   return { version: 1, basis: 'static-source-syntax', files, calculations, dataProducts: [...products.values()], ...links,
+    checkpoints: resources.checkpoints,
     findings: findings.sort((a, b) => a.type.localeCompare(b.type) || a.id.localeCompare(b.id)), limitations: WORKFLOW_LIMITS };
 }
 

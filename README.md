@@ -18,7 +18,9 @@ The workflow-inspection development branch adds a general-purpose calculation an
 
 `GET /api/map`, `--json` and self-contained HTML snapshots include the structured `workflow` report. Inspection requires optional `python3` (3.9+), using only its standard-library AST in isolated mode. Missing Python, parse failures and bounded coverage are visible; the complete free map remains available. No target code is imported or executed.
 
-This first slice recognizes syntax, not actual execution or safe reuse. Direct methods of top-level Python classes and comprehension axes/filters are supported. Dynamic paths, nested/inherited methods, shell/YAML execution, SQL, runtime call tracing, checkpoint compatibility and table coverage remain unknown. Literal-range potential iterations are separate from actual jobs, remaining jobs and directional pair comparisons. Existing cache/lazy/index/restart cues are shown for review; no runtime savings are invented. Accounts, billing and outside-customer expansion are deferred. See [the feature inventory, current limits and handoff](docs/ROADMAP_REVIEW_20261021.md).
+The inspector also reviews saved-product loads/guards, whole-result memory risks, collection retention and possible per-iteration waits, while showing existing cache/chunk/pool/release cues. Optional `.buildmap/analysis.json` adds exact contract-based row/column coverage and extension plans, declared stage checks and reported workload counters. Rolling plans retain declared input overlap; stateful partial extension stays blocked. Comparable current receipt-bound observations can show measured differences; no static savings are invented. Products are never modified or certified safe to resume. Jobs and directional pair comparisons remain separate.
+
+Dynamic paths, nested/inherited methods, shell/YAML execution, SQL and runtime call tracing remain outside the syntax adapter. Accounts, billing and outside-customer expansion are deferred. See [review records, schemas, limits and examples](docs/WORKFLOW_REVIEW.md) and [the roadmap inventory and remaining scope](docs/ROADMAP_REVIEW_20261021.md).
 
 ## Quick start
 

@@ -28,6 +28,8 @@
         "src/outcomes.js",
         "src/code-guide.js",
         "src/workflow.js",
+        "src/workflow-risk.js",
+        "src/review-evidence.js",
         "src/python-analyzer.py"
       ],
       "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior.",
@@ -94,6 +96,8 @@
         "tests/outcomes.test.js",
         "tests/guide-tasks.test.js",
         "tests/workflow.test.js",
+        "tests/review-evidence.test.js",
+        "tests/fixtures/workflow-analysis.json",
         "tests/fixtures/workflow-pipeline.py"
       ],
       "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",

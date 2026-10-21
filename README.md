@@ -22,6 +22,8 @@ The inspector also reviews saved-product loads/guards, whole-result memory risks
 
 The project-wide **Scan coverage** panel names files left unreviewed and languages outside the Python risk adapter. Optional runtime calculation references link reported measurements to the captured calculation for inspection; stale or ambiguous references cannot select a target or justify a comparison.
 
+To inspect every eligible Python file across a large repository, use `node src/cli.js /path/to/project --workflow-all --json` or `--workflow-all --html /new/report.html`. Analysis runs in bounded sequential batches; the default live review remains limited. YAML/TOML and service/timer definitions are inventoried, with unsupported workflow semantics disclosed.
+
 Dynamic paths, nested/inherited methods, shell/YAML execution, SQL and runtime call tracing remain outside the syntax adapter. Accounts, billing and outside-customer expansion are deferred. See [review records, schemas, limits and examples](docs/WORKFLOW_REVIEW.md) and [the roadmap inventory and remaining scope](docs/ROADMAP_REVIEW_20261021.md).
 
 ## Quick start

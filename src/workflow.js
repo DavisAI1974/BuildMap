@@ -11,32 +11,44 @@ export const WORKFLOW_LIMITS = [
   'A literal filename match is only a possible shared product. Working directories, source identity, schema, axes, coverage, checkpoint compatibility and actual reuse are unverified.',
   'Nested loops describe possible fan-out, not a job or pair counter. Literal range products assume every iteration reaches the inner body; guards, breaks, exceptions and dependent bounds can change actual work. AB/BA equivalence is never assumed.',
   'Cache, lazy scheduler, FFT and checkpoint names/decorators are review cues only. Their presence does not prove effective reuse; their absence does not prove a cache or checkpoint is missing.',
-  'Analysis is optional and bounded to 64 Python files / 4 MB total with the scanner’s 1 MB per-file limit. Missing Python, unsupported files and failures stay visible. No findings is not clearance to run.'
+  'Default analysis covers at most 64 Python files / 4 MB total. Explicit whole-project snapshots process every eligible Python file in sequential batches of at most 64 files / 4 MB. The scanner’s 1 MB per-file and parser’s 5-second / 16 MB per-process limits still apply. Missing Python, unsupported files and failures stay visible. No findings is not clearance to run.'
 ];
 
 // Source bytes came from the existing inventory/read boundary. -I/-S prevent a
 // mapped project's modules/site hooks from being imported by this trusted reader.
-export function pythonGuides(sources, guides) {
-  const selected = []; let bytes = 0;
+export function pythonGuides(sources, guides, { all = false } = {}) {
+  let selected = [], bytes = 0, missingRuntime = false;
+  const unavailable = batch => { for (const s of batch) Object.assign(guides.get(s.path), { status: 'analyzer-unavailable',
+    reason: 'Python analysis unavailable (python3 missing, timeout, or parser output limit). File inventory and the free map remain available.' }); };
+  function analyze(batch) {
+    if (!batch.length) return;
+    if (missingRuntime) { unavailable(batch); return; }
+    const result = spawnSync('python3', ['-I', '-S', fileURLToPath(new URL('./python-analyzer.py', import.meta.url))], {
+      input: JSON.stringify(batch.map(s => ({ source: s.source }))), encoding: 'utf8', timeout: 5000, maxBuffer: 16 * 1024 * 1024
+    });
+    let parsed;
+    try { if (!result.error && result.status === 0) parsed = JSON.parse(result.stdout); } catch { /* Visible unsupported state below. */ }
+    if (!Array.isArray(parsed) || parsed.length !== batch.length) {
+      missingRuntime = result.error?.code === 'ENOENT';
+      // Isolate a difficult file or a batch output/timeout limit without losing
+      // every other file in an explicitly requested whole-project inspection.
+      if (all && !missingRuntime && batch.length > 1) {
+        const middle = Math.floor(batch.length / 2); analyze(batch.slice(0, middle)); analyze(batch.slice(middle));
+      } else unavailable(batch);
+      return;
+    }
+    batch.forEach((s, i) => Object.assign(guides.get(s.path), parsed[i]));
+  }
   for (const source of sources) {
     const guide = guides.get(source.path);
-    if (selected.length >= 64 || bytes + Buffer.byteLength(source.source) > 4_000_000) {
+    const size = Buffer.byteLength(source.source);
+    if (all && selected.length && (selected.length >= 64 || bytes + size > 4_000_000)) { analyze(selected); selected = []; bytes = 0; }
+    if (selected.length >= 64 || bytes + size > 4_000_000) {
       guide.status = 'analysis-limit'; guide.reason = 'Python analysis exceeds 64 files or 4 MB total; this file remains unreviewed.'; continue;
     }
-    selected.push(source); bytes += Buffer.byteLength(source.source);
+    selected.push(source); bytes += size;
   }
-  if (!selected.length) return;
-  const result = spawnSync('python3', ['-I', '-S', fileURLToPath(new URL('./python-analyzer.py', import.meta.url))], {
-    input: JSON.stringify(selected.map(s => ({ source: s.source }))), encoding: 'utf8', timeout: 5000, maxBuffer: 16 * 1024 * 1024
-  });
-  let parsed;
-  try { if (!result.error && result.status === 0) parsed = JSON.parse(result.stdout); } catch { /* Visible unsupported state below. */ }
-  if (!Array.isArray(parsed) || parsed.length !== selected.length) {
-    for (const s of selected) Object.assign(guides.get(s.path), { status: 'analyzer-unavailable',
-      reason: 'Python analysis unavailable (python3 missing, timeout, or parser output limit). File inventory and the free map remain available.' });
-    return;
-  }
-  selected.forEach((s, i) => Object.assign(guides.get(s.path), parsed[i]));
+  analyze(selected);
 }
 
 export function buildWorkflow(guides) {

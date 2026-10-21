@@ -10,7 +10,7 @@ import { snapshotHtml } from './export.js';
 import { initializeProject, createWalkthrough, createPiece } from './setup.js';
 
 export function parseArgs(args) {
-  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, html: null, ref: null, init: false, walkthrough: false, piece: false, extendPiece: false, help: false };
+  const options = { target: '.', port: 4173, host: '127.0.0.1', json: false, html: null, ref: null, init: false, walkthrough: false, piece: false, extendPiece: false, workflowAll: false, help: false };
   let targetSeen = false;
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -20,6 +20,7 @@ export function parseArgs(args) {
     else if (arg === '--piece') options.piece = true;
     else if (arg === '--extend-piece') options.extendPiece = true;
     else if (arg === '--json') options.json = true;
+    else if (arg === '--workflow-all') options.workflowAll = true;
     else if (arg === '--port' || arg === '--host' || arg === '--html' || arg === '--ref') {
       const value = args[++i];
       if (!value || value.startsWith('--')) throw new Error(`Missing value for ${arg}.`);
@@ -31,6 +32,7 @@ export function parseArgs(args) {
   if (options.ref && !options.help && !/^https:\/\/github\.com\//i.test(options.target)) throw new Error('--ref applies to GitHub URL input. For local mapping, check out the branch yourself.');
   if (options.ref?.startsWith('-')) throw new Error('--ref must name a branch or tag.');
   if (options.json && options.html) throw new Error('Choose --json or --html, not both.');
+  if (options.workflowAll && !options.help && (!(options.json || options.html) || options.init || options.walkthrough || options.piece || options.extendPiece)) throw new Error('--workflow-all requires a one-shot --json or --html export; it does not run during live polling or setup.');
   if (options.init && !options.help && (options.json || options.html || options.ref || /^https?:\/\//i.test(options.target))) throw new Error('--init is local setup only. Run mapping or exports separately after setup.');
   if (options.walkthrough && !options.help && (options.init || options.json || options.html || options.ref || /^https?:\/\//i.test(options.target))) throw new Error('--walkthrough is local plan authoring only. Run initial setup, mapping or exports separately.');
   if (options.piece && !options.help && (options.init || options.walkthrough || options.json || options.html || options.ref || /^https?:\/\//i.test(options.target))) throw new Error('--piece is local plan authoring only. Run setup, walkthroughs, mapping or exports separately.');
@@ -70,7 +72,7 @@ async function main() {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (options.help) {
-      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--ref branch-or-tag] [--json | --html output.html]\n  buildmap [local-project-path] --init\n  buildmap [local-project-path] --walkthrough\n  buildmap [local-project-path] --piece\n  buildmap [local-project-path] --extend-piece\n\n--extend-piece adds files to one existing piece after review, retaining its identity, fields, goals and evidence.\n--piece groups unassigned files or declares a planned piece through a reviewed local interview. It preserves source/evidence and never grants proof.\n--walkthrough guides you through one goal, ordered existing pieces, expected results, and support assignments. Review before saving; existing plans are retained and no proof is recorded.\n--init asks four plain-English questions and saves an initial project description, then exits. Existing plans are never overwritten; code and evidence are untouched.\n--json prints one map snapshot, including gaps and source hashes, then exits.\n--html writes a self-contained interactive snapshot to a new file, then exits.\n--ref selects a branch or tag for GitHub URL input; omitted uses the default branch.\n\nExamples:\n  buildmap ../my-project --init\n  buildmap ../my-project --piece\n  buildmap ../my-project --extend-piece\n  buildmap ../my-project --walkthrough\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap https://github.com/owner/repo --ref feature/map\n  buildmap . --json\n  buildmap . --html ../buildmap.html\n`);
+      console.log(`BuildMap v0.1\n\nUsage:\n  buildmap [project-path-or-github-url] [--port 4173] [--host 127.0.0.1] [--ref branch-or-tag] [--json | --html output.html]\n  buildmap [local-project-path] --init\n  buildmap [local-project-path] --walkthrough\n  buildmap [local-project-path] --piece\n  buildmap [local-project-path] --extend-piece\n\n--extend-piece adds files to one existing piece after review, retaining its identity, fields, goals and evidence.\n--piece groups unassigned files or declares a planned piece through a reviewed local interview. It preserves source/evidence and never grants proof.\n--walkthrough guides you through one goal, ordered existing pieces, expected results, and support assignments. Review before saving; existing plans are retained and no proof is recorded.\n--init asks four plain-English questions and saves an initial project description, then exits. Existing plans are never overwritten; code and evidence are untouched.\n--workflow-all analyzes every eligible Python file in bounded sequential batches for a one-shot --json or --html snapshot. Workflow/config files remain visible; unsupported semantics stay unknown.\n--json prints one map snapshot, including gaps and source hashes, then exits.\n--html writes a self-contained interactive snapshot to a new file, then exits.\n--ref selects a branch or tag for GitHub URL input; omitted uses the default branch.\n\nExamples:\n  buildmap ../my-project --init\n  buildmap ../my-project --piece\n  buildmap ../my-project --extend-piece\n  buildmap ../my-project --walkthrough\n  buildmap .\n  buildmap --port 5000 ../my-project\n  buildmap https://github.com/owner/repo\n  buildmap https://github.com/owner/repo --ref feature/map\n  buildmap . --json\n  buildmap . --html ../buildmap.html\n`);
       return;
     }
     if (options.init || options.walkthrough || options.piece || options.extendPiece) {
@@ -83,10 +85,10 @@ async function main() {
     }
     const { root, cleanup, source } = prepareTarget(options.target, options.json ? console.error : console.log, options.ref);
     process.once('exit', cleanup);
-    if (options.json) { console.log(JSON.stringify(scanProject(root, { source }), null, 2)); return; }
+    if (options.json) { console.log(JSON.stringify(scanProject(root, { source, workflowAll: options.workflowAll }), null, 2)); return; }
     if (options.html) {
       const output = path.resolve(options.html);
-      fs.writeFileSync(output, snapshotHtml(scanProject(root, { source })), { flag: 'wx' });
+      fs.writeFileSync(output, snapshotHtml(scanProject(root, { source, workflowAll: options.workflowAll })), { flag: 'wx' });
       console.log(`Snapshot saved: ${output}`);
       return;
     }

@@ -19,7 +19,7 @@ function fixture(t) {
 }
 
 test('CLI consumes flag values independently of project position and rejects mistakes', () => {
-  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, walkthrough: false, piece: false, extendPiece: false, help: false });
+  assert.deepEqual(parseArgs(['--port', '5000', '--host', 'localhost', '../demo', '--json']), { target: '../demo', port: 5000, host: 'localhost', json: true, html: null, ref: null, init: false, walkthrough: false, piece: false, extendPiece: false, workflowAll: false, help: false });
   for (const args of [['--port'], ['--port', 'NaN'], ['--port', '65536'], ['--unknown'], ['a', 'b'], ['--html'], ['--html', 'out.html', '--json'], ['--ref'], ['--ref', 'main', '.'], ['https://github.com/owner/repo', '--ref', '-bad']]) assert.throws(() => parseArgs(args));
 });
 
@@ -29,6 +29,17 @@ test('CLI JSON mode emits a parseable one-shot snapshot without starting the ser
   assert.equal(result.status, 0, result.stderr);
   const map = JSON.parse(result.stdout);
   assert.equal(map.project.root, root); assert.ok(map.gaps.some(g => g.kind === 'missing-intent'));
+});
+
+test('whole-workflow CLI requires an explicit one-shot export and reaches files beyond the default batch', t => {
+  const root=fixture(t);
+  for(let i=0;i<66;i++)fs.writeFileSync(path.join(root,`piece-${String(i).padStart(2,'0')}.py`),`raise RuntimeError('never run target')\ndef piece_${i}():\n    return ${i}\n`);
+  assert.equal(parseArgs(['--workflow-all','--json',root]).workflowAll,true);
+  for(const args of [['--workflow-all'],['--workflow-all','--init','--json'],['--workflow-all','--html','out.html','--piece']])assert.throws(()=>parseArgs(args),/one-shot/);
+  const result=spawnSync(process.execPath,['src/cli.js',root,'--workflow-all','--json'],{encoding:'utf8',timeout:15000,maxBuffer:8*1024*1024});
+  assert.equal(result.status,0,result.stderr);const map=JSON.parse(result.stdout);
+  assert.equal(map.workflow.scope.mode,'whole-python-inventory');assert.equal(map.workflow.scope.batching,'all-eligible-files');
+  assert.equal(map.workflow.coverage.parsedPythonFiles,66);assert.ok(map.workflow.calculations.some(c=>c.name==='piece_65'));
 });
 
 test('server maps live edits, serves gaps/assets, and keeps repository files private', async t => {

@@ -499,7 +499,7 @@ function appendWorkflowReview(node) {
   if (all && workflow.coverage) {
     const coverage = workflow.coverage, section = document.createElement('details'); section.className = 'workflow-scan-coverage';
     section.innerHTML = `<summary>Scan coverage · ${coverage.parsedPythonFiles}/${coverage.pythonFiles} Python files parsed · ${coverage.outsideAdapter.length} inventory files outside risk adapter</summary>
-      <p>${escapeHtml(coverage.inventoryMode)} inventory · ${coverage.inventoryFiles} discovered/declared files. ${escapeHtml(coverage.boundary)}</p>
+      <p>${escapeHtml(coverage.inventoryMode)} inventory · ${coverage.inventoryFiles} discovered/declared files. Review scope: ${escapeHtml(workflow.scope?.mode || 'captured scope unspecified')}; ${escapeHtml(workflow.scope?.batching || 'batching unspecified')}. ${escapeHtml(coverage.boundary)}</p>
       <p>Python status counts: ${Object.entries(coverage.statuses).map(([s,n]) => `${escapeHtml(s)}: ${n}`).join('; ') || 'no Python files discovered'}.</p>
       <h4>Python files still unreviewed</h4><ul>${coverage.unreviewedPython.map(f => `<li>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</li>`).join('') || '<li>None in this bounded inventory. This does not establish complete workflow coverage.</li>'}</ul>
       <h4>Inventory outside this risk adapter</h4><ul>${coverage.outsideAdapter.map(f => `<li>${escapeHtml(f.path)} · ${escapeHtml(f.reason)}</li>`).join('') || '<li>None in this inventory.</li>'}</ul>`;

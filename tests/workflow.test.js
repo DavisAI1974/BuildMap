@@ -159,6 +159,25 @@ test('source edits invalidate calculation identities and old receipts without ch
   assert.equal(fs.readFileSync(path.join(root, 'saved-checkpoint.json'), 'utf8'), '{"source":"old","coverage":"partial"}');
 });
 
+test('explicit whole-source batching retains invalid and over-budget files without omitting later eligible source', () => {
+  const sources=Array.from({length:70},(_,i)=>({path:`piece${i}.py`,source:`def piece_${i}():\n    return ${i}\n`}));
+  sources[64].source='def broken(:\n';
+  const guides=new Map(sources.map(s=>[s.path,{functions:[]}]));pythonGuides(sources,guides,{all:true});
+  assert.equal(guides.get('piece64.py').status,'parse-error');assert.equal(guides.get('piece69.py').status,'parsed');
+  assert.equal([...guides.values()].filter(g=>g.status==='parsed').length,69);
+  const large=Array.from({length:5},(_,i)=>({path:`large${i}.py`,source:'#'+'x'.repeat(899999)+`\ndef large_${i}():\n    pass\n`}));
+  const split=new Map(large.map(s=>[s.path,{functions:[]}]));pythonGuides(large,split,{all:true});
+  assert.equal([...split.values()].filter(g=>g.status==='parsed').length,5);
+});
+
+test('workflow definitions remain visible in the full inventory with unsupported semantics and explicit scope', t => {
+  const root=fixture(t,'def run():\n    pass\n');
+  fs.writeFileSync(path.join(root,'pipeline.yml'),'jobs:\n  build: run\n');fs.writeFileSync(path.join(root,'worker.service'),'[Service]\nExecStart=python3 workflow.py\n');fs.writeFileSync(path.join(root,'project.toml'),'name="fixture"\n');
+  const map=scanProject(root,{workflowAll:true});assert.equal(map.scan.fileCount,4);assert.equal(map.workflow.coverage.parsedPythonFiles,1);
+  assert.equal(map.workflow.coverage.outsideAdapter.length,3);assert.ok(map.nodes.some(n=>n.files.includes('pipeline.yml')));
+  assert.equal(map.workflow.scope.mode,'whole-python-inventory');assert.throws(()=>scanProject(root,{workflowAll:'yes'}),/boolean/);
+});
+
 test('live API, CLI JSON and self-contained exports carry the same risk records with read-only boundaries', async t => {
   const root = fixture(t), map = scanProject(root);
   const server = startServer({ root, port: 0 }); await once(server, 'listening');

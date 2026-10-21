@@ -9,13 +9,14 @@ import { CODE_GUIDE_LIMITS } from './code-guide.js';
 import { pythonGuides, buildWorkflow, WORKFLOW_LIMITS } from './workflow.js';
 import { readAnalysis } from './review-evidence.js';
 
-const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
+const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css','.yaml','.yml','.toml','.service','.timer']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
 const IGNORE_DIRS = new Set(['.git','node_modules','dist','build','coverage','.next','.cache','.venv','venv','__pycache__','target','vendor']);
 const STATES = ['planned','coded','connected','computing','verified','live'];
 const WEIGHTS = { planned: 0, coded: 20, connected: 45, computing: 65, verified: 85, live: 100 };
 
-export function scanProject(root, { source = null, workflowFiles = null } = {}) {
+export function scanProject(root, { source = null, workflowFiles = null, workflowAll = false } = {}) {
+  if (typeof workflowAll !== 'boolean') throw new TypeError('workflowAll must be a boolean.');
   if (workflowFiles !== null && (!Array.isArray(workflowFiles) || workflowFiles.some(f => typeof f !== 'string'))) {
     throw new TypeError('workflowFiles must be an array of exact project-relative Python paths.');
   }
@@ -42,7 +43,7 @@ export function scanProject(root, { source = null, workflowFiles = null } = {}) 
     }
   }
   files.sort((a,b) => a.path.localeCompare(b.path));
-  const discovery = discoverImports(root, files, fileSet, diagnostics, workflowFiles === null ? null : new Set(workflowFiles));
+  const discovery = discoverImports(root, files, fileSet, diagnostics, workflowFiles === null ? null : new Set(workflowFiles), workflowAll);
   const importEdges = discovery.edges;
   const fileHashes = new Map(files.map(f => [f.path, f.hash]));
   const inputCache = new Map();
@@ -152,7 +153,8 @@ export function scanProject(root, { source = null, workflowFiles = null } = {}) 
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,
       dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], javascriptParser: 'acorn', httpAdapter: 'literal-fetch/node-http-path', heuristic: true },
     generatedAt: new Date().toISOString() };
-  result.workflow.scope = { mode: workflowFiles === null ? 'bounded-inventory' : 'selected-files',
+  result.workflow.scope = { mode: workflowFiles === null ? workflowAll ? 'whole-python-inventory' : 'bounded-inventory' : 'selected-files',
+    batching: workflowAll ? 'all-eligible-files' : 'first-bounded-batch',
     requestedFiles: workflowFiles === null ? null : [...new Set(workflowFiles)].sort(),
     unavailableFiles: workflowFiles === null ? [] : [...new Set(workflowFiles)].filter(f => !fileSet.has(f) || path.extname(f).toLowerCase() !== '.py').sort() };
   result.workflow.review = readAnalysis(root, result.workflow.calculations);
@@ -359,7 +361,7 @@ function walkFiles(root, diagnostics) {
   return out;
 }
 
-function discoverImports(root, files, fileSet, diagnostics, workflowFiles) {
+function discoverImports(root, files, fileSet, diagnostics, workflowFiles, workflowAll) {
   const edges = [], requests = [], providers = [], guides = new Map(), pythonSources = [];
   for (const file of files) {
     const ext = path.extname(file.path).toLowerCase();
@@ -392,7 +394,7 @@ function discoverImports(root, files, fileSet, diagnostics, workflowFiles) {
       }
     } catch (err) { diagnostics.push({ code: 'unreadable-file', message: `Source reference discovery failed for ${file.path}: ${err.code || err.name}.` }); }
   }
-  pythonGuides(pythonSources, guides);
+  pythonGuides(pythonSources, guides, { all: workflowAll });
   const importCount = uniqueEdges(edges).length;
   for (const request of requests) {
     const matches = providers.filter(p => (p.raw ? p.endpoint === request.rawPath : p.endpoint === request.path) && (!p.method || p.method === request.method));

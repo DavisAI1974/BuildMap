@@ -1,0 +1,97 @@
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+export const WORKFLOW_LIMITS = [
+  'Static Python syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
+  'First adapter covers module bodies and top-level functions. Methods, nested functions, comprehensions, dynamic paths, SQL and cross-file call/argument resolution are not analyzed.',
+  'A literal filename match is only a possible shared product. Working directories, source identity, schema, axes, coverage, checkpoint compatibility and actual reuse are unverified.',
+  'Nested loops describe possible fan-out, not a job or pair counter. Literal range products assume every iteration reaches the inner body; guards, breaks, exceptions and dependent bounds can change actual work. AB/BA equivalence is never assumed.',
+  'Cache, lazy scheduler, FFT and checkpoint names/decorators are review cues only. Their presence does not prove effective reuse; their absence does not prove a cache or checkpoint is missing.',
+  'Analysis is optional and bounded to 64 Python files / 4 MB total with the scanner’s 1 MB per-file limit. Missing Python, unsupported files and failures stay visible. No findings is not clearance to run.'
+];
+
+// Source bytes came from the existing inventory/read boundary. -I/-S prevent a
+// mapped project's modules/site hooks from being imported by this trusted reader.
+export function pythonGuides(sources, guides) {
+  const selected = []; let bytes = 0;
+  for (const source of sources) {
+    const guide = guides.get(source.path);
+    if (selected.length >= 64 || bytes + Buffer.byteLength(source.source) > 4_000_000) {
+      guide.status = 'analysis-limit'; guide.reason = 'Python analysis exceeds 64 files or 4 MB total; this file remains unreviewed.'; continue;
+    }
+    selected.push(source); bytes += Buffer.byteLength(source.source);
+  }
+  if (!selected.length) return;
+  const result = spawnSync('python3', ['-I', '-S', fileURLToPath(new URL('./python-analyzer.py', import.meta.url))], {
+    input: JSON.stringify(selected.map(s => ({ source: s.source }))), encoding: 'utf8', timeout: 5000, maxBuffer: 16 * 1024 * 1024
+  });
+  let parsed;
+  try { if (!result.error && result.status === 0) parsed = JSON.parse(result.stdout); } catch { /* Visible unsupported state below. */ }
+  if (!Array.isArray(parsed) || parsed.length !== selected.length) {
+    for (const s of selected) Object.assign(guides.get(s.path), { status: 'analyzer-unavailable',
+      reason: 'Python analysis unavailable (python3 missing, timeout, or parser output limit). File inventory and the free map remain available.' });
+    return;
+  }
+  selected.forEach((s, i) => Object.assign(guides.get(s.path), parsed[i]));
+}
+
+export function buildWorkflow(guides) {
+  const calculations = [], products = new Map(), findings = [];
+  const files = [...guides.values()].filter(g => g.path.endsWith('.py')).map(g => ({ path: g.path, sourceHash: g.sourceHash, status: g.status, reason: g.reason }));
+  const source = (file, item) => ({ path: file.path, sourceHash: file.sourceHash, line: item.line, column: item.column });
+  for (const file of guides.values()) {
+    if (!file.path.endsWith('.py') || file.status !== 'parsed') continue;
+    for (const fn of file.functions) {
+      const id = `${file.path}:${fn.line}:${fn.column}`;
+      const at = source(file, fn);
+      const calc = { id, name: fn.name, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
+        calls: fn.calls, outputs: fn.returns, transformations: fn.transformations.map(t => ({ ...t, source: source(file, t) })),
+        io: fn.io.map(io => ({ ...io, source: source(file, io) })),
+        loopPaths: fn.loopPaths, reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
+        purpose: 'Written function/module syntax; business purpose and whether this path runs need review.',
+        why: 'A declaration is not proof it is called. Review entry-point wiring and runtime counters before optimizing.' };
+      calculations.push(calc);
+      for (const io of calc.io) {
+        const key = io.pathExpression;
+        if (!products.has(key)) products.set(key, { id: `literal:${key}`, pathExpression: key, basis: 'possible-literal-path-match', compatibility: 'unknown', producers: [], consumers: [] });
+        const product = products.get(key), site = { calculationId: id, source: io.source, call: io.call, loopDepth: io.loopDepth };
+        if (io.operation.includes('write')) product.producers.push(site);
+        if (io.operation.includes('read')) product.consumers.push(site);
+      }
+      // Keep maximal nested paths so a three-deep nest does not emit a second
+      // warning for its two-deep prefix. Distinct inner branches stay separate.
+      const paths = fn.loopPaths.filter(p => !fn.loopPaths.some(q => q.length > p.length && p.every((a, i) => a.line === q[i].line && a.column === q[i].column)));
+      for (const axes of paths) {
+        const literal = axes.every(a => a.literalRangeCount !== null);
+        const potentialIterations = literal ? axes.reduce((n, a) => n * BigInt(a.literalRangeCount), 1n).toString() : null;
+        findings.push({ id: `fanout:${id}:${axes.at(-1).line}:${axes.at(-1).column}`, type: 'nested-loop-fanout', severity: 'warning',
+          confidence: 'Likely', confidenceRationale: 'Nested loop syntax is observed; actual execution and useful work per iteration are unknown.',
+          calculationIds: [id], sources: axes.map(a => source(file, a)),
+          title: `${fn.name}: review ${axes.length} nested loops before running`,
+          impact: `Possible expansion: ${axes.map(a => `${a.target} in ${a.iterable}`).join(' × ')}. This is an iteration model, not a job or pair count.`,
+          workload: { symbolic: axes.map(a => a.iterable).join(' × '), potentialIterations, actualJobs: null, pairComparisons: null, remainingJobs: null },
+          suggestedAction: 'Measure eligible/completed/remaining jobs and directional pair comparisons separately on a small fixture. Inspect existing lazy scheduling and reuse before proposing changes.',
+          correctnessTradeoff: 'Do not remove directional AB/BA work, skip observations, or replace missing values without a proven scientific equivalence.',
+          requiredVerification: ['Confirm entry point and reachable loop paths, guards, early exits and actual dimension sizes.', 'Measure jobs separately from inner pair comparisons; inspect caches, saved indexes and restart receipts.'],
+          reuseCues: calc.reuseCues });
+      }
+    }
+  }
+  for (const product of products.values()) {
+    // Two source sites are not confirmed duplicate execution. A single read
+    // inside a loop is reviewable too, without inventing a repeated-read count.
+    if (product.consumers.length < 2 && !product.consumers.some(c => c.loopDepth > 0)) continue;
+    const calculationIds = [...new Set(product.consumers.map(c => c.calculationId))];
+    findings.push({ id: `reads:${product.id}`, type: 'potential-repeated-read', severity: 'warning', confidence: 'Needs runtime evidence',
+      confidenceRationale: 'Literal read-call sites are observed. Branch exclusivity, path identity, library behavior and cache hits are unknown.',
+      calculationIds, sources: product.consumers.map(c => c.source), productId: product.id,
+      title: `Review possible repeated reads of ${product.pathExpression}`,
+      impact: `${product.consumers.length} read-call site(s) use this literal path${product.consumers.some(c => c.loopDepth) ? ', including a site inside a loop' : ''}. Actual bytes, execution count and avoidable work are unknown.`,
+      suggestedAction: 'Trace whether these sites run in the same workflow and resolve to the same source. Inspect shared preparation, caching and saved indexes before considering reuse.',
+      correctnessTradeoff: 'Repeated reads may be intentional verification or different observations. Reuse requires matching source identity, schema, coverage, order and scientific semantics.',
+      requiredVerification: ['Measure actual reads and effective cache/restart reuse on a small input.', 'Check producer/consumer paths, source identities and checkpoint compatibility.'],
+      reuseCues: calculations.filter(c => calculationIds.includes(c.id)).flatMap(c => c.reuseCues) });
+  }
+  return { version: 1, basis: 'static-source-syntax', files, calculations, dataProducts: [...products.values()],
+    findings: findings.sort((a, b) => a.type.localeCompare(b.type) || a.id.localeCompare(b.id)), limitations: WORKFLOW_LIMITS };
+}

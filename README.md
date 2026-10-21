@@ -8,9 +8,17 @@ The core contract is **existence, connection, computation, verification, and liv
 
 ## Who BuildMap is for
 
-BuildMap focuses on beginner-to-intermediate builders, especially people working with coding agents who need help understanding how a complete application fits together and keeping work aligned with its goal. Experienced developers can use the same source and evidence detail. The complete map, current goal walkthroughs, and basic focused task briefs are free. BuildMap Guide is the paid direction for deeper building and review help. Its first JavaScript function-reading preview is implemented for review; reviewed task preparation and snapshot change review are also available; billing and saved continuity remain unbuilt.
+BuildMap focuses on beginner-to-intermediate builders, especially people working with coding agents who need help understanding how a complete application fits together and keeping work aligned with its goal. Experienced developers can use the same source and evidence detail. The complete map, current goal walkthroughs, and basic focused task briefs are free. BuildMap Guide is the paid direction for deeper building and review help. Its JavaScript function-reading preview and initial Python calculation/pre-run risk inspector are implemented for review; reviewed task preparation and snapshot change review are also available; billing and saved continuity remain unbuilt.
 
 Setup still requires Node/Git commands. An optional local `--init` interview writes your initial goal and finished-product description without hand-editing JSON. An optional local `--walkthrough` interview also adds a goal and its ordered steps using existing mapped pieces. Guided `--piece` setup groups available files or declares planned pieces; `--extend-piece` adds files to an existing piece. Other existing-piece edits and recording evidence still require file authoring; this is not an existing no-code application builder.
+
+## Frankie-priority Python inspection
+
+The local-only Frankie development branch adds an initial calculation and pre-run risk inspector. Open a Python piece and choose **Inspect actual code · Guide preview**, or select the mission card and choose **Pre-run risk review · Guide preview** for the project-wide report. Expand calculations to inspect declared inputs, assignments/transformations, returns, possible literal file products and consumers; expand warnings for repeated read sites and nested-loop fan-out. Source buttons open the captured function, with exact file/line and source hash.
+
+`GET /api/map`, `--json` and self-contained HTML snapshots include the structured `workflow` report. Inspection requires optional `python3` (3.9+), using only its standard-library AST in isolated mode. Missing Python, parse failures and bounded coverage are visible; the complete free map remains available. No target code is imported or executed.
+
+This first slice recognizes syntax, not actual execution or safe reuse. Dynamic paths, methods, comprehensions, SQL, full call tracing, checkpoint compatibility and table coverage remain unknown. Literal-range potential iterations are separate from actual jobs, remaining jobs and directional pair comparisons. Existing cache/lazy/index/restart cues are shown for review; no runtime savings are invented. Accounts, billing and outside-customer expansion are deferred. See [the feature inventory, current limits and handoff](docs/FRANKIE_ROADMAP_REVIEW_20261021.md).
 
 ## Quick start
 

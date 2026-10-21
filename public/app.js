@@ -359,8 +359,8 @@ function renderDetail(id) {
   `;
   if (completion) appendCompletion(completion);
   if (finding) appendTaskBrief(finding, node);
-  if (node.kind !== 'mission') {
-    const button = document.createElement('button'); button.type = 'button'; button.className = 'guide-open'; button.textContent = 'Inspect actual code · Guide preview';
+  if (node.kind !== 'mission' || model.workflow) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'guide-open'; button.textContent = node.kind === 'mission' ? 'Pre-run risk review · Guide preview' : 'Inspect actual code · Guide preview';
     button.addEventListener('click', () => { guidePieceId = id; renderCodeGuide(id); [...$('detail').children].find(el => el.classList.contains('guide-back')).focus({ preventScroll: true }); }); $('detail').appendChild(button);
   }
   if (walkthroughReturnId && model.outcomes?.some(o => o.id === walkthroughReturnId)) {
@@ -392,16 +392,19 @@ function renderCodeGuide(id) {
   const guide = node.codeGuide;
   const capturedFingerprint = model.fingerprint, visibleKeys = new Set();
   $('detail').innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · CODE PREVIEW</div><h2>${escapeHtml(node.name)}</h2>
-    <p>See what the source declares: inputs, return expressions, and calls written inside its top-level functions. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
+    <p>See what the source declares: inputs, return expressions, and calls written inside its top-level functions. Python inspection also shows possible file products and pre-run risks. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
     <p>${escapeHtml(node.purpose)} This is the piece’s recorded purpose; the source descriptions below do not verify it.</p>
     <p>This is the first Guide capability available for MVP review. Billing and the wider coaching/review loop are not built.</p>
     <p>${snapshot ? 'Captured code reading · this snapshot does not follow later edits.' : 'Current source reading · follows local refresh.'} ${$('refreshStatus').classList.contains('stale') ? 'Refresh failed; this is the last captured source.' : ''}</p>`;
   const back = document.createElement('button'); back.type = 'button'; back.className = 'guide-back'; back.textContent = 'Back to piece';
   back.dataset.guideControl = 'back';
   back.addEventListener('click', () => { guidePieceId = null; renderDetail(id); [...$('detail').children].find(el => el.classList.contains('guide-open'))?.focus({ preventScroll: true }); }); $('detail').appendChild(back);
-  const prepare = document.createElement('button'); prepare.type = 'button'; prepare.className = 'guide-prepare'; prepare.textContent = 'Prepare detailed task';
-  prepare.addEventListener('click', () => startGuideTask(id)); $('detail').appendChild(prepare);
-  if (!guide) {
+  if (node.kind !== 'mission') {
+    const prepare = document.createElement('button'); prepare.type = 'button'; prepare.className = 'guide-prepare'; prepare.textContent = 'Prepare detailed task';
+    prepare.addEventListener('click', () => startGuideTask(id)); $('detail').appendChild(prepare);
+  }
+  appendWorkflowReview(node);
+  if (!guide && node.kind !== 'mission') {
     const section = document.createElement('p'); section.textContent = 'Code explanations were not captured in this snapshot. Re-scan the current project to include them.'; $('detail').appendChild(section);
   }
   for (const file of guide?.files || []) {
@@ -420,7 +423,7 @@ function renderCodeGuide(id) {
       });
       const where = `${file.path}:${fn.line}:${fn.column}`;
       details.innerHTML = `<summary>${escapeHtml(fn.name)} · ${escapeHtml(where)}</summary>
-        <p>${escapeHtml(fn.summary)} ${fn.exported ? 'Declared as an export.' : 'Not declared as an ES-module export.'} ${fn.async ? 'Declared async.' : ''} ${fn.generator ? 'Declared as a generator.' : ''}</p>
+        <p>${escapeHtml(fn.summary)} ${fn.language === 'Python' ? 'Python source syntax.' : fn.exported ? 'Declared as an export.' : 'Not declared as an ES-module export.'} ${fn.async ? 'Declared async.' : ''} ${fn.generator ? 'Declared as a generator.' : ''}</p>
         <h4>Inputs declared by the function</h4><p>${fn.parameters.length ? fn.parameters.map(escapeHtml).join('; ') : 'No parameters declared. This does not mean the function has no other inputs or dependencies.'}</p>
         <h4>What its return expressions describe</h4>${fn.returns.length ? fn.returns.map(r => `<p>${escapeHtml(`${file.path}:${r.line}:${r.column}`)} · ${escapeHtml(r.summary)}</p>${r.fields ? `<ul>${r.fields.map(f => `<li>${escapeHtml(f.name)}: ${escapeHtml(f.summary)}</li>`).join('')}</ul>` : ''}`).join('') : '<p>No explicit return site found. This does not establish its effects, outputs or successful completion.</p>'}
         <h4>Calls written inside this function</h4>${fn.calls.length ? `<ul>${fn.calls.map(c => `<li>${escapeHtml(c.target)} · ${escapeHtml(`${file.path}:${c.line}:${c.column}`)} · ${c.argumentCount} argument expressions${c.arguments?.length ? `: ${c.arguments.map(escapeHtml).join('; ')}` : ''}${c.resolution === 'same-file-function' ? ` · uniquely bound function declaration at ${escapeHtml(`${file.path}:${c.targetLocation.line}:${c.targetLocation.column}`)}` : ' · target not resolved'}${c.kind === 'construction' ? ' · constructor syntax' : ''}</li>`).join('')}</ul>` : '<p>No call/construction site found in this function body. Nested function bodies are excluded.</p>'}
@@ -456,6 +459,75 @@ function renderCodeGuide(id) {
   limits.innerHTML = `<h3>What this explanation covers</h3><ul>${(guide?.limitations || ['Only captured source descriptions are available; there is no runtime observation.']).map(text => `<li>${escapeHtml(text)}</li>`).join('')}</ul>`;
   $('detail').appendChild(limits);
   appendFinishedProduct();
+}
+
+function appendWorkflowReview(node) {
+  const workflow = model.workflow;
+  if (!workflow) return;
+  const all = node.kind === 'mission';
+  const calculations = workflow.calculations.filter(c => all || node.files.includes(c.source.path));
+  const ids = new Set(calculations.map(c => c.id));
+  const findings = workflow.findings.filter(f => all || f.calculationIds.some(id => ids.has(id)));
+  const files = workflow.files.filter(f => all || node.files.includes(f.path));
+  if (!all && !files.length) return;
+  const fingerprint = model.fingerprint;
+  const panel = document.createElement('section'); panel.className = 'detail-section workflow-review';
+  panel.innerHTML = `<h3>Before you run · Python risk review</h3>
+    <p>${all ? 'Project-wide' : 'This piece’s'} static review: ${files.filter(f => f.status === 'parsed').length}/${files.length} Python files parsed; ${findings.length} review finding(s). No findings is not clearance to run. Actual jobs, pair comparisons, reads, remaining work and savings are unknown.</p>
+    ${files.map(f => `<p>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</p>`).join('')}
+    <p>Source locations below open their captured calculation. Read-only analysis does not launch or modify this project.</p>`;
+  const sourceButtons = (section, sources) => {
+    for (const source of sources) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-source';
+      button.textContent = `Inspect ${source.path}:${source.line}:${source.column}`;
+      button.title = `Captured SHA-256: ${source.sourceHash}`;
+      button.addEventListener('click', () => {
+        if (model.fingerprint !== fingerprint) return;
+        const owner = model.nodes.find(n => n.kind !== 'mission' && n.files.includes(source.path));
+        if (!owner) return;
+        selectedId = owner.id; guidePieceId = owner.id; renderCodeGuide(owner.id);
+        const fn = owner.codeGuide?.files.find(f => f.path === source.path)?.functions
+          .filter(f => f.line <= source.line && f.endLine >= source.line).sort((a,b) => (a.endLine - a.line) - (b.endLine - b.line))[0];
+        const key = fn && JSON.stringify([owner.id, source.path, source.sourceHash, fn.line, fn.column]);
+        const target = taskControls().find(el => el.dataset.guideControl === key);
+        if (target) { target.open = true; guideOpenFunctions.add(key); target.scrollIntoView({ block: 'nearest' }); target.focus({ preventScroll: true }); }
+      }); section.appendChild(button);
+    }
+  };
+  for (const finding of findings) {
+    const section = document.createElement('details'); section.className = 'workflow-finding';
+    section.innerHTML = `<summary>${escapeHtml(finding.confidence)} · ${escapeHtml(finding.title)}</summary>
+      <p>${escapeHtml(finding.severity)} · ${escapeHtml(finding.confidenceRationale)}</p>
+      <h4>Why review this?</h4><p>${escapeHtml(finding.impact)}</p>
+      ${finding.workload ? `<p>Literal-range potential inner iterations: ${escapeHtml(finding.workload.potentialIterations ?? 'unknown')}. This assumes all written iterations reach the inner body; actual jobs and pair comparisons remain unknown.</p>` : ''}
+      <h4>Safe next step</h4><p>${escapeHtml(finding.suggestedAction)}</p>
+      <h4>Correctness tradeoff</h4><p>${escapeHtml(finding.correctnessTradeoff)}</p>
+      <h4>Validation required</h4><ul>${finding.requiredVerification.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>
+      <h4>Existing reuse cues to inspect</h4>${finding.reuseCues.length ? `<ul>${finding.reuseCues.map(c => `<li>${escapeHtml(c.expression)} · ${escapeHtml(c.basis)} · ${escapeHtml(`${c.source.path}:${c.source.line}:${c.source.column}`)}</li>`).join('')}</ul>` : '<p>No supported cue found in the affected calculation. Caching/restart elsewhere is still unknown.</p>'}
+      <details><summary>Source identity and finding JSON</summary><pre>${escapeHtml(JSON.stringify(finding, null, 2))}</pre></details>`;
+    sourceButtons(section, finding.sources); panel.appendChild(section);
+  }
+  for (const calc of calculations) {
+    const section = document.createElement('details'); section.className = 'workflow-calculation';
+    section.innerHTML = `<summary>What is ${escapeHtml(calc.name)} building? · ${escapeHtml(`${calc.source.path}:${calc.source.line}`)}</summary>
+      <p>${escapeHtml(calc.purpose)}</p><h4>Why does this run?</h4><p>${escapeHtml(calc.why)}</p>
+      <p>Declared inputs: ${escapeHtml(calc.inputs.join(', ') || 'none; other dependencies may exist')}.</p>
+      <p>Return expressions: ${escapeHtml(calc.outputs.map(o => o.summary).join('; ') || 'none found; side effects may exist')}.</p>
+      <h4>Assignments and transformations written in this scope</h4>${calc.transformations.length ? `<ul>${calc.transformations.map(t => `<li>${escapeHtml(t.summary)} · line ${t.source.line}</li>`).join('')}</ul>` : '<p>No supported assignment syntax found; calls and other effects may exist.</p>'}
+      <h4>Possible file inputs / outputs / saved state</h4>${calc.io.length ? `<ul>${calc.io.map(io => `<li>${escapeHtml(io.operation)} ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} · line ${io.source.line}. Written call syntax; schema, coverage and checkpoint identity unknown.</li>`).join('')}</ul>` : '<p>No supported literal file I/O found. Dynamic paths and other storage remain unknown.</p>'}`;
+    sourceButtons(section, [calc.source]); panel.appendChild(section);
+  }
+  const products = workflow.dataProducts.filter(p => all || [...p.producers, ...p.consumers].some(s => ids.has(s.calculationId)));
+  for (const product of products) {
+    const section = document.createElement('details'); section.className = 'workflow-product';
+    const names = sites => sites.map(s => workflow.calculations.find(c => c.id === s.calculationId)?.name || s.calculationId).join(', ') || 'unknown / not found';
+    section.innerHTML = `<summary>Possible shared product: ${escapeHtml(product.pathExpression)}</summary>
+      <p>Producers: ${escapeHtml(names(product.producers))}. Consumers: ${escapeHtml(names(product.consumers))}.</p>
+      <p>Exact literal path match only. Runtime path, calculation identity, source identity, fields, axes, retention, checkpoint compatibility and actual reuse are unknown.</p>`;
+    sourceButtons(section, [...product.producers, ...product.consumers].map(s => s.source)); panel.appendChild(section);
+  }
+  const limits = document.createElement('details'); limits.innerHTML = `<summary>Coverage and uncertainty</summary><ul>${workflow.limitations.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
+  panel.appendChild(limits); $('detail').appendChild(panel);
 }
 
 function taskControls() {

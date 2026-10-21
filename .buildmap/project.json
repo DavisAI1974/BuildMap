@@ -26,7 +26,9 @@
         "src/imports.js",
         "src/javascript.js",
         "src/outcomes.js",
-        "src/code-guide.js"
+        "src/code-guide.js",
+        "src/workflow.js",
+        "src/python-analyzer.py"
       ],
       "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior.",
       "contributes": "Turns source code into the living set of puzzle pieces.",
@@ -90,7 +92,9 @@
         "tests/export.test.js",
         "tests/inventory.test.js",
         "tests/outcomes.test.js",
-        "tests/guide-tasks.test.js"
+        "tests/guide-tasks.test.js",
+        "tests/workflow.test.js",
+        "tests/fixtures/frankie-workflow.py"
       ],
       "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
       "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",

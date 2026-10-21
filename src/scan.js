@@ -6,6 +6,7 @@ import { readIntent, readFinishedProduct } from './intent.js';
 import { sourceReferences, resolveImport } from './imports.js';
 import { buildOutcomes, buildCompletion } from './outcomes.js';
 import { CODE_GUIDE_LIMITS } from './code-guide.js';
+import { pythonGuides, buildWorkflow, WORKFLOW_LIMITS } from './workflow.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -93,7 +94,7 @@ export function scanProject(root, { source = null } = {}) {
       implementation: complete ? 'complete' : present.length ? 'partial' : 'missing',
       baseStatus: base, status: resolveStatus({ base, evidence: assessment.accepted ? receipt.status : null }),
       evidence: receipt || null, evidenceAssessment: assessment, sourceHashes,
-      codeGuide: { basis: 'source-syntax', limitations: CODE_GUIDE_LIMITS, files: fields.files.map(file =>
+      codeGuide: { basis: 'source-syntax', limitations: [...CODE_GUIDE_LIMITS.map(s => `JavaScript adapter: ${s}`), ...WORKFLOW_LIMITS], files: fields.files.map(file =>
         discovery.guides.get(file) || { path: file, status: 'missing', reason: 'No readable implementation file is present.', sourceHash: null, functions: [] }) } };
   }
 
@@ -143,6 +144,7 @@ export function scanProject(root, { source = null } = {}) {
   const result = { project: { name: manifest.name || source?.repoName || path.basename(root), root, source: source || { kind: 'local', snapshot: false }, mode, intent, finishedProduct, completion: completionMap.completion, progress,
     progressLabel: 'Evidence index', counts, uncertainty: intent.confidence === 'unknown' ? ['Intent is unknown; interview recommended.'] : [] },
     states: STATES, nodes, edges: uniqueEdges(edges), outcomes: outcomeMap.outcomes, gaps, diagnostics,
+    workflow: buildWorkflow(discovery.guides),
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,
       dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], javascriptParser: 'acorn', httpAdapter: 'literal-fetch/node-http-path', heuristic: true },
     generatedAt: new Date().toISOString() };
@@ -349,12 +351,12 @@ function walkFiles(root, diagnostics) {
 }
 
 function discoverImports(root, files, fileSet, diagnostics) {
-  const edges = [], requests = [], providers = [], guides = new Map();
+  const edges = [], requests = [], providers = [], guides = new Map(), pythonSources = [];
   for (const file of files) {
     const ext = path.extname(file.path).toLowerCase();
-    const supported = ['.js', '.mjs', '.cjs'].includes(ext);
+    const supported = ['.js', '.mjs', '.cjs', '.py'].includes(ext);
     const guide = { path: file.path, status: supported ? 'unreadable' : 'unsupported', sourceHash: file.hash, functions: [],
-      reason: supported ? 'Source could not be read for this explanation.' : 'Function explanations currently support JavaScript .js, .mjs and .cjs only.' };
+      reason: supported ? 'Source could not be read for this explanation.' : 'Function explanations support JavaScript .js, .mjs, .cjs and optional Python .py.' };
     guides.set(file.path, guide);
     if (supported && file.size > 1_000_000) { guide.status = 'size-limit'; guide.reason = 'Source explanation is skipped above the existing 1 MB discovery limit.'; }
     if (file.size > 1_000_000) { diagnostics.push({ code: 'large-file', message: `${file.path} is present but import discovery is skipped above 1 MB.` }); continue; }
@@ -364,6 +366,7 @@ function discoverImports(root, files, fileSet, diagnostics) {
       if (supported) {
         if (hash(bytes) !== file.hash) { guide.status = 'changed-during-scan'; guide.reason = 'Source changed while being scanned. Refresh before inspecting its functions.'; }
         else if (references.error) { guide.status = 'parse-error'; guide.reason = references.error; }
+        else if (ext === '.py') pythonSources.push({ path: file.path, source: bytes.toString('utf8') });
         else { guide.status = 'parsed'; guide.reason = 'Parsed source declarations; no code was executed.'; guide.functions = references.functions; }
       }
       if (references.error) diagnostics.push({ code: 'javascript-parse-failed', message: `${file.path}: ${references.error}` });
@@ -376,6 +379,7 @@ function discoverImports(root, files, fileSet, diagnostics) {
       }
     } catch (err) { diagnostics.push({ code: 'unreadable-file', message: `Source reference discovery failed for ${file.path}: ${err.code || err.name}.` }); }
   }
+  pythonGuides(pythonSources, guides);
   const importCount = uniqueEdges(edges).length;
   for (const request of requests) {
     const matches = providers.filter(p => (p.raw ? p.endpoint === request.rawPath : p.endpoint === request.path) && (!p.method || p.method === request.method));

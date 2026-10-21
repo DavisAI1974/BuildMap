@@ -936,3 +936,46 @@ test('the final box shows only reviewed scope completion, links its evidence and
     } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
   }
 });
+
+test('Python pre-run review navigates captured sources, escapes products, refreshes risks and preserves free proof offline/live', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'buildmap-workflow-ui-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const first = `def prepare():
+    with open('<img onerror=evil()>.csv') as source:
+        return source.read()
+def search():
+    for cell in range(99):
+        for transform in range(2):
+            with open('<img onerror=evil()>.csv') as source:
+                consume(source)
+`;
+  for (const offline of [false, true]) {
+    fs.writeFileSync(path.join(root, 'work.py'), first);
+    const map = scanProject(root), original = JSON.stringify(map), ui = await client(map, offline);
+    const controls = () => { const all = [], stack = [...ui.get('detail').children]; while (stack.length) { const el = stack.pop(); all.push(el); stack.push(...el.children); } return all; };
+    const open = id => { ui.get('nodeLayer').children.find(n => n.dataset.id === id).click(); ui.get('detail').children.find(e => e.classes.has('guide-open')).click(); };
+    open('__mission__');
+    let panel = ui.get('detail').children.find(e => e.classes.has('workflow-review'));
+    assert.match(panel.innerHTML, /Project-wide.*1\/1.*2 review finding/);
+    const read = controls().find(e => e.classes.has('workflow-finding') && e.innerHTML.includes('possible repeated reads'));
+    assert.match(read.innerHTML, /Needs runtime evidence/); assert.match(read.innerHTML, /&lt;img/); assert.doesNotMatch(read.innerHTML, /<img/);
+    const sourceButton = read.children[0]; sourceButton.click();
+    assert.match(ui.get('detail').innerHTML, /CODE PREVIEW/);
+    assert.equal(controls().find(e => e.classes.has('code-function') && e.open).innerHTML.includes('prepare'), true);
+    assert.ok(controls().find(e => e.classes.has('workflow-product')));
+    assert.equal(JSON.stringify(map), original);
+    if (!offline) {
+      fs.writeFileSync(path.join(root, 'work.py'), 'def search():\n    return 1\n');
+      ui.setModel(scanProject(root)); await ui.refresh();
+      panel = ui.get('detail').children.find(e => e.classes.has('workflow-review'));
+      assert.match(panel.innerHTML, /0 review finding/);
+      assert.equal(controls().some(e => e.classes.has('workflow-finding')), false);
+      sourceButton.click(); // A detached source from the previous identity is inert.
+      assert.equal(controls().some(e => e.classes.has('code-function') && e.open), false);
+      ui.fail(true); await ui.refresh(); assert.match(ui.get('refreshStatus').textContent, /could not|failed|unavailable/i);
+    } else assert.deepEqual(ui.counts(), { requests: 0, polls: 0 });
+    ui.get('detail').children.find(e => e.classes.has('guide-back')).click();
+    assert.match(ui.get('detail').innerHTML, /PIECE INSPECTOR/);
+    assert.equal(ui.get('mapShell').hidden, false); assert.equal(map.project.counts.verified, 0); assert.equal(map.project.counts.live, 0);
+  }
+});

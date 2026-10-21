@@ -48,3 +48,12 @@ def checkpoint_unknown():
     # The filename alone cannot establish this checkpoint's source identity.
     with open('saved-checkpoint.json') as stream:
         return stream.read()
+
+
+class Workflow:
+    def jobs(self, cells, transforms, series):
+        return [(cell, tx, x) for cell in cells for tx in transforms
+                for x in series if eligible(x)]
+
+    def advance(self, stage, day):
+        return getattr(self, stage)(day)

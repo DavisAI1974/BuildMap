@@ -1,4 +1,4 @@
-Current private Frankie development work is described in [the October 21 roadmap review](docs/FRANKIE_ROADMAP_REVIEW_20261021.md). It adds the initial Python calculation/risk slice with 115 current Node tests and seven scoped browser checks. Earlier completion/browser descriptions below describe the PR baseline; the private branch’s broader completion scope is pending.
+Current private Frankie development work is described in [the October 21 roadmap review](docs/FRANKIE_ROADMAP_REVIEW_20261021.md). It adds the initial Python calculation/risk slice with 119 current Node tests and eight scoped browser checks. Earlier completion/browser descriptions below describe the PR baseline; the private branch’s broader completion scope is pending.
 
 # BuildMap stage and remaining gaps
 

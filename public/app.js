@@ -392,7 +392,7 @@ function renderCodeGuide(id) {
   const guide = node.codeGuide;
   const capturedFingerprint = model.fingerprint, visibleKeys = new Set();
   $('detail').innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · CODE PREVIEW</div><h2>${escapeHtml(node.name)}</h2>
-    <p>See what the source declares: inputs, return expressions, and calls written inside its top-level functions. Python inspection also shows possible file products and pre-run risks. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
+    <p>See what the source declares: inputs, return expressions, and calls written inside its supported functions. Python inspection includes direct class methods, comprehension expansion, possible file products and pre-run risks. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
     <p>${escapeHtml(node.purpose)} This is the piece’s recorded purpose; the source descriptions below do not verify it.</p>
     <p>This is the first Guide capability available for MVP review. Billing and the wider coaching/review loop are not built.</p>
     <p>${snapshot ? 'Captured code reading · this snapshot does not follow later edits.' : 'Current source reading · follows local refresh.'} ${$('refreshStatus').classList.contains('stale') ? 'Refresh failed; this is the last captured source.' : ''}</p>`;
@@ -446,7 +446,7 @@ function renderCodeGuide(id) {
       section.appendChild(details);
     }
     if (file.status === 'parsed' && !file.functions.length) {
-      const empty = document.createElement('p'); empty.textContent = 'No top-level function declaration or assigned function was found within the supported scope. This does not mean the file has no behavior.'; section.appendChild(empty);
+      const empty = document.createElement('p'); empty.textContent = 'No supported function or module-body scope was found. This does not mean the file has no behavior.'; section.appendChild(empty);
     }
     $('detail').appendChild(section);
   }
@@ -475,6 +475,7 @@ function appendWorkflowReview(node) {
   panel.innerHTML = `<h3>Before you run · Python risk review</h3>
     <p>${all ? 'Project-wide' : 'This piece’s'} static review: ${files.filter(f => f.status === 'parsed').length}/${files.length} Python files parsed; ${findings.length} review finding(s). No findings is not clearance to run. Actual jobs, pair comparisons, reads, remaining work and savings are unknown.</p>
     ${files.map(f => `<p>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</p>`).join('')}
+    ${workflow.scope?.unavailableFiles?.length ? `<p>Requested files unavailable for Python analysis: ${workflow.scope.unavailableFiles.map(escapeHtml).join(', ')}.</p>` : ''}
     <p>Source locations below open their captured calculation. Read-only analysis does not launch or modify this project.</p>`;
   const sourceButtons = (section, sources) => {
     for (const source of sources) {
@@ -514,6 +515,7 @@ function appendWorkflowReview(node) {
       <p>Declared inputs: ${escapeHtml(calc.inputs.join(', ') || 'none; other dependencies may exist')}.</p>
       <p>Return expressions: ${escapeHtml(calc.outputs.map(o => o.summary).join('; ') || 'none found; side effects may exist')}.</p>
       <h4>Assignments and transformations written in this scope</h4>${calc.transformations.length ? `<ul>${calc.transformations.map(t => `<li>${escapeHtml(t.summary)} · line ${t.source.line}</li>`).join('')}</ul>` : '<p>No supported assignment syntax found; calls and other effects may exist.</p>'}
+      ${(calc.comprehensions || []).length ? `<h4>Comprehension expansion</h4><ul>${calc.comprehensions.map(c => `<li>${escapeHtml(c.kind)} · ${escapeHtml(c.evaluation)} · ${escapeHtml(c.axes.map(a => `${a.target} in ${a.iterable}${a.filters.length ? ` if ${a.filters.join(' and ')}` : ''}`).join(' × '))} · line ${c.source.line}. Actual jobs, pairs and allocation unknown.</li>`).join('')}</ul>` : ''}
       <h4>Possible file inputs / outputs / saved state</h4>${calc.io.length ? `<ul>${calc.io.map(io => `<li>${escapeHtml(io.operation)} ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} · line ${io.source.line}. Written call syntax; schema, coverage and checkpoint identity unknown.</li>`).join('')}</ul>` : '<p>No supported literal file I/O found. Dynamic paths and other storage remain unknown.</p>'}`;
     sourceButtons(section, [calc.source]); panel.appendChild(section);
   }

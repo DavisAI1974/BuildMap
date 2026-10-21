@@ -69,7 +69,7 @@ test('fan-out separates symbolic dimensions and literal potential iterations fro
   assert.equal(w.dataProducts.find(p => p.pathExpression === 'saved-checkpoint.json').compatibility, 'unknown');
 });
 
-test('comments, strings, dynamic reads, shadowed imports and excluded scopes do not invent read findings', t => {
+test('comments, strings, dynamic reads, shadowed imports and nested scopes do not invent read findings', t => {
   const root = fixture(t, `import pandas as pd
 # pd.read_csv('fake.csv')
 text = "pd.read_csv('fake.csv')"
@@ -82,10 +82,6 @@ def outer():
     def inner():
         open('nested.csv')
         open('nested.csv')
-class Reader:
-    def read(self):
-        open('method.csv')
-        open('method.csv')
 `);
   const w = scanProject(root).workflow;
   assert.deepEqual(w.dataProducts, []); assert.deepEqual(w.findings, []);
@@ -174,4 +170,90 @@ test('live API, CLI JSON and self-contained exports carry the same risk records 
   const html = snapshotHtml(map);
   assert.ok(html.includes('nested-loop-fanout')); assert.ok(html.includes('Before you run'));
   assert.equal((await fetch(url.replace('/api/map', '/workflow.py'))).status, 404);
+});
+
+test('eager and deferred comprehensions expose axes and filters without claiming jobs, pairs or generator execution', t => {
+  const root = fixture(t, `raise RuntimeError('never execute this fixture')
+def build_jobs(cells, transforms, series):
+    return [(cell, tx, x) for cell in cells for tx in transforms for x in series if eligible(x)]
+def defer(cells, series):
+    return (open('deferred.csv') for cell in cells for x in series)
+def formats():
+    pairs = {(x, y) for x in range(2) for y in range(3) if False}
+    return {(x, y): x for x in range(2) for y in range(x)}
+`);
+  const w = scanProject(root).workflow;
+  const findings = w.findings.filter(f => f.type === 'comprehension-fanout');
+  assert.equal(findings.length, 4);
+  const eager = findings.find(f => f.title.startsWith('build_jobs:'));
+  assert.equal(eager.workload.symbolic, 'cells × transforms × series');
+  assert.equal(eager.workload.evaluation, 'eager-container');
+  assert.deepEqual(eager.workload.filters, ['eligible(x)']);
+  assert.equal(eager.workload.potentialIterations, null);
+  const generator = findings.find(f => f.title.startsWith('defer:'));
+  assert.equal(generator.workload.evaluation, 'deferred-expression');
+  assert.match(generator.impact, /may never be consumed/);
+  assert.equal(w.dataProducts.some(p => p.pathExpression === 'deferred.csv'), false);
+  assert.equal(w.calculations.find(c => c.name === 'defer').calls.some(c => c.target === 'open'), false);
+  assert.equal(findings.find(f => f.title.includes('SetComp')).workload.potentialIterations, '6');
+  assert.equal(findings.find(f => f.title.includes('DictComp')).workload.potentialIterations, null);
+  for (const f of findings) {
+    assert.equal(f.workload.actualJobs, null); assert.equal(f.workload.pairComparisons, null); assert.equal(f.workload.remainingJobs, null);
+    assert.ok(f.sources[0].sourceHash && f.requiredVerification.length);
+  }
+});
+
+test('direct class methods expose workflow syntax while nested bodies, inheritance and dispatch remain unproven', t => {
+  const root = fixture(t, `class Pipeline:
+    def run(self, stages, days):
+        def hidden():
+            open('nested.csv')
+            open('nested.csv')
+        for stage in stages:
+            for day in days:
+                getattr(self, stage)(day)
+        return self.result
+    @staticmethod
+    def jobs():
+        return [(x,y) for x in range(2) for y in range(3)]
+    async def wait(self):
+        return await self.pending()
+    def stream(self):
+        yield from self.saved
+`);
+  const w = scanProject(root).workflow;
+  assert.deepEqual(w.calculations.map(c => c.name), ['Pipeline.run', 'Pipeline.jobs', 'Pipeline.wait', 'Pipeline.stream']);
+  assert.ok(w.calculations.every(c => c.scopeKind === 'method'));
+  assert.deepEqual(w.calculations[0].inputs, ['self', 'stages', 'days']);
+  assert.equal(w.dataProducts.length, 0);
+  assert.ok(w.findings.some(f => f.title.startsWith('Pipeline.run:')));
+  assert.equal(w.findings.find(f => f.title.startsWith('Pipeline.jobs:')).workload.potentialIterations, '6');
+  assert.match(w.limitations.join(' '), /inheritance\/dispatch/);
+  assert.equal(w.calculations[0].calls.some(c => c.resolution !== 'unresolved-source-reference'), false);
+  assert.equal(w.calculations.find(c => c.name === 'Pipeline.stream').generator, true);
+});
+
+test('eager comprehension reads are potential repetition; imported range names cannot ground counts', t => {
+  const root = fixture(t, `from custom import range
+def build():
+    return [open('read.csv') for x in range(2) for y in range(3)]
+`);
+  const w = scanProject(root).workflow;
+  assert.equal(w.findings.find(f => f.type === 'comprehension-fanout').workload.potentialIterations, null);
+  assert.equal(w.findings.find(f => f.type === 'potential-repeated-read').confidence, 'Needs runtime evidence');
+});
+
+test('explicit Python review scope retains all free files and imports and discloses unselected/missing files', t => {
+  const root = fixture(t, 'import other\ndef work():\n    return 1\n');
+  fs.writeFileSync(path.join(root, 'other.py'), 'def other():\n    return 2\n');
+  const full = scanProject(root), selected = scanProject(root, { workflowFiles: ['workflow.py', 'missing.py'] });
+  assert.deepEqual(selected.nodes.map(n => ({id:n.id,status:n.status,files:n.files})), full.nodes.map(n => ({id:n.id,status:n.status,files:n.files})));
+  assert.deepEqual(selected.edges, full.edges);
+  assert.equal(selected.workflow.files.find(f => f.path === 'other.py').status, 'not-selected');
+  assert.equal(selected.workflow.files.find(f => f.path === 'workflow.py').status, 'parsed');
+  assert.deepEqual(selected.workflow.scope.unavailableFiles, ['missing.py']);
+  assert.equal(selected.workflow.scope.mode, 'selected-files');
+  assert.equal(selected.workflow.calculations.some(c => c.name === 'other'), false);
+  assert.notEqual(selected.fingerprint, full.fingerprint);
+  assert.throws(() => scanProject(root, {workflowFiles:'workflow.py'}), /array/);
 });

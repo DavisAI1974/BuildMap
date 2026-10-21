@@ -2,26 +2,26 @@
   "components": {
     "intent": {
       "status": "verified",
-      "command": "npm test (115/115, Node 24.19.0, Python 3.12.14)",
-      "note": "Current implementation passed the 115-test Node suite, including nine new Python workflow/read-only/uncertainty/API/export/client regressions. This is a manually recorded local check, not authenticated CI, production behavior, full transitive coverage or continuing live use.",
-      "recordedAt": "2026-10-21T07:56:40.767984+00:00",
+      "command": "npm test (119/119, Node 24.19.0, Python 3.12.14)",
+      "note": "Current implementation passed all 119 Node tests, including isolated Python syntax review, direct class methods, eager/deferred comprehensions, exact review scope and existing free-map/evidence/API/export behavior. Local manually recorded checks; no Frankie scientific run, authenticated CI, complete transitive coverage or continuing live use is established.",
+      "recordedAt": "2026-10-21T08:08:02.710787+00:00",
       "sourceHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786"
       },
       "inputHashes": {
-        "src/scan.js": "0eb6e48ed5d708b872b5db429861a908a3782a175786edb30181f76eb3062e0c",
+        "src/scan.js": "5fbc2b7f28bff489cd9fc43c488a69e3c1731575e6664e004082edd065757c5c",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
-        "src/workflow.js": "20ed95af1ca4ac8800434337bf4ab995828d7eb0d39b49421f8a5a0555af1083",
-        "src/python-analyzer.py": "d95f640a2856028e3de891c4d4839470fa9d3f81325b4b322c691f197118a8ac",
+        "src/workflow.js": "a981586ce55c3fe9b3efeea67ba3e1c82cec5e227a274cc2986800c1241ea7be",
+        "src/python-analyzer.py": "c043cd48fd46d5a6febe3400ee25113e1ec7f740097f13bfeaf169dfce593734",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "4b9493b80f4aa25851273e7d485de3df06d1e2936968a09bc96daaf8b351c25d",
         "src/export.js": "5722354aa43df21e6ce95f162c35d3b27946efd2ec0b743682bfa5e5e5964773",
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
-        "public/app.js": "9ee0258d76f591eecac1e628e2788fe5776c7bf80eb69b4f92475c27cdc6acea",
+        "public/app.js": "036b6d3a3c27e0625ac90d811a4e3155803eae66f15abcf7ada10682d0a463d3",
         "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
         "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -32,27 +32,27 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f",
         "tests/guide-tasks.test.js": "feaef9914800538b75b5de1bdfa88e96802e03d498d5ad29bda93e67bac091ec",
-        "tests/workflow.test.js": "ead5ce60be5b2b40ead1b0f8edc2e9366438a6d33ba4d7fd96f0cc264b290e3f",
-        "tests/fixtures/frankie-workflow.py": "1d56907d4184f2d2703c301fa92de2ed4c21c533b123600078c1d5d97c29a7a5",
+        "tests/workflow.test.js": "8637f9d01d72577366b54e223a844ca1f432e169c70f97239929f8ca8254c7dd",
+        "tests/fixtures/frankie-workflow.py": "6957a270c7d27988a05e2e94604a27d8759cbe654fa01cb379541f07d8df9249",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         ".buildmap/project.json": "733e68107321ae7fce52ee6c47ccb4ee688ed8f0597b55256313a4b5ad20f5e0",
-        ".buildmap/workflow-browser-check.mjs": "6cc5f3e1bad7ea3cfe7a3815ae6d5b2b35e34ee1db15b6fb83577dd684878835"
+        ".buildmap/workflow-browser-check.mjs": "cc6bfeb8cc2f188ad5036de92ec72cdfd37ebbd907e0bc625a8b456735879a79"
       }
     },
     "scanner": {
       "status": "verified",
-      "command": "npm test (115/115, Node 24.19.0, Python 3.12.14)",
-      "note": "Current implementation passed the 115-test Node suite, including nine new Python workflow/read-only/uncertainty/API/export/client regressions. This is a manually recorded local check, not authenticated CI, production behavior, full transitive coverage or continuing live use.",
-      "recordedAt": "2026-10-21T07:56:40.768699+00:00",
+      "command": "npm test (119/119, Node 24.19.0, Python 3.12.14)",
+      "note": "Current implementation passed all 119 Node tests, including isolated Python syntax review, direct class methods, eager/deferred comprehensions, exact review scope and existing free-map/evidence/API/export behavior. Local manually recorded checks; no Frankie scientific run, authenticated CI, complete transitive coverage or continuing live use is established.",
+      "recordedAt": "2026-10-21T08:08:02.711791+00:00",
       "sourceHashes": {
-        "src/scan.js": "0eb6e48ed5d708b872b5db429861a908a3782a175786edb30181f76eb3062e0c",
+        "src/scan.js": "5fbc2b7f28bff489cd9fc43c488a69e3c1731575e6664e004082edd065757c5c",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
-        "src/workflow.js": "20ed95af1ca4ac8800434337bf4ab995828d7eb0d39b49421f8a5a0555af1083",
-        "src/python-analyzer.py": "d95f640a2856028e3de891c4d4839470fa9d3f81325b4b322c691f197118a8ac"
+        "src/workflow.js": "a981586ce55c3fe9b3efeea67ba3e1c82cec5e227a274cc2986800c1241ea7be",
+        "src/python-analyzer.py": "c043cd48fd46d5a6febe3400ee25113e1ec7f740097f13bfeaf169dfce593734"
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
@@ -61,7 +61,7 @@
         "src/export.js": "5722354aa43df21e6ce95f162c35d3b27946efd2ec0b743682bfa5e5e5964773",
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
-        "public/app.js": "9ee0258d76f591eecac1e628e2788fe5776c7bf80eb69b4f92475c27cdc6acea",
+        "public/app.js": "036b6d3a3c27e0625ac90d811a4e3155803eae66f15abcf7ada10682d0a463d3",
         "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
         "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -72,19 +72,19 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f",
         "tests/guide-tasks.test.js": "feaef9914800538b75b5de1bdfa88e96802e03d498d5ad29bda93e67bac091ec",
-        "tests/workflow.test.js": "ead5ce60be5b2b40ead1b0f8edc2e9366438a6d33ba4d7fd96f0cc264b290e3f",
-        "tests/fixtures/frankie-workflow.py": "1d56907d4184f2d2703c301fa92de2ed4c21c533b123600078c1d5d97c29a7a5",
+        "tests/workflow.test.js": "8637f9d01d72577366b54e223a844ca1f432e169c70f97239929f8ca8254c7dd",
+        "tests/fixtures/frankie-workflow.py": "6957a270c7d27988a05e2e94604a27d8759cbe654fa01cb379541f07d8df9249",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         ".buildmap/project.json": "733e68107321ae7fce52ee6c47ccb4ee688ed8f0597b55256313a4b5ad20f5e0",
-        ".buildmap/workflow-browser-check.mjs": "6cc5f3e1bad7ea3cfe7a3815ae6d5b2b35e34ee1db15b6fb83577dd684878835"
+        ".buildmap/workflow-browser-check.mjs": "cc6bfeb8cc2f188ad5036de92ec72cdfd37ebbd907e0bc625a8b456735879a79"
       }
     },
     "server": {
       "status": "verified",
-      "command": "npm test (115/115, Node 24.19.0, Python 3.12.14)",
-      "note": "Current implementation passed the 115-test Node suite, including nine new Python workflow/read-only/uncertainty/API/export/client regressions. This is a manually recorded local check, not authenticated CI, production behavior, full transitive coverage or continuing live use.",
-      "recordedAt": "2026-10-21T07:56:40.769458+00:00",
+      "command": "npm test (119/119, Node 24.19.0, Python 3.12.14)",
+      "note": "Current implementation passed all 119 Node tests, including isolated Python syntax review, direct class methods, eager/deferred comprehensions, exact review scope and existing free-map/evidence/API/export behavior. Local manually recorded checks; no Frankie scientific run, authenticated CI, complete transitive coverage or continuing live use is established.",
+      "recordedAt": "2026-10-21T08:08:02.712402+00:00",
       "sourceHashes": {
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "4b9493b80f4aa25851273e7d485de3df06d1e2936968a09bc96daaf8b351c25d",
@@ -93,15 +93,15 @@
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
-        "src/scan.js": "0eb6e48ed5d708b872b5db429861a908a3782a175786edb30181f76eb3062e0c",
+        "src/scan.js": "5fbc2b7f28bff489cd9fc43c488a69e3c1731575e6664e004082edd065757c5c",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
-        "src/workflow.js": "20ed95af1ca4ac8800434337bf4ab995828d7eb0d39b49421f8a5a0555af1083",
-        "src/python-analyzer.py": "d95f640a2856028e3de891c4d4839470fa9d3f81325b4b322c691f197118a8ac",
+        "src/workflow.js": "a981586ce55c3fe9b3efeea67ba3e1c82cec5e227a274cc2986800c1241ea7be",
+        "src/python-analyzer.py": "c043cd48fd46d5a6febe3400ee25113e1ec7f740097f13bfeaf169dfce593734",
         "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
-        "public/app.js": "9ee0258d76f591eecac1e628e2788fe5776c7bf80eb69b4f92475c27cdc6acea",
+        "public/app.js": "036b6d3a3c27e0625ac90d811a4e3155803eae66f15abcf7ada10682d0a463d3",
         "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
         "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -112,34 +112,34 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f",
         "tests/guide-tasks.test.js": "feaef9914800538b75b5de1bdfa88e96802e03d498d5ad29bda93e67bac091ec",
-        "tests/workflow.test.js": "ead5ce60be5b2b40ead1b0f8edc2e9366438a6d33ba4d7fd96f0cc264b290e3f",
-        "tests/fixtures/frankie-workflow.py": "1d56907d4184f2d2703c301fa92de2ed4c21c533b123600078c1d5d97c29a7a5",
+        "tests/workflow.test.js": "8637f9d01d72577366b54e223a844ca1f432e169c70f97239929f8ca8254c7dd",
+        "tests/fixtures/frankie-workflow.py": "6957a270c7d27988a05e2e94604a27d8759cbe654fa01cb379541f07d8df9249",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         ".buildmap/project.json": "733e68107321ae7fce52ee6c47ccb4ee688ed8f0597b55256313a4b5ad20f5e0",
-        ".buildmap/workflow-browser-check.mjs": "6cc5f3e1bad7ea3cfe7a3815ae6d5b2b35e34ee1db15b6fb83577dd684878835"
+        ".buildmap/workflow-browser-check.mjs": "cc6bfeb8cc2f188ad5036de92ec72cdfd37ebbd907e0bc625a8b456735879a79"
       }
     },
     "visualizer": {
       "status": "verified",
-      "command": "npm test (115/115, Node 24.19.0, Python 3.12.14); scoped .buildmap/workflow-browser-check.mjs (7/7, Chromium 154.0.8037.57)",
-      "note": "Current implementation passed the 115-test Node suite, including nine new Python workflow/read-only/uncertainty/API/export/client regressions. This is a manually recorded local check, not authenticated CI, production behavior, full transitive coverage or continuing live use. Seven scoped synthetic browser checks also cover risk review, source navigation, escaping, 390px width, free inspector return, captured export, refresh and parser failure. Earlier broader browser/MVP scope is not renewed by these checks.",
-      "recordedAt": "2026-10-21T07:56:40.770074+00:00",
+      "command": "npm test (119/119, Node 24.19.0, Python 3.12.14); scoped .buildmap/workflow-browser-check.mjs (8/8, Chromium 154.0.8037.57)",
+      "note": "Current implementation passed all 119 Node tests, including isolated Python syntax review, direct class methods, eager/deferred comprehensions, exact review scope and existing free-map/evidence/API/export behavior. Local manually recorded checks; no Frankie scientific run, authenticated CI, complete transitive coverage or continuing live use is established. Eight synthetic Chromium checks cover class-method/comprehension rendering and source navigation, risk review, escaping, 390px width, free inventory return, offline export, refresh and parse failure. This does not renew the separate broader whole-MVP completion scope.",
+      "recordedAt": "2026-10-21T08:08:02.712901+00:00",
       "sourceHashes": {
         "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
-        "public/app.js": "9ee0258d76f591eecac1e628e2788fe5776c7bf80eb69b4f92475c27cdc6acea",
+        "public/app.js": "036b6d3a3c27e0625ac90d811a4e3155803eae66f15abcf7ada10682d0a463d3",
         "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
         "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d"
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
-        "src/scan.js": "0eb6e48ed5d708b872b5db429861a908a3782a175786edb30181f76eb3062e0c",
+        "src/scan.js": "5fbc2b7f28bff489cd9fc43c488a69e3c1731575e6664e004082edd065757c5c",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
-        "src/workflow.js": "20ed95af1ca4ac8800434337bf4ab995828d7eb0d39b49421f8a5a0555af1083",
-        "src/python-analyzer.py": "d95f640a2856028e3de891c4d4839470fa9d3f81325b4b322c691f197118a8ac",
+        "src/workflow.js": "a981586ce55c3fe9b3efeea67ba3e1c82cec5e227a274cc2986800c1241ea7be",
+        "src/python-analyzer.py": "c043cd48fd46d5a6febe3400ee25113e1ec7f740097f13bfeaf169dfce593734",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "4b9493b80f4aa25851273e7d485de3df06d1e2936968a09bc96daaf8b351c25d",
         "src/export.js": "5722354aa43df21e6ce95f162c35d3b27946efd2ec0b743682bfa5e5e5964773",
@@ -152,19 +152,19 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f",
         "tests/guide-tasks.test.js": "feaef9914800538b75b5de1bdfa88e96802e03d498d5ad29bda93e67bac091ec",
-        "tests/workflow.test.js": "ead5ce60be5b2b40ead1b0f8edc2e9366438a6d33ba4d7fd96f0cc264b290e3f",
-        "tests/fixtures/frankie-workflow.py": "1d56907d4184f2d2703c301fa92de2ed4c21c533b123600078c1d5d97c29a7a5",
+        "tests/workflow.test.js": "8637f9d01d72577366b54e223a844ca1f432e169c70f97239929f8ca8254c7dd",
+        "tests/fixtures/frankie-workflow.py": "6957a270c7d27988a05e2e94604a27d8759cbe654fa01cb379541f07d8df9249",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         ".buildmap/project.json": "733e68107321ae7fce52ee6c47ccb4ee688ed8f0597b55256313a4b5ad20f5e0",
-        ".buildmap/workflow-browser-check.mjs": "6cc5f3e1bad7ea3cfe7a3815ae6d5b2b35e34ee1db15b6fb83577dd684878835"
+        ".buildmap/workflow-browser-check.mjs": "cc6bfeb8cc2f188ad5036de92ec72cdfd37ebbd907e0bc625a8b456735879a79"
       }
     },
     "verification": {
       "status": "verified",
-      "command": "npm test (115/115, Node 24.19.0, Python 3.12.14)",
-      "note": "Current implementation passed the 115-test Node suite, including nine new Python workflow/read-only/uncertainty/API/export/client regressions. This is a manually recorded local check, not authenticated CI, production behavior, full transitive coverage or continuing live use.",
-      "recordedAt": "2026-10-21T07:56:40.771182+00:00",
+      "command": "npm test (119/119, Node 24.19.0, Python 3.12.14)",
+      "note": "Current implementation passed all 119 Node tests, including isolated Python syntax review, direct class methods, eager/deferred comprehensions, exact review scope and existing free-map/evidence/API/export behavior. Local manually recorded checks; no Frankie scientific run, authenticated CI, complete transitive coverage or continuing live use is established.",
+      "recordedAt": "2026-10-21T08:08:02.713408+00:00",
       "sourceHashes": {
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
         "tests/intent.test.js": "b0f3b5c2c5dd3b70e179fd437b1844023bac3348756f874a0fad3ad87bea592a",
@@ -174,30 +174,30 @@
         "tests/inventory.test.js": "a0b48f13951b41f35e9f3f6d72ac1660e86225887713f98ff371b8c024c83af7",
         "tests/outcomes.test.js": "98bbf9eaac1cfb676b6e17a7790505ae1f3c5a7e1fe18c45c031e2b9eac44b1f",
         "tests/guide-tasks.test.js": "feaef9914800538b75b5de1bdfa88e96802e03d498d5ad29bda93e67bac091ec",
-        "tests/workflow.test.js": "ead5ce60be5b2b40ead1b0f8edc2e9366438a6d33ba4d7fd96f0cc264b290e3f",
-        "tests/fixtures/frankie-workflow.py": "1d56907d4184f2d2703c301fa92de2ed4c21c533b123600078c1d5d97c29a7a5"
+        "tests/workflow.test.js": "8637f9d01d72577366b54e223a844ca1f432e169c70f97239929f8ca8254c7dd",
+        "tests/fixtures/frankie-workflow.py": "6957a270c7d27988a05e2e94604a27d8759cbe654fa01cb379541f07d8df9249"
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
-        "src/scan.js": "0eb6e48ed5d708b872b5db429861a908a3782a175786edb30181f76eb3062e0c",
+        "src/scan.js": "5fbc2b7f28bff489cd9fc43c488a69e3c1731575e6664e004082edd065757c5c",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "739de66bf8e2ccfa0c147ea779a162ee3afc32fc415b3febeb865d185fead020",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
         "src/code-guide.js": "c597447859a517ca24a5c5d340cab784d434d8b8b2f9d38d9ddce4014eb8b632",
-        "src/workflow.js": "20ed95af1ca4ac8800434337bf4ab995828d7eb0d39b49421f8a5a0555af1083",
-        "src/python-analyzer.py": "d95f640a2856028e3de891c4d4839470fa9d3f81325b4b322c691f197118a8ac",
+        "src/workflow.js": "a981586ce55c3fe9b3efeea67ba3e1c82cec5e227a274cc2986800c1241ea7be",
+        "src/python-analyzer.py": "c043cd48fd46d5a6febe3400ee25113e1ec7f740097f13bfeaf169dfce593734",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "4b9493b80f4aa25851273e7d485de3df06d1e2936968a09bc96daaf8b351c25d",
         "src/export.js": "5722354aa43df21e6ce95f162c35d3b27946efd2ec0b743682bfa5e5e5964773",
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "public/index.html": "20e9ab4121d19083448a277f874fd6c87577fdfae8d5e9227e4b830f5d26e490",
-        "public/app.js": "9ee0258d76f591eecac1e628e2788fe5776c7bf80eb69b4f92475c27cdc6acea",
+        "public/app.js": "036b6d3a3c27e0625ac90d811a4e3155803eae66f15abcf7ada10682d0a463d3",
         "public/styles.css": "83f60ea3f7e94802771d1b509e48fa46538c4d60518819e0e1c3159df448632f",
         "public/guide-tasks.js": "934a2da0836700a4e05375f0aceb6ec9daebb49d1c2497b1da4081fe2de8b62d",
         "package.json": "cabf922a14a035bbc4fa5e2242d1dfae074a7040f63e5eef0748f10c30360fb1",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
         ".buildmap/project.json": "733e68107321ae7fce52ee6c47ccb4ee688ed8f0597b55256313a4b5ad20f5e0",
-        ".buildmap/workflow-browser-check.mjs": "6cc5f3e1bad7ea3cfe7a3815ae6d5b2b35e34ee1db15b6fb83577dd684878835"
+        ".buildmap/workflow-browser-check.mjs": "cc6bfeb8cc2f188ad5036de92ec72cdfd37ebbd907e0bc625a8b456735879a79"
       }
     }
   }

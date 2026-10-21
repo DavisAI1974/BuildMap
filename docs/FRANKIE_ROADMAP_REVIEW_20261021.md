@@ -25,7 +25,7 @@ Existing = the acceptance scope is met; Partial = useful related implementation 
 
 ## Bounded first slice
 
-Extend the existing scanner and Guide panel, without introducing a competing mapper. Use an optional isolated Python standard-library AST parser; pass captured source bytes, never import or run target code. Keep missing Python, parse failures, size limits and changed source explicit. Extract top-level function and module-body syntax, arguments/returns, loops, calls, and supported literal file I/O. Correlate exact path expressions only as possible products: a matching filename is not compatible saved state, a table schema, or verified reuse.
+Extend the existing scanner and Guide panel, without introducing a competing mapper. Use an optional isolated Python standard-library AST parser; pass captured source bytes, never import or run target code. Keep missing Python, parse failures, size limits and changed source explicit. Extract top-level function, direct class method and module-body syntax, arguments/returns, loops, comprehension axes/filters, calls, and supported literal file I/O. Correlate exact path expressions only as possible products: a matching filename is not compatible saved state, a table schema, or verified reuse.
 
 Pre-run findings cover repeated literal read sites and nested-loop fan-out. Each includes source hashes/locations, affected calculation, confidence, impact rationale, safe review action, correctness tradeoff and required runtime validation. No actual job/remaining-pair/elapsed-time/savings figures are invented. AB/BA directionality remains intact. Cache/decorator/lazy/restart names are reported as unverified cues, never proof that repetition is fixed or that a new cache is needed.
 
@@ -44,13 +44,13 @@ The roadmap's October audit figures (161 GB, 99 layers, 32/6 GB indexes) are con
 
 BM-01, BM-02, BM-03, BM-04, BM-05 and BM-12 are now **Partial**. BM-09/BM-10 remain **Partial**; BM-06/BM-07/BM-08/BM-11 remain **Missing**. No full roadmap item is claimed Existing yet. BM-12 has synthetic regression coverage, not a real current Frankie repository audit.
 
-- `src/python-analyzer.py`: isolated standard-library Python AST reader for module bodies/top-level functions, parameters, calls, returns, assignments, supported literal I/O and nested loops. Syntax is not a business-purpose explanation or observed execution. Python AST columns use one-based UTF-8 byte offsets.
+- `src/python-analyzer.py`: isolated standard-library Python AST reader for module bodies/top-level functions/direct class methods, parameters, calls, returns, assignments, supported literal I/O, nested loops and comprehensions. Syntax is not a business-purpose explanation or observed execution. Python AST columns use one-based UTF-8 byte offsets.
 - `src/workflow.js` and `src/scan.js`: existing scan integration, bounded optional parser, source-linked calculations, possible data products, evidence-linked warnings and explicit unknowns. The `workflow` record is included in the existing JSON/API/export snapshot, separately from the free evidence/gap contract.
 - `public/app.js`: per-piece calculation/product review and project-wide mission-card pre-run report; expandable findings, correctness/validation guidance and captured-source navigation. Existing Guide/free navigation, basic briefs and proof states stay intact.
 - `tests/fixtures/frankie-workflow.py`, `tests/workflow.test.js`, `tests/ui.test.js`: small non-executing synthetic regression pack. Tests cover possible shared preparation, 99-layer expansion, symbolic dimensions, arbitrary-precision potential iteration counts, distinct AB/BA calls, optimization cues, unknown checkpoint compatibility, false-positive suppression, stale source, parser availability/coverage limits, CLI/API/export and shared-client navigation/refresh.
 - `.buildmap/project.json`: new files belong to the existing scanner and verification pieces; no competing engine or new paid entitlement system.
 
-Validation: **115/115 Node tests pass on Node 24.19.0** with Python 3.12.14. **Seven scoped Chromium 154.0.8037.57 browser checks pass**, including project-wide review, escaped products and source navigation, 390px width, return to the free inventory, self-contained export without API/assets/polling, live source refresh and visible parse failure. No page errors. The browser driver is `.buildmap/workflow-browser-check.mjs`; Playwright is separately provisioned, not a product dependency. Example rerun:
+Validation: **119/119 Node tests pass on Node 24.19.0** with Python 3.12.14. **Eight scoped Chromium 154.0.8037.57 browser checks pass**, including project-wide review, escaped products and source navigation, 390px width, return to the free inventory, self-contained export without API/assets/polling, live source refresh and visible parse failure. No page errors. The browser driver is `.buildmap/workflow-browser-check.mjs`; Playwright is separately provisioned, not a product dependency. Example rerun:
 
 ```bash
 npm test
@@ -61,4 +61,6 @@ Node 20, the earlier full 30-case browser suite, physical devices, exhaustive ac
 
 Resume from `/workspace/BuildMap-frankie` on `private/frankie-inspector-risk-20261021`. Fetch/reconcile any newer audit work before integration; do not push this branch to the public repository if privacy is required. No evidence-history subsystem is needed. Next useful step is read-only analysis of the current Frankie source, then grounded workload counters and compatible checkpoint/reuse analysis.
 
-Current `.buildmap/evidence.json` replaces the superseded component records with the actual 115-test checks and the scoped seven-case browser observation. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
+Current `.buildmap/evidence.json` replaces the superseded component records with the actual 119-test checks and the scoped eight-case browser observation. Obsolete whole-outcome/completion claims are removed; that broader scope stays pending until observed again. No evidence archive or lineage record is added.
+
+The current one-day Frankie audit is waiting for the recent source branch. October 6 and October 14 checkouts are not used as current-run evidence. Generic class-method/comprehension/scoped-review support is built and tested; no current Frankie findings or workflow verdict is issued from those older sources.

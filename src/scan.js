@@ -14,7 +14,10 @@ const IGNORE_DIRS = new Set(['.git','node_modules','dist','build','coverage','.n
 const STATES = ['planned','coded','connected','computing','verified','live'];
 const WEIGHTS = { planned: 0, coded: 20, connected: 45, computing: 65, verified: 85, live: 100 };
 
-export function scanProject(root, { source = null } = {}) {
+export function scanProject(root, { source = null, workflowFiles = null } = {}) {
+  if (workflowFiles !== null && (!Array.isArray(workflowFiles) || workflowFiles.some(f => typeof f !== 'string'))) {
+    throw new TypeError('workflowFiles must be an array of exact project-relative Python paths.');
+  }
   root = path.resolve(root);
   const diagnostics = [];
   const manifest = readJson(root, '.buildmap/project.json', diagnostics);
@@ -38,7 +41,7 @@ export function scanProject(root, { source = null } = {}) {
     }
   }
   files.sort((a,b) => a.path.localeCompare(b.path));
-  const discovery = discoverImports(root, files, fileSet, diagnostics);
+  const discovery = discoverImports(root, files, fileSet, diagnostics, workflowFiles === null ? null : new Set(workflowFiles));
   const importEdges = discovery.edges;
   const fileHashes = new Map(files.map(f => [f.path, f.hash]));
   const inputCache = new Map();
@@ -148,6 +151,9 @@ export function scanProject(root, { source = null } = {}) {
     scan: { inventoryMode: inventory.mode, fileCount: files.length, importCount: discovery.importCount, httpReferenceCount: discovery.httpCount,
       dependencyLanguages: ['JavaScript', 'TypeScript', 'Python', 'HTML', 'CSS'], javascriptParser: 'acorn', httpAdapter: 'literal-fetch/node-http-path', heuristic: true },
     generatedAt: new Date().toISOString() };
+  result.workflow.scope = { mode: workflowFiles === null ? 'bounded-inventory' : 'selected-files',
+    requestedFiles: workflowFiles === null ? null : [...new Set(workflowFiles)].sort(),
+    unavailableFiles: workflowFiles === null ? [] : [...new Set(workflowFiles)].filter(f => !fileSet.has(f) || path.extname(f).toLowerCase() !== '.py').sort() };
   result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence: rawEvidence });
   return result;
 }
@@ -350,7 +356,7 @@ function walkFiles(root, diagnostics) {
   return out;
 }
 
-function discoverImports(root, files, fileSet, diagnostics) {
+function discoverImports(root, files, fileSet, diagnostics, workflowFiles) {
   const edges = [], requests = [], providers = [], guides = new Map(), pythonSources = [];
   for (const file of files) {
     const ext = path.extname(file.path).toLowerCase();
@@ -366,7 +372,11 @@ function discoverImports(root, files, fileSet, diagnostics) {
       if (supported) {
         if (hash(bytes) !== file.hash) { guide.status = 'changed-during-scan'; guide.reason = 'Source changed while being scanned. Refresh before inspecting its functions.'; }
         else if (references.error) { guide.status = 'parse-error'; guide.reason = references.error; }
-        else if (ext === '.py') pythonSources.push({ path: file.path, source: bytes.toString('utf8') });
+        else if (ext === '.py') {
+          if (workflowFiles && !workflowFiles.has(file.path)) {
+            guide.status = 'not-selected'; guide.reason = 'Outside the explicitly selected Python analysis files; free inventory and source imports are retained.';
+          } else pythonSources.push({ path: file.path, source: bytes.toString('utf8') });
+        }
         else { guide.status = 'parsed'; guide.reason = 'Parsed source declarations; no code was executed.'; guide.functions = references.functions; }
       }
       if (references.error) diagnostics.push({ code: 'javascript-parse-failed', message: `${file.path}: ${references.error}` });

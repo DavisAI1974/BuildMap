@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 export const WORKFLOW_LIMITS = [
   'Static Python syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
-  'First adapter covers module bodies and top-level functions. Methods, nested functions, comprehensions, dynamic paths, SQL and cross-file call/argument resolution are not analyzed.',
+  'Adapter covers module bodies, top-level functions, direct methods of top-level classes and comprehension axes/filters. Nested functions/classes, inheritance/dispatch, shell/YAML execution, dynamic paths, SQL and cross-file call/argument resolution remain unknown.',
+  'Eager comprehensions construct containers if reached; generator expressions defer their body, which may never be consumed. Neither syntax proves end-to-end lazy scheduling. Filters, dependent iterables and callers can change work. Generator-body I/O is not inferred.',
   'A literal filename match is only a possible shared product. Working directories, source identity, schema, axes, coverage, checkpoint compatibility and actual reuse are unverified.',
   'Nested loops describe possible fan-out, not a job or pair counter. Literal range products assume every iteration reaches the inner body; guards, breaks, exceptions and dependent bounds can change actual work. AB/BA equivalence is never assumed.',
   'Cache, lazy scheduler, FFT and checkpoint names/decorators are review cues only. Their presence does not prove effective reuse; their absence does not prove a cache or checkpoint is missing.',
@@ -37,17 +38,18 @@ export function pythonGuides(sources, guides) {
 
 export function buildWorkflow(guides) {
   const calculations = [], products = new Map(), findings = [];
-  const files = [...guides.values()].filter(g => g.path.endsWith('.py')).map(g => ({ path: g.path, sourceHash: g.sourceHash, status: g.status, reason: g.reason }));
+  const files = [...guides.values()].filter(g => g.path.toLowerCase().endsWith('.py')).map(g => ({ path: g.path, sourceHash: g.sourceHash, status: g.status, reason: g.reason }));
   const source = (file, item) => ({ path: file.path, sourceHash: file.sourceHash, line: item.line, column: item.column });
   for (const file of guides.values()) {
-    if (!file.path.endsWith('.py') || file.status !== 'parsed') continue;
+    if (!file.path.toLowerCase().endsWith('.py') || file.status !== 'parsed') continue;
     for (const fn of file.functions) {
       const id = `${file.path}:${fn.line}:${fn.column}`;
       const at = source(file, fn);
-      const calc = { id, name: fn.name, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
+      const calc = { id, name: fn.name, scopeKind: fn.scopeKind, generator: fn.generator, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
         calls: fn.calls, outputs: fn.returns, transformations: fn.transformations.map(t => ({ ...t, source: source(file, t) })),
         io: fn.io.map(io => ({ ...io, source: source(file, io) })),
-        loopPaths: fn.loopPaths, reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
+        loopPaths: fn.loopPaths, comprehensions: fn.comprehensions.map(c => ({ ...c, source: source(file, c) })),
+        reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
         purpose: 'Written function/module syntax; business purpose and whether this path runs need review.',
         why: 'A declaration is not proof it is called. Review entry-point wiring and runtime counters before optimizing.' };
       calculations.push(calc);
@@ -74,6 +76,19 @@ export function buildWorkflow(guides) {
           correctnessTradeoff: 'Do not remove directional AB/BA work, skip observations, or replace missing values without a proven scientific equivalence.',
           requiredVerification: ['Confirm entry point and reachable loop paths, guards, early exits and actual dimension sizes.', 'Measure jobs separately from inner pair comparisons; inspect caches, saved indexes and restart receipts.'],
           reuseCues: calc.reuseCues });
+      }
+      for (const comp of calc.comprehensions.filter(c => c.axes.length >= 2)) {
+        const literal = comp.axes.every(a => a.literalRangeCount !== null && !a.async);
+        const potentialIterations = literal ? comp.axes.reduce((n, a) => n * BigInt(a.literalRangeCount), 1n).toString() : null;
+        findings.push({ id: `comprehension:${id}:${comp.line}:${comp.column}`, type: 'comprehension-fanout', severity: 'warning', confidence: 'Likely',
+          confidenceRationale: 'Multiple comprehension axes are observed; reachability, filter selectivity, collection size and runtime impact are unknown.',
+          calculationIds: [id], sources: [comp.source], title: `${fn.name}: review ${comp.axes.length}-axis ${comp.kind} expansion`,
+          impact: `${comp.evaluation === 'eager-container' ? 'An eager container is written' : 'A deferred generator expression is written'} over ${comp.axes.map(a => a.iterable).join(' × ')}. Filters and dependent iterables can change expansion. A generator may never be consumed; callers may also materialize it.`,
+          workload: { symbolic: comp.axes.map(a => a.iterable).join(' × '), potentialIterations, actualJobs: null, pairComparisons: null, remainingJobs: null,
+            evaluation: comp.evaluation, filters: comp.axes.flatMap(a => a.filters) },
+          suggestedAction: 'Inspect the caller, existing lazy scheduler, caches and saved indexes. Measure container size, actual eligible jobs and directional pairs separately before proposing a change.',
+          correctnessTradeoff: 'Changing materialization can change evaluation timing, side effects, exceptions and restart order. Preserve filters, scientific directionality and exact saved-job identity.',
+          requiredVerification: ['Check dimension sizes, dependent bounds, filters and whether the expression is reached or consumed.', 'Measure allocation and job/pair counters; do not equate bounded dispatch with lazy upstream construction.'], reuseCues: calc.reuseCues });
       }
     }
   }

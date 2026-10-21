@@ -53,7 +53,13 @@ def analyze(source):
         tree = ast.parse(source)
     except (SyntaxError, ValueError, RecursionError) as error:
         return {"status": "parse-error", "reason": "Python source could not be parsed: " + type(error).__name__, "functions": []}
-    definitions = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    definitions = []
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            definitions.append((node.name, node, 'function'))
+        elif isinstance(node, ast.ClassDef):
+            definitions.extend((node.name + '.' + method.name, method, 'method') for method in node.body
+                               if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)))
     imports = {}
     for n in tree.body:
         if isinstance(n, ast.Import):
@@ -77,17 +83,43 @@ def analyze(source):
         def __init__(self):
             self.calls, self.returns, self.io, self.loop_paths, self.cues, self.stack, self.transformations = [], [], [], [], [], [], []
             self.conditions = self.loops = self.throws = 0
+            self.yields = 0
+            self.comprehensions = []
 
         def visit_FunctionDef(self, node):
             pass  # Nested bodies/defaults/decorators belong to a different scope.
         visit_AsyncFunctionDef = visit_FunctionDef
         visit_ClassDef = visit_FunctionDef
         visit_Lambda = visit_FunctionDef
-        # Comprehension scopes are deliberately outside this first loop adapter.
-        visit_ListComp = visit_FunctionDef
-        visit_SetComp = visit_FunctionDef
-        visit_DictComp = visit_FunctionDef
-        visit_GeneratorExp = visit_FunctionDef
+        def visit_ListComp(self, node):
+            axes = []
+            for generator in node.generators:
+                axes.append({"target": expr(generator.target), "iterable": expr(generator.iter),
+                             "filters": [expr(test) for test in generator.ifs], "async": bool(generator.is_async),
+                             "literalRangeCount": range_count(generator.iter) if 'range' not in bound and 'range' not in imports else None,
+                             **location(generator.target)})
+            self.comprehensions.append({"kind": type(node).__name__, "evaluation": 'deferred-expression' if isinstance(node, ast.GeneratorExp) else 'eager-container',
+                                        "axes": axes, **location(node)})
+            # A generator's first iterable is evaluated at construction. Its
+            # body/filters/inner iterables may never be consumed: do not turn
+            # their call sites into observed or repeated file-read findings.
+            if isinstance(node, ast.GeneratorExp):
+                self.visit(node.generators[0].iter)
+            else:
+                for generator in node.generators:
+                    self.visit(generator.iter)
+                    self.stack.append({"target": expr(generator.target), "iterable": expr(generator.iter), **location(generator.target)})
+                    for condition in generator.ifs:
+                        self.visit(condition)
+                if isinstance(node, ast.DictComp):
+                    self.visit(node.key)
+                    self.visit(node.value)
+                else:
+                    self.visit(node.elt)
+                del self.stack[-len(node.generators):]
+        visit_SetComp = visit_ListComp
+        visit_DictComp = visit_ListComp
+        visit_GeneratorExp = visit_ListComp
 
         def visit_For(self, node):
             self.loops += 1
@@ -128,6 +160,11 @@ def analyze(source):
             self.returns.append({"summary": expr(node.value), "kind": type(node.value).__name__, **location(node)})
             self.generic_visit(node)
 
+        def visit_Yield(self, node):
+            self.yields += 1
+            self.generic_visit(node)
+        visit_YieldFrom = visit_Yield
+
         def visit_Assign(self, node):
             self.transformations.append({"summary": expr(node), "kind": type(node).__name__, **location(node)})
             self.generic_visit(node)
@@ -165,24 +202,24 @@ def analyze(source):
             self.generic_visit(node)
 
     records = []
-    scopes = [(n.name, n.body, n) for n in definitions]
+    scopes = [(qualified, n.body, n, kind) for qualified, n, kind in definitions]
     module_body = [n for n in tree.body if not isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))]
     if module_body:
-        scopes.insert(0, ('<module>', module_body, None))
-    for function_name, body, fn in scopes:
+        scopes.insert(0, ('<module>', module_body, None, 'module'))
+    for function_name, body, fn, scope_kind in scopes:
         reader = Reader()
         for statement in body:
             reader.visit(statement)
         args = fn.args if fn else None
         parameters = ([a.arg for a in args.posonlyargs + args.args] + (["*" + args.vararg.arg] if args.vararg else []) + [a.arg for a in args.kwonlyargs] + (["**" + args.kwarg.arg] if args.kwarg else [])) if args else []
         decorators = [{"expression": expr(d), "basis": "decorator syntax; effect unverified", **location(d)} for d in fn.decorator_list] if fn else []
-        records.append({"name": function_name, "language": "Python", "exported": False, "async": isinstance(fn, ast.AsyncFunctionDef), "generator": False,
+        records.append({"name": function_name, "language": "Python", "scopeKind": scope_kind, "exported": False, "async": isinstance(fn, ast.AsyncFunctionDef), "generator": reader.yields > 0,
                         "parameters": parameters, "calls": reader.calls, "returns": reader.returns,
                         "conditions": reader.conditions, "loops": reader.loops, "throws": reader.throws,
                         "line": fn.lineno if fn else 1, "column": fn.col_offset + 1 if fn else 1, "endLine": fn.end_lineno if fn else len(source.splitlines()),
                         "summary": f"{function_name} declares {len(parameters)} parameters, {len(reader.calls)} call sites and {reader.loops} loop constructs. Paths and branches may never run.",
                         "io": reader.io, "loopPaths": reader.loop_paths, "reuseCues": reader.cues, "decorators": decorators,
-                        "transformations": reader.transformations})
+                        "transformations": reader.transformations, "comprehensions": reader.comprehensions})
     return {"status": "parsed", "reason": "Parsed Python source syntax using isolated standard-library AST; target code was not executed.", "functions": records}
 
 

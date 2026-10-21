@@ -28,10 +28,10 @@ try {
   await page.locator('.node[data-id="__mission__"]').click();
   await page.locator('.guide-open').click();
   await page.locator('.workflow-review').waitFor();
-  assert.match(await page.locator('.workflow-review').innerText(), /Project-wide.*1\/1.*3 review finding/s);
-  assert.equal(await page.locator('.workflow-finding').count(), 3);
+  assert.match(await page.locator('.workflow-review').innerText(), /Project-wide.*1\/1.*4 review finding/s);
+  assert.equal(await page.locator('.workflow-finding').count(), 4);
   assert.match(await page.locator('#stateCounts').innerText(), /verified: 0.*live: 0/s);
-  check('Project-wide report opens from the free map; three synthetic findings, no elevated proof');
+  check('Project-wide report opens from the free map; four synthetic findings, no elevated proof');
   const reads = page.locator('.workflow-finding').filter({ hasText: 'possible repeated reads' });
   await reads.locator('summary').first().click();
   assert.match(await reads.innerText(), /Needs runtime evidence/);
@@ -43,6 +43,15 @@ try {
   assert.equal(await opened.count(), 1); assert.match(await opened.innerText(), /prepare/);
   assert.match(await page.locator('.workflow-product').first().innerText(), /Possible shared product/);
   check('Escaped filename, existing optimization cues and evidence navigation to exact calculation');
+  const comp = page.locator('.workflow-finding').filter({ hasText: 'Workflow.jobs:' });
+  await comp.locator('summary').first().click();
+  assert.match(await comp.innerText(), /eager container.*cells.*transforms.*series/s);
+  await comp.locator('.workflow-source').first().click();
+  assert.match(await page.locator('.code-function[open]').filter({ hasText: 'Workflow.jobs' }).innerText(), /Workflow.jobs/);
+  const calculation = page.locator('.workflow-calculation').filter({ hasText: 'What is Workflow.jobs building?' });
+  await calculation.locator('summary').click();
+  assert.match(await calculation.innerText(), /eager-container.*eligible\(x\)/s);
+  check('Class method and filtered comprehension render and navigate without claiming runtime job counts');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.workflow-finding').first().locator('summary').first().click();
   const bounds = await page.evaluate(() => ({ viewport: innerWidth, width: document.documentElement.scrollWidth }));
@@ -59,7 +68,7 @@ try {
   const offline = await context.newPage(); offline.on('pageerror', e => errors.push(e.message));
   await offline.goto(snapshotUrl); await offline.locator('.node').first().waitFor(); await offline.locator('#fitButton').click();
   await offline.locator('.node[data-id="__mission__"]').click(); await offline.locator('.guide-open').click();
-  assert.equal(await offline.locator('.workflow-finding').count(), 3);
+  assert.equal(await offline.locator('.workflow-finding').count(), 4);
   assert.match(await offline.locator('#detail').innerText(), /Captured code reading/);
   assert.deepEqual(requests.filter(p => p !== '/favicon.ico'), ['/']);
   check('Self-contained captured report renders with no asset/API/poll requests');

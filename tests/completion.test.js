@@ -141,4 +141,6 @@ test('reported stage traces retain clocks, checkpoint contracts and incomplete h
   assert.ok(evaluateAnalysis(partial,[],()=>({current:true})).diagnostics.some(d=>/No preceding successful finish/.test(d.message)));
   const reversed={...imported.document,events:[imported.document.events[2],imported.document.events[0]]};
   assert.ok(evaluateAnalysis(reversed,[],()=>({current:true})).diagnostics.some(d=>/strictly increasing/.test(d.message)));
+  const retry={...imported.document,events:[...imported.document.events.slice(0,3),{...imported.document.events[0],id:'retry',sequence:3},{...imported.document.events[3],id:'consumer-after-retry',sequence:4}]};
+  assert.ok(evaluateAnalysis(retry,[],()=>({current:true})).diagnostics.some(d=>/No preceding successful finish/.test(d.message)));
 });

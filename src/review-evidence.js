@@ -234,7 +234,7 @@ export function evaluateAnalysis(document, calculations = [], checkBinding = () 
     if (!stage) result.diagnostics.push({ section:'events',id:e.id,message:'Reported stage has no accepted declaration.' });
     if (e.event === 'start') {
       if (active.has(key)) result.diagnostics.push({section:'events',id:e.id,message:'Another start is recorded before a finish for this stage/run/clock. Inspect overlapping attempts.'});
-      active.set(key,e.id);
+      active.set(key,e.id); completed.delete(key);
       for(const dependency of stage?.dependsOn || []) if(!completed.has(JSON.stringify([e.runIdentity,e.clockIdentity,dependency]))) result.diagnostics.push({section:'events',id:e.id,message:`No preceding successful finish for declared dependency ${dependency} in this supplied run/clock. Partial logs or independent clocks may explain this.`});
     } else if(e.event === 'finish') {
       if(!active.has(key)) result.diagnostics.push({section:'events',id:e.id,message:'Finish has no preceding start in these supplied records; a partial log may explain it.'});

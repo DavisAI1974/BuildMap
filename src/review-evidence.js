@@ -74,6 +74,11 @@ function boundedFile(root, rel, limit) {
   } finally { fs.closeSync(fd); }
 }
 
+export function readAnalysisDocument(root) {
+  try { return JSON.parse(boundedFile(root, '.buildmap/analysis.json', 1_000_000).toString('utf8')); }
+  catch (error) { if (error.code === 'ENOENT') return { version: 1 }; throw error; }
+}
+
 export function readAnalysis(root, calculations) {
   let bytes;
   try { bytes = boundedFile(root, '.buildmap/analysis.json', 1_000_000); }
@@ -103,7 +108,7 @@ export function readAnalysis(root, calculations) {
 
 export function evaluateAnalysis(document, calculations = [], checkBinding = () => ({ current: false, reason: 'No local binding reader.' })) {
   const result = { version: 1, status: document === null ? 'not-supplied' : 'supplied', basis: 'user-supplied-contracts-and-observations',
-    products: [], stages: [], observations: [], comparisons: [], diagnostics: [],
+    products: [], stages: [], workloads: [], events: [], observations: [], comparisons: [], diagnostics: [],
     limitations: ['Contracts and observations are supplied metadata, not authenticated execution evidence. Matching receipt bytes establish freshness of those bytes only.',
       'Coverage plans are conditional on exact supplied identities and half-open row coordinates. No product is read, changed, activated or certified safe to resume.',
       'Unknown counters stay unknown. Static iteration models, jobs and directional pair comparisons are separate quantities.'] };
@@ -159,14 +164,27 @@ export function evaluateAnalysis(document, calculations = [], checkBinding = () 
     }
     const semantics = requiredContract.semantics;
     if (semantics.kind === 'rolling' && requiredRows.some(r => r.start < semantics.originRow)) throw Error('Required rows precede the declared rolling origin.');
-    const extension = missing.map(m => ({ ...m, inputRows: semantics.kind === 'stateful' ? null
-      : { start: semantics.kind === 'rolling' ? Math.max(semantics.originRow, m.rows.start - semantics.lookbackRows) : m.rows.start, end: m.rows.end } }));
+    const policy = semantics.boundaryPolicy;
+    const reviewedPolicy = semantics.kind === 'stateful' && object(policy) && text(policy.id) && text(policy.stateSchemaIdentity) &&
+      text(policy.review) && text(policy.owner) && text(policy.missingValuePolicy) && policy.ordering === 'ordered-rows';
+    const boundaryStates = list(p.boundaryStates ?? []).map(b => {
+      if (!object(b) || !text(b.id) || !Number.isSafeInteger(b.row) || b.row < 0 || !text(b.stateIdentity)) throw Error('Boundary states require id, nonnegative row and stateIdentity.');
+      return { ...b, freshness: bindingStatus(b.bindings), compatible: canonical(b.contract) === canonical(requiredContract) };
+    });
+    const extension = missing.map(m => {
+      const matches = boundaryStates.filter(b => b.row === m.rows.start && b.compatible && b.freshness.status === 'current');
+      const state = reviewedPolicy && matches.length === 1 ? matches[0] : null;
+      return { ...m, inputRows: semantics.kind === 'stateful' && !state ? null
+        : { start: semantics.kind === 'rolling' ? Math.max(semantics.originRow, m.rows.start - semantics.lookbackRows) : m.rows.start, end: m.rows.end },
+        ...(semantics.kind === 'stateful' ? { boundaryState: state ? { id: state.id, row: state.row, stateIdentity: state.stateIdentity, freshness: state.freshness } : null,
+          reason: state ? 'Conditional on supplied reviewed policy and current bound boundary-state receipt; state contents not inspected.' : 'Requires a reviewed ordered-row boundary policy and exactly one compatible, currently bound state at the first missing row.' } : {}) };
+    });
     return { id: p.id, path: text(p.path) ? p.path : null, contract: requiredContract, verified: false,
       status: missingCells === 0n ? 'complete-under-supplied-contracts' : requiredCells === missingCells
         ? (excluded.length && !compatible.length ? 'incompatible-or-unavailable' : 'absent') : 'partial-under-supplied-contracts',
       requiredCells: String(requiredCells), reusableCells: String(requiredCells - missingCells), missingCells: String(missingCells),
       compatibleSources: compatible.map(({ id, freshness }) => ({ id, freshness })), excludedSources: excluded, reusable, missing, extension,
-      extensionStatus: !missing.length ? 'no-extension-planned' : semantics.kind === 'stateful' ? 'blocked-needs-domain-boundary-state' : 'conditional-plan-needs-output-verification',
+      extensionStatus: !missing.length ? 'no-extension-planned' : semantics.kind === 'stateful' && extension.some(e => !e.boundaryState) ? 'blocked-needs-domain-boundary-state' : 'conditional-plan-needs-output-verification',
       verification: ['Verify identities, row coordinate/order, column meaning and actual product completeness.', 'Compare full recomputation with the extended output, including missing values, rolling overlap and boundary rows. No zero-fill or AB/BA symmetry is assumed.'] };
   });
   entries('stages', s => {
@@ -197,6 +215,60 @@ export function evaluateAnalysis(document, calculations = [], checkBinding = () 
     }
     for (const id of s.outputs) if (result.stages.some(other => other.id !== s.id && other.outputs.includes(id))) result.diagnostics.push({ section: 'stages', id: s.id, message: `Multiple declared producers of ${id}; review ownership and write sequencing.` });
   }
+  const eventClocks = new Map();
+  entries('events', e => {
+    if (!text(e.runIdentity) || !text(e.clockIdentity) || !text(e.stageId) || !Number.isSafeInteger(e.sequence) || e.sequence < 0 ||
+      !['start','finish','read-product','write-product','load-checkpoint','save-checkpoint'].includes(e.event)) throw Error('Events require runIdentity, clockIdentity, stageId, nonnegative sequence and a supported event name.');
+    if (e.event === 'finish' && !['passed','failed','interrupted'].includes(e.result)) throw Error('Finish events require passed, failed or interrupted result.');
+    if (!['start','finish'].includes(e.event) && !text(e.productId)) throw Error('Product/checkpoint events require productId.');
+    const clock = JSON.stringify([e.runIdentity,e.clockIdentity]), previous = eventClocks.get(clock);
+    if (previous !== undefined && e.sequence <= previous) throw Error('Events must have strictly increasing sequence in each run/clock; no timeline guessed.');
+    const freshness = bindingStatus(e.bindings); eventClocks.set(clock,e.sequence);
+    return { id:e.id,runIdentity:e.runIdentity,clockIdentity:e.clockIdentity,sequence:e.sequence,stageId:e.stageId,event:e.event,
+      result:e.result || null,productId:e.productId || null,freshness,basis:'reported-event; not authenticated by BuildMap' };
+  });
+  const active = new Map(), completed = new Map();
+  for (const e of result.events) {
+    const key = JSON.stringify([e.runIdentity,e.clockIdentity,e.stageId]);
+    const stage = stages.get(e.stageId);
+    if (!stage) result.diagnostics.push({ section:'events',id:e.id,message:'Reported stage has no accepted declaration.' });
+    if (e.event === 'start') {
+      if (active.has(key)) result.diagnostics.push({section:'events',id:e.id,message:'Another start is recorded before a finish for this stage/run/clock. Inspect overlapping attempts.'});
+      active.set(key,e.id);
+      for(const dependency of stage?.dependsOn || []) if(!completed.has(JSON.stringify([e.runIdentity,e.clockIdentity,dependency]))) result.diagnostics.push({section:'events',id:e.id,message:`No preceding successful finish for declared dependency ${dependency} in this supplied run/clock. Partial logs or independent clocks may explain this.`});
+    } else if(e.event === 'finish') {
+      if(!active.has(key)) result.diagnostics.push({section:'events',id:e.id,message:'Finish has no preceding start in these supplied records; a partial log may explain it.'});
+      active.delete(key); if(e.result==='passed') completed.set(key,e.id); else completed.delete(key);
+    }
+    if(e.productId && stage) {
+      const expected=e.event==='read-product'?stage.inputs:e.event==='write-product'?stage.outputs:stage.checkpointProducts;
+      if(!expected.includes(e.productId)) result.diagnostics.push({section:'events',id:e.id,message:`Reported ${e.event} of ${e.productId} is outside this stage’s declared product contract.`});
+    }
+  }
+  entries('workloads', w => {
+    if (!object(w.calculation) || !text(w.calculation.path) || !text(w.calculation.name) || !/^[a-f0-9]{64}$/.test(w.calculation.sourceHash || '')) throw Error('Workload requires a source-bound calculation reference.');
+    if (!text(w.workloadIdentity) || w.independentCartesian !== true) throw Error('Workload requires workloadIdentity and explicit independentCartesian: true. Dependent bounds cannot be multiplied.');
+    const candidates = calculations.filter(c => c.source.path === w.calculation.path && c.name === w.calculation.name);
+    const current = candidates.length === 1 && candidates[0].source.sourceHash === w.calculation.sourceHash;
+    const axes = list(w.axes, 16);
+    if (!axes.length || axes.some(a => !object(a) || !text(a.expression))) throw Error('Workload axes require nonempty expressions.');
+    const dimensions = axes.map(a => {
+      const values = ['min','likely','max'].map(k => count(a[k]));
+      if (BigInt(values[0]) > BigInt(values[1]) || BigInt(values[1]) > BigInt(values[2])) throw Error('Workload min <= likely <= max is required.');
+      return { expression: a.expression, min: values[0], likely: values[1], max: values[2] };
+    });
+    const c = candidates[0];
+    const models = c ? [...c.loopPaths, ...c.comprehensions.map(comp => comp.axes)].map(as => as.map(a => a.iterable)) : [];
+    const recognized = current && models.some(model => canonical(model) === canonical(dimensions.map(a => a.expression)));
+    const freshness = bindingStatus(w.bindings);
+    const reason = !current ? 'Calculation source is missing, ambiguous or changed.' : !recognized ? 'Axes do not match a captured loop/comprehension model.'
+      : freshness.status !== 'current' ? 'Current dimension receipt bindings are required.' : null;
+    return { id: w.id, workloadIdentity: w.workloadIdentity, calculationId: current ? c.id : null, dimensions, freshness,
+      status: reason ? 'refused' : 'conditional-source-model', reason,
+      potentialIterations: reason ? null : Object.fromEntries(['min','likely','max'].map(k => [k, dimensions.reduce((n,a) => n*BigInt(a[k]),1n).toString()])),
+      actualJobs: null, pairComparisons: null,
+      note: 'Potential inner iterations under supplied independent dimensions; guards, filters, exceptions and callers can change reached work. This is not a measured job/pair counter.' };
+  });
   entries('runtime', r => {
     if (!object(r.identity) || runtimeKeys.some(k => !text(r.identity[k]))) throw Error('Runtime observations require source/calculation/workload/environment/metric-scope identities.');
     if (r.counters !== undefined && !object(r.counters) || r.metrics !== undefined && !object(r.metrics)) throw Error('Counters and metrics must be objects.');

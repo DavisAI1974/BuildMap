@@ -58,6 +58,26 @@ async function client(initial, offline = false, navigator = undefined) {
     refresh: () => api.refresh() };
 }
 
+test('calculation reader searches and pages a large project, follows real source candidates and returns to the complete free map', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-reader-')); t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'work.js'), 'export function entry(x) { const result=prepare(x); return result; }\nexport function prepare(x) { return x+1; }\n'+Array.from({length:60},(_,i)=>`export function extra${i}(x) { return x; }`).join('\n'));
+  const map=scanProject(root), ui=await client(map,true);
+  ui.get('workflowViewButton').listeners.click();
+  const detail=ui.get('detail'), results=detail.children.find(c=>c.className==='workflow-reader-results');
+  assert.equal(results.children.filter(c=>c.className==='workflow-choice').length,25);
+  const search=detail.children.find(c=>c.tag==='label').children[0]; search.value='entry'; search.listeners.input();
+  assert.equal(results.children.filter(c=>c.className==='workflow-choice').length,1);
+  results.children.find(c=>c.className==='workflow-choice').listeners.click();
+  const reading=detail.children.find(c=>c.className==='workflow-reader-calculation');
+  assert.match(reading.innerHTML,/What comes in.*What does it build.*What comes out/s);
+  reading.children.find(c=>c.className==='workflow-follow').listeners.click();
+  assert.match(reading.innerHTML,/prepare/);
+  ui.get('mapViewButton').listeners.click();
+  assert.equal(ui.get('workspace').classes.has('workflow-reading'),false);
+  assert.equal(ui.get('nodeLayer').children.filter(c=>c.className.includes('node')).length,map.nodes.length);
+  assert.equal(ui.counts().requests,0);
+});
+
 test('empty walkthrough guidance explains local authoring, snapshot refresh and keeps the free map intact', async () => {
   for (const offline of [false, true]) {
     const input = model('empty-journey'); input.outcomes = [];

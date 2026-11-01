@@ -122,6 +122,9 @@ def analyze(source):
             self.facts = []
             self.guards = []
             self.collections = {}
+            self.steps = []
+            self.constants = {}
+            self.result_targets = {}
 
         def fact(self, node, kind, **details):
             self.facts.append({"kind": kind, "expression": expr(node), "loopDepth": len(self.stack),
@@ -130,8 +133,14 @@ def analyze(source):
         def path_value(self, node):
             if literal(node) is not None:
                 return literal(node)
+            if isinstance(node, ast.Name):
+                return self.constants.get(node.id)
             if isinstance(node, ast.Call) and canonical(name(node.func)) == 'pathlib.Path' and node.args:
-                return literal(node.args[0])
+                return self.path_value(node.args[0])
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+                left, right = self.path_value(node.left), self.path_value(node.right)
+                if left is not None and right is not None:
+                    return left.rstrip('/') + '/' + right
             return None
 
         def visit_FunctionDef(self, node):
@@ -223,6 +232,7 @@ def analyze(source):
 
         def visit_Return(self, node):
             self.returns.append({"summary": expr(node.value), "kind": type(node.value).__name__, **location(node)})
+            self.steps.append({"kind": "return", "expression": expr(node.value), "guards": list(self.guards), **location(node)})
             self.generic_visit(node)
 
         def visit_Yield(self, node):
@@ -234,6 +244,11 @@ def analyze(source):
             self.transformations.append({"summary": expr(node), "kind": type(node).__name__, **location(node)})
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             value = node.value
+            self.steps.append({"kind": "assign", "targets": [expr(t) for t in targets], "expression": expr(value),
+                               "references": sorted({n.id for n in ast.walk(value) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}) if value else [],
+                               "guards": list(self.guards), **location(node)})
+            if isinstance(value, ast.Call):
+                self.result_targets[id(value)] = [expr(t) for t in targets]
             for target in targets:
                 if not isinstance(target, ast.Name):
                     continue
@@ -257,6 +272,9 @@ def analyze(source):
             call = {"target": target, "kind": "call", "argumentCount": len(node.args) + len(node.keywords),
                                "arguments": [expr(a) for a in node.args] + [(k.arg or '**') + '=' + expr(k.value) for k in node.keywords],
                                "resolution": "unresolved-source-reference", **location(node)}
+            call.update({"positionalArguments": [expr(a) for a in node.args],
+                         "keywordArguments": [{"name": k.arg, "expression": expr(k.value)} for k in node.keywords],
+                         "resultTargets": self.result_targets.get(id(node), []), "guards": list(self.guards), "loopDepth": len(self.stack)})
             parts = target.split('.')
             if len(parts) == 1 and target in linkable:
                 call['bindingReference'] = {"kind": 'local-function', "targetName": target}
@@ -315,10 +333,10 @@ def analyze(source):
             product = operation = None
             root = target.split('.')[0]
             if resolved in ('pandas.read_csv', 'pandas.read_parquet', 'pandas.read_pickle', 'numpy.load') and root in imports:
-                product = literal(node.args[0]) if node.args else next((literal(k.value) for k in node.keywords if k.arg in ('filepath_or_buffer', 'path', 'file')), None)
+                product = self.path_value(node.args[0]) if node.args else next((self.path_value(k.value) for k in node.keywords if k.arg in ('filepath_or_buffer', 'path', 'file')), None)
                 operation = 'read'
             elif target == 'open' and 'open' not in bound and 'open' not in imports:
-                product = literal(node.args[0]) if node.args else next((literal(k.value) for k in node.keywords if k.arg == 'file'), None)
+                product = self.path_value(node.args[0]) if node.args else next((self.path_value(k.value) for k in node.keywords if k.arg == 'file'), None)
                 mode_node = node.args[1] if len(node.args) > 1 else next((k.value for k in node.keywords if k.arg == 'mode'), ast.Constant(value='r'))
                 mode = literal(mode_node)
                 if mode is not None:
@@ -331,7 +349,8 @@ def analyze(source):
                 operation = 'write'
             if product is not None and operation:
                 self.io.append({"pathExpression": product, "operation": operation, "call": target,
-                                "basis": "literal-path-call-syntax", "loopDepth": len(self.stack), **location(node)})
+                                "basis": "literal-or-unique-constant-path-syntax", "loopDepth": len(self.stack),
+                                "guards": list(self.guards), "resultTargets": self.result_targets.get(id(node), []), **location(node)})
                 self.fact(node, 'persistence', operation='load' if operation == 'read' else 'save' if operation == 'write' else 'load-save',
                           pathExpression=product, literalPath=product, basis='literal file-I/O call syntax; saved-product semantics unknown')
             self.generic_visit(node)
@@ -343,6 +362,17 @@ def analyze(source):
         scopes.insert(0, ('<module>', module_body, None, 'module'))
     for function_name, body, fn, scope_kind in scopes:
         reader = Reader()
+        # Resolve only single-assignment literal/path constants. No evaluation,
+        # branch execution, parameter substitution or mutable alias inference.
+        local_stores = Counter(n.id for statement in body for n in ast.walk(statement)
+                               if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)))
+        for statement in body:
+            if isinstance(statement, (ast.Assign, ast.AnnAssign)) and statement.value is not None:
+                targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                value = reader.path_value(statement.value)
+                for target in targets:
+                    if isinstance(target, ast.Name) and local_stores[target.id] == 1 and value is not None:
+                        reader.constants[target.id] = value
         for statement in body:
             reader.visit(statement)
         args = fn.args if fn else None
@@ -351,6 +381,8 @@ def analyze(source):
         records.append({"name": function_name, "language": "Python", "scopeKind": scope_kind, "sourceLinkable": function_name in linkable,
                         "exported": False, "async": isinstance(fn, ast.AsyncFunctionDef), "generator": reader.yields > 0,
                         "parameters": parameters, "calls": reader.calls, "returns": reader.returns,
+                        "documentation": ast.get_docstring(fn) if fn else ast.get_docstring(tree),
+                        "steps": reader.steps,
                         "conditions": reader.conditions, "loops": reader.loops, "throws": reader.throws,
                         "line": fn.lineno if fn else 1, "column": fn.col_offset + 1 if fn else 1, "endLine": fn.end_lineno if fn else len(source.splitlines()),
                         "summary": f"{function_name} declares {len(parameters)} parameters, {len(reader.calls)} call sites and {reader.loops} loop constructs. Paths and branches may never run.",

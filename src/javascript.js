@@ -97,7 +97,7 @@ export function analyzeJavaScript(source, ext = '.js') {
       }
     }
   });
-  return { imports: [...imports], requests, providers, functions: explainFunctions(ast, bindings) };
+  return { imports: [...imports], requests, providers, functions: explainFunctions(ast, bindings, source) };
 }
 
 function requestMethod(options) {

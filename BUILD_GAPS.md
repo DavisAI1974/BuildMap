@@ -1,3 +1,5 @@
+Current completion increment: [October 31 guide and acceptance](docs/COMPLETION_GUIDE_20261031.md). It adds searchable calculation reading, written-argument/product navigation, JavaScript workflow analysis, contextualized helper-read/computation warnings, explicit Guide task continuity, measurement/event import and reviewed stateful boundary plans. Commercial service configuration and unrestricted dynamic-language interpretation remain outside this local release candidate. Earlier test counts and completion descriptions below are historical; use the current acceptance record.
+
 Current general-purpose workflow-inspection work is described in [the October 21 roadmap review](docs/ROADMAP_REVIEW_20261021.md) and [the review-record schema](docs/WORKFLOW_REVIEW.md). It adds calculation connections, pre-run resource/restart risks, conditional table coverage/extension, declared stage checks and reported workload comparisons. Current validation is recorded in the roadmap review. Earlier completion/browser descriptions below describe the PR baseline; the broader whole-MVP completion scope is pending.
 
 # BuildMap stage and remaining gaps

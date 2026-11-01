@@ -4,7 +4,7 @@ import path from 'node:path';
 import { inspectResources } from './workflow-risk.js';
 
 export const WORKFLOW_LIMITS = [
-  'Static Python syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
+  'Static Python and JavaScript syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
   'Adapter covers module bodies, top-level functions, direct methods of top-level classes and comprehension axes/filters. Source-call candidates link unique undecorated functions through supported local imports; argument/data propagation, nested functions/classes, inheritance/dispatch, shell/YAML execution, dynamic paths and SQL remain unknown.',
   'Call links identify possible source declarations, not execution, scheduling, actual parameter values or runtime data flow. Rebindings, star imports and decorated targets are excluded conservatively; dynamic mutation, re-exports and runtime import paths remain unresolved.',
   'Eager comprehensions construct containers if reached; generator expressions defer their body, which may never be consumed. Neither syntax proves end-to-end lazy scheduling. Filters, dependent iterables and callers can change work. Generator-body I/O is not inferred.',
@@ -56,16 +56,17 @@ export function buildWorkflow(guides) {
   const files = [...guides.values()].filter(g => g.path.toLowerCase().endsWith('.py')).map(g => ({ path: g.path, sourceHash: g.sourceHash, status: g.status, reason: g.reason }));
   const source = (file, item) => ({ path: file.path, sourceHash: file.sourceHash, line: item.line, column: item.column });
   for (const file of guides.values()) {
-    if (!file.path.toLowerCase().endsWith('.py') || file.status !== 'parsed') continue;
+    if (!/\.(py|js|mjs|cjs)$/i.test(file.path) || file.status !== 'parsed') continue;
     for (const fn of file.functions) {
       const id = `${file.path}:${fn.line}:${fn.column}`;
       const at = source(file, fn);
-      const calc = { id, name: fn.name, scopeKind: fn.scopeKind, sourceLinkable: fn.sourceLinkable, generator: fn.generator, language: 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
+      const calc = { id, name: fn.name, scopeKind: fn.scopeKind, sourceLinkable: fn.sourceLinkable, exported: fn.exported, generator: fn.generator, language: fn.language || 'Python', basis: 'source-syntax', source: at, inputs: fn.parameters,
         calls: fn.calls.map(c => ({ ...c, source: source(file, c) })), outputs: fn.returns, transformations: fn.transformations.map(t => ({ ...t, source: source(file, t) })),
         io: fn.io.map(io => ({ ...io, source: source(file, io) })),
         facts: (fn.facts || []).map(f => ({ ...f, source: source(file, f) })),
         loopPaths: fn.loopPaths, comprehensions: fn.comprehensions.map(c => ({ ...c, source: source(file, c) })),
         reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
+        documentation: fn.documentation || null, steps: (fn.steps || []).map(s => ({ ...s, source: source(file, s) })),
         purpose: 'Written function/module syntax; business purpose and whether this path runs need review.',
         why: 'A declaration is not proof it is called. Review entry-point wiring and runtime counters before optimizing.' };
       calculations.push(calc);
@@ -127,12 +128,15 @@ export function buildWorkflow(guides) {
   const resources = inspectResources(calculations);
   findings.push(...resources.findings);
   const statuses = Object.fromEntries([...new Set(files.map(f => f.status))].sort().map(status => [status, files.filter(f => f.status === status).length]));
-  const outsideAdapter = [...guides.values()].filter(g => !g.path.toLowerCase().endsWith('.py')).map(g => ({ path: g.path,
-    reason: 'Outside the Python calculation/risk adapter. Other source/import or JavaScript Guide support does not establish a workflow risk review.' }));
+  const javascriptFiles = [...guides.values()].filter(g => /\.(js|mjs|cjs)$/i.test(g.path));
+  const outsideAdapter = [...guides.values()].filter(g => !/\.(py|js|mjs|cjs)$/i.test(g.path)).map(g => ({ path: g.path,
+    reason: 'Outside the Python/JavaScript calculation/risk adapters. Import inventory does not establish workflow risk coverage.' }));
   return { version: 1, basis: 'static-source-syntax', files, calculations, dataProducts: [...products.values()], ...links,
     checkpoints: resources.checkpoints,
     coverage: { inventoryFiles: guides.size, pythonFiles: files.length, parsedPythonFiles: statuses.parsed || 0,
       statuses, unreviewedPython: files.filter(f => f.status !== 'parsed'), outsideAdapter,
+      javascriptFiles: javascriptFiles.length, parsedJavaScriptFiles: javascriptFiles.filter(f => f.status === 'parsed').length,
+      unreviewedJavaScript: javascriptFiles.filter(f => f.status !== 'parsed').map(f => ({ path: f.path, status: f.status, reason: f.reason })),
       boundary: 'Counts cover discovered/explicitly declared inventory only. Ignored, excluded, deleted, unreadable and unlisted files may be absent. Parsing does not establish reachable execution or complete semantic coverage.' },
     findings: findings.sort((a, b) => a.type.localeCompare(b.type) || a.id.localeCompare(b.id)), limitations: WORKFLOW_LIMITS };
 }
@@ -152,8 +156,11 @@ function calculationLinks(calculations, guides) {
     totalCallSites++;
     const ref = call.bindingReference;
     if (!ref) continue;
-    const modules = ref.kind === 'local-function' ? [calculation.source.path] : moduleCandidates(calculation.source.path, ref, guides);
-    const targets = modules.length === 1 ? declarations.get(JSON.stringify([modules[0], ref.targetName])) || [] : [];
+    const modules = ref.kind === 'local-function' ? [calculation.source.path] : ref.kind === 'javascript-import'
+      ? [path.posix.normalize(path.posix.join(path.posix.dirname(calculation.source.path), ref.module))].flatMap(p => /\.(js|mjs|cjs)$/.test(p) ? [p] : [p, `${p}.js`, `${p}/index.js`]).filter(p => guides.has(p))
+      : moduleCandidates(calculation.source.path, ref, guides);
+    const targets = modules.length === 1 ? (declarations.get(JSON.stringify([modules[0], ref.targetName])) || [])
+      .filter(c => ref.kind !== 'javascript-import' || c.exported) : [];
     if (targets.length !== 1) {
       unresolvedCalls.push({ calculationId: calculation.id, target: call.target, source: call.source,
         reason: modules.length > 1 ? 'Multiple local module paths match; no target selected.'

@@ -30,7 +30,10 @@
         "src/workflow.js",
         "src/workflow-risk.js",
         "src/review-evidence.js",
-        "src/python-analyzer.py"
+        "src/python-analyzer.py",
+        "src/javascript-workflow.js",
+        "src/workflow-explain.js",
+        "src/measurements.js"
       ],
       "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior.",
       "contributes": "Turns source code into the living set of puzzle pieces.",
@@ -50,7 +53,8 @@
         "src/server.js",
         "src/cli.js",
         "src/export.js",
-        "src/setup.js"
+        "src/setup.js",
+        "src/dev.js"
       ],
       "purpose": "Serve current maps and actionable gaps, export an offline HTML snapshot, or guide explicitly requested local project descriptions, piece grouping and walkthrough plans.",
       "contributes": "Makes progress visible while the software is being built instead of after the fact.",
@@ -98,7 +102,8 @@
         "tests/workflow.test.js",
         "tests/review-evidence.test.js",
         "tests/fixtures/workflow-analysis.json",
-        "tests/fixtures/workflow-pipeline.py"
+        "tests/fixtures/workflow-pipeline.py",
+        "tests/completion.test.js"
       ],
       "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
       "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",
@@ -156,7 +161,7 @@
   ],
   "finishedProduct": {
     "experience": "You open your project and see a clear visual map of its pieces, files, connections and goals. Select a piece to understand its job in plain English, or select a goal to follow its steps beside the map. The wider free walkthrough shows readable steps and recorded examples, with the first unfinished point clearly visible.",
-    "behavior": "Help beginner-to-intermediate builders understand how a complete application fits together, see what has actually been demonstrated, and keep coding-agent work focused on the intended result. The complete map, current goal walkthroughs and basic focused task briefs are free. Missing work and unsupported claims stay visible so progress is grounded in evidence. BuildMap Guide adds a first source-bound JavaScript function-reading preview. Guide also prepares user-reviewed tasks with acceptance criteria and exact file scope, and compares later local snapshots with the agreed baseline. Criteria still require actual checks; persistent continuity and billing are not implemented."
+    "behavior": "Help beginner-to-intermediate builders understand how a complete application fits together, see what has actually been demonstrated, and keep coding-agent work focused on the intended result. The complete map, current goal walkthroughs and basic focused task briefs are free. Missing work and unsupported claims stay visible so progress is grounded in evidence. BuildMap Guide adds a first source-bound JavaScript function-reading preview. Guide also prepares user-reviewed tasks with acceptance criteria and exact file scope, and compares later local snapshots with the agreed baseline. Criteria still require actual checks; Guide tasks can be explicitly saved on the device and exported/imported with their original baseline. Billing remains unconfigured."
   },
   "completion": {
     "label": "MVP",

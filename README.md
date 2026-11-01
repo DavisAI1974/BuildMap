@@ -6,6 +6,10 @@ BuildMap watches a repository by rescanning it every time its browser client pol
 
 The core contract is **existence, connection, computation, verification, and live use are different things**. BuildMap borrows the spatial language of workflow maps; it is a software map, not a workflow editor.
 
+## Runtime observation increment
+
+Explicit signed local Python observation is implemented; it is never started by mapping or refresh. See [runtime observation](docs/RUNTIME_OBSERVATION.md) for collection, trust, current-source/input checks, finite-case comparisons and limits, and [the finalization checklist](docs/FINALIZATION_CHECKLIST_20261031.md) for the remaining roadmap work. Billing stays last, with a Stripe stub.
+
 ## Current completion increment — October 31, 2026
 
 **Calculations & risks · Guide** is a searchable, paginated reading view. Python and JavaScript calculations share inputs, assignment/return steps, source-call argument bindings, saved outputs, possible consumers and contextualized warnings. Function purpose comes from source documentation, a declared stage or the piece plan; it is attributed rather than invented. Calls and filenames remain source candidates.

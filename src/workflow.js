@@ -5,7 +5,7 @@ import { inspectResources } from './workflow-risk.js';
 
 export const WORKFLOW_LIMITS = [
   'Static Python and JavaScript syntax only; no target module is imported and no workflow runs. Actual reads, jobs, pair comparisons, memory, elapsed time and savings remain unknown.',
-  'Adapter covers module bodies, top-level functions, direct methods of top-level classes and comprehension axes/filters. Source-call candidates link unique undecorated functions through supported local imports; argument/data propagation, nested functions/classes, inheritance/dispatch, shell/YAML execution, dynamic paths and SQL remain unknown.',
+  'Adapter covers module bodies, top-level/nested functions, direct methods of top-level classes and comprehension axes/filters. Source-call candidates link unique undecorated functions through supported local imports; general argument/data propagation, nested classes, inheritance/dispatch, shell/YAML execution, dynamic paths and SQL remain unknown.',
   'Call links identify possible source declarations, not execution, scheduling, actual parameter values or runtime data flow. Rebindings, star imports and decorated targets are excluded conservatively; dynamic mutation, re-exports and runtime import paths remain unresolved.',
   'Eager comprehensions construct containers if reached; generator expressions defer their body, which may never be consumed. Neither syntax proves end-to-end lazy scheduling. Filters, dependent iterables and callers can change work. Generator-body I/O is not inferred.',
   'A literal filename match is only a possible shared product. Working directories, source identity, schema, axes, coverage, checkpoint compatibility and actual reuse are unverified.',
@@ -67,6 +67,7 @@ export function buildWorkflow(guides) {
         loopPaths: fn.loopPaths, comprehensions: fn.comprehensions.map(c => ({ ...c, source: source(file, c) })),
         reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
         documentation: fn.documentation || null, parameterNames: fn.parameterNames || fn.parameters, steps: (fn.steps || []).map(s => ({ ...s, source: source(file, s) })),
+        fieldAccesses:(fn.fieldAccesses || []).map(s=>({...s,source:source(file,s)})),sql:(fn.sql || []).map(s=>({...s,source:source(file,s)})),
         purpose: 'Written function/module syntax; business purpose and whether this path runs need review.',
         why: 'A declaration is not proof it is called. Review entry-point wiring and runtime counters before optimizing.' };
       calculations.push(calc);

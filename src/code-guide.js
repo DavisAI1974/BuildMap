@@ -84,11 +84,13 @@ export function explainFunctions(ast, bindingCounts, source = '') {
         else if (value?.type) stack.push(value);
       }
     }
-    const workflow = javascriptWorkflow(ast, bindingCounts, source, fn, byName);
+    const workflow = javascriptWorkflow(ast, bindingCounts, source, fn, byName, expression);
+    const comment=source.slice(Math.max(0,fn.start-4000),fn.start).match(/\/\*\*((?:(?!\*\/)[\s\S])*)\*\/\s*(?:export\s+(?:default\s+)?)?(?:(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*)?$/);
+    const documentation=comment?comment[1].split('\n').map(line=>line.replace(/^\s*\*\s?/, '').trimEnd()).join('\n').trim():null;
     for (const c of calls) Object.assign(c, workflow.calls.get(`${c.line}:${c.column}`) || {});
     const order = (a,b) => a.line - b.line || a.column - b.column;
     return { name, exported: exported || exportedNames.has(name), async: Boolean(fn.async), generator: Boolean(fn.generator),
-      language: 'JavaScript', scopeKind: 'function', sourceLinkable: byName.has(name), documentation: null,
+      language: 'JavaScript', scopeKind: 'function', sourceLinkable: byName.has(name), documentation,
       io: workflow.io, transformations: workflow.transformations, loopPaths: workflow.loopPaths, comprehensions: [],
       facts: workflow.facts, reuseCues: workflow.reuseCues, steps: workflow.steps, decorators: [],
       parameters: fn.params.map(parameter), calls: calls.sort(order), returns: returns.sort(order), conditions, loops, throws,

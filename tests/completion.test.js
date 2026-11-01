@@ -155,3 +155,14 @@ test('reported stage traces retain clocks, checkpoint contracts and incomplete h
   const retry={...imported.document,events:[...imported.document.events.slice(0,3),{...imported.document.events[0],id:'retry',sequence:3},{...imported.document.events[3],id:'consumer-after-retry',sequence:4}]};
   assert.ok(evaluateAnalysis(retry,[],()=>({current:true})).diagnostics.some(d=>/No preceding successful finish/.test(d.message)));
 });
+
+test('plain operation explanations, exact field selectors and SQL-like literal references remain source-attributed',t=>{
+ const root=fixture(t);
+ write(root,'calculate.py',`def total(rows, connection):\n    """Calculate the requested subtotal from the provided price values."""\n    selected=rows['price']\n    squared=selected*selected\n    summed=sum(selected)\n    connection.execute("SELECT price FROM orders JOIN customers ON orders.id=customers.id WHERE label='FROM fake' -- JOIN imaginary\\n")\n    return {'square':squared,'sum':summed}\nraise RuntimeError('must never execute while scanning')\n`);
+ write(root,'guide.js','/** Build the source subtotal for the selected rows. */\nexport function subtotal(price) { const total=price*2; return total; }');
+ const w=scanProject(root).workflow,c=w.calculations.find(c=>c.name==='total');
+ assert.match(c.purpose,/Source documentation: Calculate/);assert.ok(c.steps.some(s=>s.explanation.includes('Sums the supplied values')));
+ assert.equal(c.fieldAccesses[0].selector,"'price'");assert.deepEqual(c.sql[0].tables.map(t=>t.tableExpression),['orders','customers']);
+ assert.match(c.sql[0].basis,/unverified/);
+ const js=w.calculations.find(c=>c.name==='subtotal');assert.match(js.purpose,/Build the source subtotal/);assert.match(js.steps[0].explanation,/expression using \*/);
+});

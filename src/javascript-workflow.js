@@ -1,6 +1,6 @@
 // Bounded syntax adapter for the same calculation review used by Python.
 // Never imports a mapped module or evaluates its expressions.
-export function javascriptWorkflow(ast, bindings, source, fn, definitions) {
+export function javascriptWorkflow(ast, bindings, source, fn, definitions, describe = n=>'the written expression') {
   const at = n => ({ line: n.loc.start.line, column: n.loc.start.column + 1 });
   const raw = n => { if (!n) return 'no explicit value'; const text = source.slice(n.start, n.end); return text.length > 240 ? text.slice(0,237)+'...' : text; };
   const literal = n => n?.type === 'Literal' && typeof n.value === 'string' ? n.value : null;
@@ -21,7 +21,7 @@ export function javascriptWorkflow(ast, bindings, source, fn, definitions) {
       if (n.id.type === 'Identifier' && bindings.get(n.id.name) === 1 && literal(n.init) !== null) constants.set(n.id.name, literal(n.init));
       const summary = raw(n), targets = [raw(n.id)];
       result.transformations.push({ summary, kind: n.type, ...at(n) });
-      result.steps.push({ kind: n.init ? 'assign' : 'declare', targets, expression: raw(n.init), guards, ...at(n) });
+      result.steps.push({ kind: n.init ? 'assign' : 'declare', targets, expression: raw(n.init), explanation:n.init?`Builds ${describe(n.init)}. Source syntax does not establish runtime values.`:null, guards, ...at(n) });
       walk(n.init, axes, guards, targets); return;
     }
     if (n.type === 'ReturnStatement') result.steps.push({ kind: 'return', expression: raw(n.argument), guards, ...at(n) });

@@ -74,6 +74,8 @@ function boundedFile(root, rel, limit) {
   } finally { fs.closeSync(fd); }
 }
 
+export const readProjectFile = boundedFile;
+
 export function readAnalysisDocument(root) {
   try { return JSON.parse(boundedFile(root, '.buildmap/analysis.json', 1_000_000).toString('utf8')); }
   catch (error) { if (error.code === 'ENOENT') return { version: 1 }; throw error; }

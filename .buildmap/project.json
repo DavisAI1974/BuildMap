@@ -33,7 +33,9 @@
         "src/python-analyzer.py",
         "src/javascript-workflow.js",
         "src/workflow-explain.js",
-        "src/measurements.js"
+        "src/measurements.js",
+        "src/collected-runs.js",
+        "src/python-observer.py"
       ],
       "purpose": "Inventory source, discover bounded relationships, assess evidence and declared outcome walkthroughs, and show gaps without assuming end-to-end behavior.",
       "contributes": "Turns source code into the living set of puzzle pieces.",
@@ -103,7 +105,9 @@
         "tests/review-evidence.test.js",
         "tests/fixtures/workflow-analysis.json",
         "tests/fixtures/workflow-pipeline.py",
-        "tests/completion.test.js"
+        "tests/completion.test.js",
+        "tests/collected-runs.test.js",
+        "tests/recovery-extension.test.js"
       ],
       "purpose": "Check source/evidence semantics, outcome plans and example freshness, Git inventory, export safety, CLI/HTTP behavior, and client logic with a DOM harness; browser layout still needs observation.",
       "contributes": "Prevents BuildMap from confusing 'exists on disk' with 'actually proven to work.'",

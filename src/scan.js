@@ -9,6 +9,7 @@ import { CODE_GUIDE_LIMITS } from './code-guide.js';
 import { pythonGuides, buildWorkflow, WORKFLOW_LIMITS } from './workflow.js';
 import { explainWorkflow } from './workflow-explain.js';
 import { readAnalysis } from './review-evidence.js';
+import { readCollectedRuns, observedReuseGroups } from './collected-runs.js';
 
 const CODE_EXT = new Set(['.js','.mjs','.cjs','.jsx','.ts','.tsx','.py','.go','.rs','.java','.kt','.kts','.rb','.php','.cs','.c','.cc','.cpp','.h','.hpp','.swift','.scala','.sh','.html','.htm','.css','.yaml','.yml','.toml','.service','.timer']);
 const SPECIAL_CODE = new Set(['Dockerfile','Makefile']);
@@ -160,6 +161,11 @@ export function scanProject(root, { source = null, workflowFiles = null, workflo
     unavailableFiles: workflowFiles === null ? [] : [...new Set(workflowFiles)].filter(f => !fileSet.has(f) || path.extname(f).toLowerCase() !== '.py').sort() };
   result.workflow.review = readAnalysis(root, result.workflow.calculations);
   explainWorkflow(result.workflow, nodes, result.workflow.review);
+  result.workflow.collected = readCollectedRuns(root,Object.fromEntries(fileHashes),result.workflow.calculations);
+  for(const run of result.workflow.collected.runs)run.reuseGroups=observedReuseGroups(run);
+  const observedIndex=new Map();
+  for(const run of result.workflow.collected.runs.filter(r=>r.eligibleForComparison))for(const c of run.calculations){if(!c.calculationId)continue;if(!observedIndex.has(c.calculationId))observedIndex.set(c.calculationId,[]);observedIndex.get(c.calculationId).push({runId:run.runId,collectorId:run.collectorId,calculationId:c.calculationId,observedEntries:c.calls,resumable:c.resumable});}
+  for(const finding of result.workflow.findings)finding.observationContext=finding.calculationIds.flatMap(id=>observedIndex.get(id)||[]);
   result.workflow.coverage.inventoryMode = inventory.mode;
   result.fingerprint = fingerprint({ ...result, generatedAt: undefined, manifest, evidence: rawEvidence });
   return result;

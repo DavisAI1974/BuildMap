@@ -494,12 +494,7 @@ function appendWorkflowReview(node) {
     ${files.map(f => `<p>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</p>`).join('')}
     ${workflow.scope?.unavailableFiles?.length ? `<p>Requested files unavailable for Python analysis: ${workflow.scope.unavailableFiles.map(escapeHtml).join(', ')}.</p>` : ''}
     <p>Source locations below open their captured calculation. Read-only analysis does not launch or modify this project.</p>`;
-  const sourceButtons = (section, sources) => {
-    for (const source of sources) {
-      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-source';
-      button.textContent = `Inspect ${source.path}:${source.line}:${source.column}`;
-      button.title = `Captured SHA-256: ${source.sourceHash}`;
-      button.addEventListener('click', () => {
+  const openSource = source => {
         if (model.fingerprint !== fingerprint) return;
         const owner = model.nodes.find(n => n.kind !== 'mission' && n.files.includes(source.path));
         if (!owner) return;
@@ -509,7 +504,13 @@ function appendWorkflowReview(node) {
         const key = fn && JSON.stringify([owner.id, source.path, source.sourceHash, fn.line, fn.column]);
         const target = taskControls().find(el => el.dataset.guideControl === key);
         if (target) { target.open = true; guideOpenFunctions.add(key); target.scrollIntoView({ block: 'nearest' }); target.focus({ preventScroll: true }); }
-      }); section.appendChild(button);
+  };
+  const sourceButtons = (section, sources) => {
+    for (const source of sources) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-source';
+      button.textContent = `Inspect ${source.path}:${source.line}:${source.column}`;
+      button.title = `Captured SHA-256: ${source.sourceHash}`;
+      button.addEventListener('click', () => openSource(source)); section.appendChild(button);
     }
   };
   if (all && workflow.coverage) {
@@ -523,6 +524,9 @@ function appendWorkflowReview(node) {
     panel.appendChild(section);
   }
   appendWorkflowEvidence(panel, all ? workflow.review : null, (workflow.checkpoints || []).filter(c => all || ids.has(c.calculationId)), sourceButtons, calculationById);
+  appendCollectedRuns(panel, workflow.collected, id=>{
+    const calculation=calculationById.get(id); if(calculation)openSource(calculation.source);
+  }, all ? null : ids);
   const relationships = (workflow.relationships || []).filter(r => all || ids.has(r.from) || ids.has(r.to));
   if (relationships.length || workflow.callCoverage) {
     const connections = document.createElement('details'); connections.className = 'workflow-connections';
@@ -549,6 +553,7 @@ function appendWorkflowReview(node) {
     section.innerHTML = `<summary>${escapeHtml(finding.confidence)} · ${escapeHtml(finding.title)}</summary>
       <p>${escapeHtml(finding.severity)} · ${escapeHtml(finding.confidenceRationale)}</p>
       <h4>Why review this?</h4><p>${escapeHtml(finding.impact)}</p>
+      ${(finding.observationContext || []).length?`<p>Current signed observations: ${finding.observationContext.map(o=>`${escapeHtml(o.runId)} · ${escapeHtml(o.observedEntries)} profile entries`).join('; ')}. These do not prove a defect, successful I/O or safe reuse.</p>`:''}
       ${finding.workload ? `<p>Literal-range potential inner iterations: ${escapeHtml(finding.workload.potentialIterations ?? 'unknown')}. This assumes all written iterations reach the inner body; actual jobs and pair comparisons remain unknown.</p>` : ''}
       <h4>Safe next step</h4><p>${escapeHtml(finding.suggestedAction)}</p>
       <h4>Correctness tradeoff</h4><p>${escapeHtml(finding.correctnessTradeoff)}</p>
@@ -661,6 +666,47 @@ function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons, calcu
     const item = document.createElement('p'); item.className = 'workflow-evidence-issue'; item.textContent = `${diagnostic.section} ${diagnostic.id || ''}: ${diagnostic.message}`; section.appendChild(item);
   }
   const limits = document.createElement('p'); limits.textContent = review.limitations.join(' '); section.appendChild(limits); panel.appendChild(section);
+}
+
+function appendCollectedRuns(panel, collected, navigate, selectedIds=null) {
+  if(!collected?.runs?.length && !collected?.diagnostics?.length)return;
+  const section=document.createElement('section');section.className='collected-runs';
+  section.innerHTML='<h3>Observed execution · signed local collector</h3><p>Signatures identify a configured collector. They do not certify results, hostile-code isolation or continuing liveness. Call links below are observed project-filtered ancestry, not a complete cross-process timeline.</p>';
+  for(const message of collected.diagnostics || []){const item=document.createElement('p');item.textContent=message;section.appendChild(item);}
+  for(const run of collected.runs || []){
+    const item=document.createElement('details');item.className='collected-run';
+    item.innerHTML=`<summary>${escapeHtml(run.runId || run.file)} · ${escapeHtml(run.status)}</summary><p>${escapeHtml(run.reason || run.limitation || '')}</p>`;
+    if(!run.verifiedSignature){section.appendChild(item);continue;}
+    const payload=run.payload;
+    const metadata=document.createElement('p');metadata.textContent=`Collector ${run.collectorId}; entry ${run.entry}; exit ${payload.exitCode}; complete within scope ${payload.completeWithinScope}; current input bindings ${run.inputFreshness}. ${run.eligibleForComparison?'Current complete receipt can support finite-case comparisons.':'Stale/partial/failed observation: reuse comparisons are disabled.'}`;item.appendChild(metadata);
+    const metrics=document.createElement('p');metrics.textContent=`Elapsed ${payload.metrics.elapsedSeconds ?? 'unknown'} seconds; process CPU ${payload.metrics.cpuSeconds ?? 'unknown'} seconds; normalized CPU ${payload.metrics.cpuUtilizationPercent ?? 'unknown'}%; peak process RSS ${payload.metrics.peakMemoryBytes ?? 'unknown'} bytes; allowed CPUs ${payload.metrics.cpuCount ?? 'unknown'}. Observer overhead is included.`;item.appendChild(metrics);
+    const byId=new Map(run.calculations.map(c=>[c.id,c]));
+    for(const c of run.calculations.filter(c=>!selectedIds||selectedIds.has(c.calculationId)).slice(0,100)){
+      const row=document.createElement('details');row.className='collected-calculation';
+      row.innerHTML=`<summary>${escapeHtml(c.name)} · ${escapeHtml(c.calls)} observed profile entries</summary><p>${escapeHtml(c.path)}:${c.line} · ${escapeHtml(c.sourceMatch)} · inclusive ${escapeHtml(c.elapsedNanoseconds)} ns. ${c.resumable?'Generator/coroutine entries include resumes.':'Return events can include unwinding; unavailable results are not treated as equal.'}</p>`;
+      if(c.calculationId && run.status!=='stale'){
+        const button=document.createElement('button');button.type='button';button.textContent=`Inspect observed ${c.name}`;button.addEventListener('click',()=>navigate(c.calculationId));row.appendChild(button);
+      }
+      const routes=payload.relationships.filter(r=>r.from===c.id||r.to===c.id);
+      for(const r of routes.slice(0,50)){
+        const route=document.createElement('p');route.textContent=`Observed route: ${byId.get(r.from)?.name || r.from} → ${byId.get(r.to)?.name || r.to}: ${r.calls} entries.`;row.appendChild(route);
+      }
+      const ops=payload.operations.filter(o=>o.calculationId===c.id);
+      for(const op of ops.slice(0,50)){const text=document.createElement('p');text.textContent=`${op.path}: ${op.openAttempts} open attempts (${op.mode || 'mode unavailable'}). Successful reads/writes and bytes are not established by audit events.`;row.appendChild(text);}
+      for(const group of (run.reuseGroups || []).filter(g=>g.observedId===c.id)){
+        const text=document.createElement('p');text.textContent=`Repeated directional input identity ${group.inputDigest}: ${group.calls} entries; same observed output ${group.stableObservedOutputs}. ${group.review}`;row.appendChild(text);
+      }
+      item.appendChild(row);
+    }
+    const coverage=document.createElement('details');coverage.innerHTML=`<summary>Collector scope, omissions and identities</summary><pre>${escapeHtml(JSON.stringify({coverage:payload.coverage,sourceChanges:payload.sourceChanges,environment:payload.environment},null,2))}</pre><ul>${(payload.limitations || []).map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>`;item.appendChild(coverage);
+    section.appendChild(item);
+  }
+  for(const comparison of collected.comparisons || []){
+    const item=document.createElement('details');item.className='collected-comparison';
+    item.innerHTML=`<summary>Signed comparison · ${escapeHtml(comparison.status)}</summary><p>${escapeHtml(comparison.reason || comparison.scope)}</p>${comparison.metricDifferences?`<pre>${escapeHtml(JSON.stringify({finiteValues:comparison.finiteValueComparison,differences:comparison.metricDifferences},null,2))}</pre>`:''}`;
+    section.appendChild(item);
+  }
+  panel.appendChild(section);
 }
 
 function taskControls() {
@@ -971,7 +1017,9 @@ function renderWorkflowReader() {
       <h4>What comes in?</h4><p>Parameters: ${escapeHtml(c.inputs.join(', ') || 'none declared; hidden inputs may exist')}.</p>
       <ul>${c.io.filter(io => io.operation.includes('read')).map(io => `<li>Reads ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} at line ${io.source.line}.</li>`).join('') || (x?.throughCalls?.length?'<li>No direct file read captured here; inspect the helper inputs below.</li>':'<li>No supported file reads found. Dynamic paths and other storage may exist.</li>')}</ul>
       ${(x?.throughCalls || []).length?`<h4>Inputs read through called helpers</h4><ul>${x.throughCalls.map(io=>`<li>${escapeHtml(io.calculation)} reads <code>${escapeHtml(io.expression)}</code> · ${escapeHtml(io.source.path)}:${io.source.line}. Written argument substitution; actual path and read unobserved.</li>`).join('')}</ul>`:''}
-      <h4>What does it build?</h4><ol>${(x?.steps || []).slice(0, 100).map(s => `<li>${s.kind === 'declare' ? `Declares ${escapeHtml(s.targets.join(', '))} without an initial value` : s.kind === 'assign' ? `Sets ${escapeHtml(s.targets.join(', '))} from` : 'Returns'} ${s.kind==='declare'?'':`<code>${escapeHtml(s.expression)}</code>`} · line ${s.source.line}${s.guards.length ? ` · under ${escapeHtml(s.guards.map(g => `${g.branch}: ${g.test}`).join('; '))}` : ''}.</li>`).join('') || '<li>Read the source: no supported assignment or return steps were captured.</li>'}</ol>
+      <h4>What does it build?</h4><ol>${(x?.steps || []).slice(0, 100).map(s => `<li>${s.kind === 'declare' ? `Declares ${escapeHtml(s.targets.join(', '))} without an initial value` : s.kind === 'loop' ? 'Repeats over' : s.kind === 'assign' ? `Sets ${escapeHtml(s.targets.join(', '))} from` : 'Returns'} ${s.kind==='declare'?'':`<code>${escapeHtml(s.expression)}</code>`} · line ${s.source.line}${s.guards.length ? ` · under ${escapeHtml(s.guards.map(g => `${g.branch}: ${g.test}`).join('; '))}` : ''}.${s.explanation?`<p>${escapeHtml(s.explanation)}</p>`:''}</li>`).join('') || '<li>Read the source: no supported assignment or return steps were captured.</li>'}</ol>
+      ${(c.fieldAccesses || []).length?`<h4>Fields, keys and positions referenced</h4><ul>${c.fieldAccesses.slice(0,50).map(f=>`<li>${escapeHtml(f.access)} ${escapeHtml(f.container)}[${escapeHtml(f.selector)}] · line ${f.source.line}. Runtime schema not inferred.</li>`).join('')}</ul>`:''}
+      ${(c.sql || []).length?`<h4>Possible SQL products</h4><ul>${c.sql.map(q=>`<li>${escapeHtml(q.call)} · ${escapeHtml(q.tables.map(t=>t.operation+' '+t.tableExpression).join('; '))}. ${escapeHtml(q.basis)}</li>`).join('')}</ul>`:''}
       <p>${(x?.steps || []).length > 100 ? 'Showing the first 100 steps; JSON/source contains the rest.' : 'Written statement order is a reading order. Branches, loops, asynchronous work and callers determine execution.'}</p>
       <h4>What comes out?</h4><p>${escapeHtml(c.outputs.map(o => o.summary).join('; ') || 'No explicit return expression found; side effects may exist')}.</p>
       <ul>${c.io.filter(io => io.operation.includes('write')).map(io => `<li>Saves ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} · line ${io.source.line}.</li>`).join('')}</ul>
@@ -993,12 +1041,14 @@ function renderWorkflowReader() {
     const riskPanel = document.createElement('section'); riskPanel.innerHTML = '<h4>Before you run</h4>';
     for (const f of risks.slice(0, 30)) {
       const item = document.createElement('details'); item.className = 'workflow-reader-risk';
-      item.innerHTML = `<summary>${escapeHtml(f.reviewPriority || 'normal')} · ${escapeHtml(f.title)}</summary><p>${escapeHtml(f.impact)}</p><p>${escapeHtml(f.reviewContext?.explanation || '')}</p><p>${escapeHtml(f.suggestedAction)}</p><p>Correctness: ${escapeHtml(f.correctnessTradeoff)}</p><ul>${f.requiredVerification.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>`;
+      item.innerHTML = `<summary>${escapeHtml(f.reviewPriority || 'normal')} · ${escapeHtml(f.title)}</summary><p>${escapeHtml(f.impact)}</p><p>${escapeHtml(f.reviewContext?.explanation || '')}</p><p>${escapeHtml(f.suggestedAction)}</p><p>Correctness: ${escapeHtml(f.correctnessTradeoff)}</p><ul>${f.requiredVerification.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>${(f.observationContext || []).length?`<p>Current signed profile entries: ${f.observationContext.map(o=>`${escapeHtml(o.runId)}: ${escapeHtml(o.observedEntries)}`).join('; ')}. Entry counts are not job counts or proof of safe reuse.</p>`:''}`;
       riskPanel.appendChild(item);
     }
     if (!risks.length) riskPanel.innerHTML += '<p>No supported risk finding for this calculation. This is not clearance to run.</p>';
     reading.appendChild(riskPanel); sourceButton(c);
+    appendCollectedRuns(reading,w.collected,choose,new Set([c.id]));
   }
+  appendCollectedRuns(panel,w.collected,choose);
   renderList(); renderCalculation();
 }
 

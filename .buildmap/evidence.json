@@ -2,9 +2,9 @@
   "components": {
     "intent": {
       "status": "verified",
-      "recordedAt": "2026-11-01T00:53:42.460Z",
-      "command": "npm test (153 cases); focused event/measurement/continuity checks",
-      "note": "All 153 Node cases passed on Node 24.22.1, Python 3.12.14; a subsequent focused 23-case run passed after tightening reported retry ordering. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
+      "recordedAt": "2026-11-01T01:00:34.284Z",
+      "command": "npm test (154 cases, Node 24.22.1 / Python 3.12.14)",
+      "note": "All 154 Node cases passed on Node 24.22.1, Python 3.12.14; all final cases include retry ordering and identifier-safe helper input propagation. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
       "sourceHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786"
       },
@@ -13,13 +13,13 @@
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-        "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-        "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+        "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+        "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
         "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
         "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-        "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-        "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-        "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+        "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+        "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+        "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
         "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "a6e3c3c13ef255cb329a3120e02eb3c5d59b092db78dd808eb2f6e4371d40165",
@@ -27,7 +27,7 @@
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "src/dev.js": "dd659738ff3730483b09a67ebcbf5a1cc38c8a796866efe39a81f8bca8a84bc2",
         "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-        "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+        "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
         "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
         "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -42,30 +42,30 @@
         "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
         "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
         "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-        "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f",
+        "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946",
         ".buildmap/project.json": "c50c74dda181ab8f7982465d6de9dfaf1312c75dc967a399ed375844132362dc",
         "package.json": "ca26e61c1535a383bf76121c34a3f32bae3f6c1d329deeffab6b0dc7bbecafda",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/ACCEPTANCE_20261031.md": "75380bc2f893622a9ba84c987aa92f12183fb53a4f90a31537a6545253a21a1f"
+        "docs/ACCEPTANCE_20261031.md": "8b1e5bcc1398ad4e05f73ed950a676f62f685bd6d6ad30b409f20cd21cb4deca"
       }
     },
     "scanner": {
       "status": "verified",
-      "recordedAt": "2026-11-01T00:53:42.460Z",
-      "command": "npm test (153 cases); focused event/measurement/continuity checks",
-      "note": "All 153 Node cases passed on Node 24.22.1, Python 3.12.14; a subsequent focused 23-case run passed after tightening reported retry ordering. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
+      "recordedAt": "2026-11-01T01:00:34.285Z",
+      "command": "npm test (154 cases, Node 24.22.1 / Python 3.12.14)",
+      "note": "All 154 Node cases passed on Node 24.22.1, Python 3.12.14; all final cases include retry ordering and identifier-safe helper input propagation. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
       "sourceHashes": {
         "src/scan.js": "4716ce5a9cf01f26f494727589e01e27b1784bd689adc10f26005933f0a02b0e",
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-        "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-        "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+        "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+        "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
         "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
         "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-        "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-        "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-        "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+        "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+        "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+        "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
         "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39"
       },
       "inputHashes": {
@@ -76,7 +76,7 @@
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "src/dev.js": "dd659738ff3730483b09a67ebcbf5a1cc38c8a796866efe39a81f8bca8a84bc2",
         "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-        "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+        "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
         "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
         "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -91,18 +91,18 @@
         "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
         "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
         "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-        "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f",
+        "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946",
         ".buildmap/project.json": "c50c74dda181ab8f7982465d6de9dfaf1312c75dc967a399ed375844132362dc",
         "package.json": "ca26e61c1535a383bf76121c34a3f32bae3f6c1d329deeffab6b0dc7bbecafda",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/ACCEPTANCE_20261031.md": "75380bc2f893622a9ba84c987aa92f12183fb53a4f90a31537a6545253a21a1f"
+        "docs/ACCEPTANCE_20261031.md": "8b1e5bcc1398ad4e05f73ed950a676f62f685bd6d6ad30b409f20cd21cb4deca"
       }
     },
     "server": {
       "status": "verified",
-      "recordedAt": "2026-11-01T00:53:42.460Z",
-      "command": "npm test (153 cases); focused event/measurement/continuity checks",
-      "note": "All 153 Node cases passed on Node 24.22.1, Python 3.12.14; a subsequent focused 23-case run passed after tightening reported retry ordering. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
+      "recordedAt": "2026-11-01T01:00:34.285Z",
+      "command": "npm test (154 cases, Node 24.22.1 / Python 3.12.14)",
+      "note": "All 154 Node cases passed on Node 24.22.1, Python 3.12.14; all final cases include retry ordering and identifier-safe helper input propagation. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
       "sourceHashes": {
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "a6e3c3c13ef255cb329a3120e02eb3c5d59b092db78dd808eb2f6e4371d40165",
@@ -116,16 +116,16 @@
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-        "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-        "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+        "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+        "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
         "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
         "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-        "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-        "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-        "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+        "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+        "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+        "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
         "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39",
         "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-        "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+        "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
         "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
         "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -140,21 +140,21 @@
         "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
         "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
         "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-        "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f",
+        "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946",
         ".buildmap/project.json": "c50c74dda181ab8f7982465d6de9dfaf1312c75dc967a399ed375844132362dc",
         "package.json": "ca26e61c1535a383bf76121c34a3f32bae3f6c1d329deeffab6b0dc7bbecafda",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/ACCEPTANCE_20261031.md": "75380bc2f893622a9ba84c987aa92f12183fb53a4f90a31537a6545253a21a1f"
+        "docs/ACCEPTANCE_20261031.md": "8b1e5bcc1398ad4e05f73ed950a676f62f685bd6d6ad30b409f20cd21cb4deca"
       }
     },
     "visualizer": {
       "status": "verified",
-      "recordedAt": "2026-11-01T00:53:42.460Z",
-      "command": "Supported cloud preview and CUA browser checks, plus retained DOM tests",
+      "recordedAt": "2026-11-01T01:00:34.285Z",
+      "command": "Supported cloud-preview CUA observations and retained DOM checks",
       "note": "Observed live and captured map rendering, source/calculation search and navigation, Guide task review/agreement, device save/reload/original-baseline restore and disposable-copy removal. Retained DOM checks cover stale/failure/scope/offline cases. This is scoped browser evidence, not the entire historical Chromium suite, all devices, authenticated provenance or continuing deployment liveness.",
       "sourceHashes": {
         "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-        "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+        "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
         "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
         "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0"
       },
@@ -164,13 +164,13 @@
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-        "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-        "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+        "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+        "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
         "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
         "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-        "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-        "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-        "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+        "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+        "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+        "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
         "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "a6e3c3c13ef255cb329a3120e02eb3c5d59b092db78dd808eb2f6e4371d40165",
@@ -189,18 +189,18 @@
         "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
         "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
         "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-        "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f",
+        "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946",
         ".buildmap/project.json": "c50c74dda181ab8f7982465d6de9dfaf1312c75dc967a399ed375844132362dc",
         "package.json": "ca26e61c1535a383bf76121c34a3f32bae3f6c1d329deeffab6b0dc7bbecafda",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/ACCEPTANCE_20261031.md": "75380bc2f893622a9ba84c987aa92f12183fb53a4f90a31537a6545253a21a1f"
+        "docs/ACCEPTANCE_20261031.md": "8b1e5bcc1398ad4e05f73ed950a676f62f685bd6d6ad30b409f20cd21cb4deca"
       }
     },
     "verification": {
       "status": "verified",
-      "recordedAt": "2026-11-01T00:53:42.461Z",
-      "command": "npm test (153 cases); focused event/measurement/continuity checks",
-      "note": "All 153 Node cases passed on Node 24.22.1, Python 3.12.14; a subsequent focused 23-case run passed after tightening reported retry ordering. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
+      "recordedAt": "2026-11-01T01:00:34.285Z",
+      "command": "npm test (154 cases, Node 24.22.1 / Python 3.12.14)",
+      "note": "All 154 Node cases passed on Node 24.22.1, Python 3.12.14; all final cases include retry ordering and identifier-safe helper input propagation. Includes actual small executed measurement/read-count tests and exact output preservation. These local checks do not execute or certify inspected production workflows.",
       "sourceHashes": {
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
         "tests/intent.test.js": "b0f3b5c2c5dd3b70e179fd437b1844023bac3348756f874a0fad3ad87bea592a",
@@ -214,7 +214,7 @@
         "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
         "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
         "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-        "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f"
+        "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946"
       },
       "inputHashes": {
         "src/intent.js": "ed8a702617ac58366c32aa74c5c9789379ce380178d6410cc413826488a75786",
@@ -222,13 +222,13 @@
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-        "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-        "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+        "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+        "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
         "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
         "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-        "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-        "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-        "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+        "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+        "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+        "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
         "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "a6e3c3c13ef255cb329a3120e02eb3c5d59b092db78dd808eb2f6e4371d40165",
@@ -236,20 +236,20 @@
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "src/dev.js": "dd659738ff3730483b09a67ebcbf5a1cc38c8a796866efe39a81f8bca8a84bc2",
         "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-        "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+        "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
         "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
         "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0",
         ".buildmap/project.json": "c50c74dda181ab8f7982465d6de9dfaf1312c75dc967a399ed375844132362dc",
         "package.json": "ca26e61c1535a383bf76121c34a3f32bae3f6c1d329deeffab6b0dc7bbecafda",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/ACCEPTANCE_20261031.md": "75380bc2f893622a9ba84c987aa92f12183fb53a4f90a31537a6545253a21a1f"
+        "docs/ACCEPTANCE_20261031.md": "8b1e5bcc1398ad4e05f73ed950a676f62f685bd6d6ad30b409f20cd21cb4deca"
       }
     }
   },
   "outcomes": {
     "inspect-build": {
       "status": "verified",
-      "recordedAt": "2026-11-01T00:54:52.116Z",
+      "recordedAt": "2026-11-01T01:00:35.127Z",
       "command": "Current readIntent → scanProject → real local GET /api/map equality check; supported cloud-preview CUA piece/goal DOM observations",
       "note": "Observed the current declared four-step free-map example. Local intent/scanner/HTTP snapshots matched selected fields and fingerprint. The mirrored current-source cloud preview displayed the exact visualizer file list, evidence-review heading, named goal steps and destination. The browser response fingerprint was not intercepted or equated to the differently rooted local server. Guide save/reload and calculation navigation were observed separately. This is a scoped content/source observation, not all-roadmap completion, authenticated provenance, full accessibility or live deployment.",
       "sourceHashes": {
@@ -258,13 +258,13 @@
         "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
         "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
         "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-        "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-        "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+        "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+        "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
         "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
         "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-        "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-        "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-        "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+        "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+        "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+        "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
         "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39",
         "src/server.js": "e8d4c059f4ee4be7a9bc23ceab6e7a9d6879c10a93361a2037c11f40496c07d3",
         "src/cli.js": "a6e3c3c13ef255cb329a3120e02eb3c5d59b092db78dd808eb2f6e4371d40165",
@@ -272,7 +272,7 @@
         "src/setup.js": "d68a2c0c802f494577e3e5f671efe1dab56d0a60867415594b5c2fea55eaa53a",
         "src/dev.js": "dd659738ff3730483b09a67ebcbf5a1cc38c8a796866efe39a81f8bca8a84bc2",
         "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-        "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+        "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
         "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
         "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0",
         "tests/scan.test.js": "0f3899963d1994e6c5cc3f374c8f9d40d44f0d4dfbdc006f774249b63a5d3402",
@@ -287,14 +287,14 @@
         "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
         "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
         "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-        "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f"
+        "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946"
       },
       "definitionHash": "ec9bc63293e38ac5116b5665682edf78c4953ccc652000dea7707d6e6a980c7a",
       "inputHashes": {
         ".buildmap/project.json": "c50c74dda181ab8f7982465d6de9dfaf1312c75dc967a399ed375844132362dc",
         "package.json": "ca26e61c1535a383bf76121c34a3f32bae3f6c1d329deeffab6b0dc7bbecafda",
         "package-lock.json": "e11bc34bd02afb530112c7573725f792b67b8922256fd2b73f3e78e7800fde8f",
-        "docs/ACCEPTANCE_20261031.md": "75380bc2f893622a9ba84c987aa92f12183fb53a4f90a31537a6545253a21a1f"
+        "docs/ACCEPTANCE_20261031.md": "8b1e5bcc1398ad4e05f73ed950a676f62f685bd6d6ad30b409f20cd21cb4deca"
       },
       "example": {
         "name": "Current free map source-to-HTTP-to-browser content review",
@@ -381,13 +381,13 @@
                     "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
                     "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
                     "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-                    "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-                    "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+                    "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+                    "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
                     "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
                     "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-                    "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-                    "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-                    "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+                    "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+                    "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+                    "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
                     "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39"
                   }
                 },
@@ -420,7 +420,7 @@
                   "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces.",
                   "sourceHashes": {
                     "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-                    "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+                    "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
                     "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
                     "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0"
                   }
@@ -456,14 +456,14 @@
                     "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
                     "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
                     "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-                    "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f"
+                    "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946"
                   }
                 }
               ],
               "outcomeIds": [
                 "inspect-build"
               ],
-              "fingerprint": "319e4e4ccb08"
+              "fingerprint": "2ff657ab7be3"
             }
           },
           {
@@ -514,13 +514,13 @@
                     "src/imports.js": "6d197fea7e8073cd348281746e09fae32893982163d2fdde0838a5311765f770",
                     "src/javascript.js": "8e2db32ab5a7df9748e3811ca84b2906e05622e531b6ed99bd2b6020b151a431",
                     "src/outcomes.js": "b1182d6fa8fe129a446d8b19d6f16313f48aabb91a9e96252183abc4ca1e3017",
-                    "src/code-guide.js": "d4241fcf5834752472742f7ac1535d1db3e962a7998a88c8a46f98ec3cf49bbc",
-                    "src/workflow.js": "1732e7df1fdf0d0819600c4b180ad707ad56092dae7c058dfba7b8aabee3777a",
+                    "src/code-guide.js": "368b2c4d7709e2c4bc657b4829f9fefd96e3c74d18f5d57e8e58292aff121398",
+                    "src/workflow.js": "1ddd04659670d8747bd381d0fec36e1204b56a71b31438570520ab1f6b7643c6",
                     "src/workflow-risk.js": "0e3565a15b6bafa40d3386cc2fbed018184b98d05ede58d322910bae3e44756c",
                     "src/review-evidence.js": "8629432dd50016483e31e853b66b066525ebc12085434668635e9dac436cd6fa",
-                    "src/python-analyzer.py": "38121ddbc855c146b21fbebae5379a78e4c17e1c62e128d57b7ec7397625377c",
-                    "src/javascript-workflow.js": "fab5a66ad56f061e99f78217cfe37278209d5052f09b3d678c0bbe55632402ef",
-                    "src/workflow-explain.js": "85707c58410892ba08d5b8b95215a648efb4f28221dc63fe76b85d90e521be54",
+                    "src/python-analyzer.py": "bf5f6b43d96c80a28999764721887bed5032d7e8d9cde5eb3cf52c56a95753bd",
+                    "src/javascript-workflow.js": "59311698c2e033f6d5f1ed33f04ae7e053daf3e846f7f382c539f3e56c75bf59",
+                    "src/workflow-explain.js": "5a6361578f66599f5d8318f44fa2dfea8805035716f8d7b4a327ba95a963f5b3",
                     "src/measurements.js": "c93a01ed72431487c77bb073dc29b223580421fd0bd554a2dfe34338bcea3e39"
                   }
                 },
@@ -553,7 +553,7 @@
                   "purpose": "Inspect pieces, source wiring, evidence, and declared outcome walkthroughs with recorded inputs/outputs; mini-visuals are illustrations, not runtime traces.",
                   "sourceHashes": {
                     "public/index.html": "a0d46b089cdce8e35562a46e7a8f49e6b0edc9c1718ecac11da9d4a5bc968d1f",
-                    "public/app.js": "4935ad60547bf85fe6f71b866abb42b941d8419a46c17d8ed78ff2fb37a69db3",
+                    "public/app.js": "4ce501582d4504bd67f329a69c324e4b1a3576ac236c28a2a4200f0ea39afc1f",
                     "public/styles.css": "4dc2f9b762e5afe991824bdc715e0cf22d8b9eca46e794b4f186992f4496c73a",
                     "public/guide-tasks.js": "60eaf99b02b6a1f7c73cbb2d0052e7e414acb49444648ec8ab18947344403ed0"
                   }
@@ -589,14 +589,14 @@
                     "tests/review-evidence.test.js": "089ec7dcd8ca6dc6e5c53fa3ea6b0f3db85b11d2624a3e41327f1e2b7eee9a23",
                     "tests/fixtures/workflow-analysis.json": "bdaaa6da09ebf9ec3cf0636a1312a63cc36495e1cd52db279267504b0e70db0a",
                     "tests/fixtures/workflow-pipeline.py": "b5101fdff7622bab8cb718ac4b2c437c4ff5b9f3fd262716b8b9d5807b1a319c",
-                    "tests/completion.test.js": "458a1f5c2eab0cddc55078d84c3beec4344be5f6d3307729a3affb2795f45e9f"
+                    "tests/completion.test.js": "23e486e91c5209aa19fb165e9a25a14de91dc93e93807466e260c4315cd72946"
                   }
                 }
               ],
               "outcomeIds": [
                 "inspect-build"
               ],
-              "fingerprint": "319e4e4ccb08"
+              "fingerprint": "2ff657ab7be3"
             }
           },
           {
@@ -632,11 +632,11 @@
   },
   "completion": {
     "status": "verified",
-    "recordedAt": "2026-11-01T00:54:52.116Z",
+    "recordedAt": "2026-11-01T01:00:35.127Z",
     "note": "Reviewed only the explicit free-MVP inspect-build scope and its current named source/API/browser-content example. This does not establish completion of all 12 roadmap projects or commercial launch.",
     "definitionHash": "1a4df3a201d3eca6c23ca05a2306484b40bc44910f01cce60ce432c50c00a119",
     "outcomeEvidenceHashes": {
-      "inspect-build": "4fdd301ccba9f51f7baa421581e025d6051f72b74de542ec949c915cc71c840e"
+      "inspect-build": "c6c732e026518d5da4adfa01f2691c6da7238b9f577a8773275b9cba69f441b6"
     }
   }
 }

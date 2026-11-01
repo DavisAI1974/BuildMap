@@ -92,6 +92,7 @@ export function explainFunctions(ast, bindingCounts, source = '') {
       io: workflow.io, transformations: workflow.transformations, loopPaths: workflow.loopPaths, comprehensions: [],
       facts: workflow.facts, reuseCues: workflow.reuseCues, steps: workflow.steps, decorators: [],
       parameters: fn.params.map(parameter), calls: calls.sort(order), returns: returns.sort(order), conditions, loops, throws,
+      parameterNames: fn.params.map(p => p.type === 'Identifier' ? p.name : p.type === 'AssignmentPattern' && p.left.type === 'Identifier' ? p.left.name : null),
       ...loc(fn), endLine: fn.loc.end.line,
       summary: `${name} declares ${fn.params.length} parameter${fn.params.length === 1 ? '' : 's'} and contains ${calls.length} call/construction site${calls.length === 1 ? '' : 's'} and ${returns.length} return site${returns.length === 1 ? '' : 's'}.` };
   });

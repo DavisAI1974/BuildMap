@@ -23,6 +23,8 @@ test('source walkthrough follows real arguments, transformed values, saved produ
   const link = w.relationships.find(r => r.from === run.id);
   assert.deepEqual(link.inputBindings.map(b => [b.parameter,b.expression]), [['source',"'raw.csv'"]]);
   assert.deepEqual(link.resultTargets,['table']);
+  assert.equal(run.explanation.throughCalls[0].expression,"'raw.csv'");
+  assert.match(run.explanation.throughCalls[0].basis,/not resolved runtime paths/);
   assert.equal(prepare.explanation.consumers[0].product,'prepared.parquet');
   const trace = traceCalculation(w,run.id); assert.deepEqual(trace.steps.map(s => s.name),['run','prepare']);
   assert.equal(trace.truncated,false); assert.match(trace.basis,/not a runtime schedule/);
@@ -42,6 +44,15 @@ test('JavaScript shares the workflow model, links exported local imports and ret
   assert.equal(w.coverage.parsedJavaScriptFiles,2);
   assert.ok(w.dataProducts.find(p=>p.pathExpression==='raw.csv'));
   assert.ok(w.findings.find(f=>f.type==='potential-repeated-computation'));
+});
+
+test('helper input propagation substitutes identifier nodes without rewriting quoted text or merging symbolic file identities', t=>{
+  const root=fixture(t);
+  write(root,'read.js',`import fs from 'node:fs';\nimport path from 'node:path';\nfunction read(root,rel) { return fs.readFileSync(path.join(root,rel,'rel')); }\nexport function load(root) { return read(root,'input.csv'); }\n`);
+  const w=scanProject(root).workflow, load=w.calculations.find(c=>c.name==='load');
+  assert.equal(load.explanation.throughCalls[0].expression,`path.join(root, 'input.csv', "rel")`);
+  assert.equal(w.dataProducts.length,0);
+  assert.equal(w.calculations.find(c=>c.name==='read').io[0].pathKind,'symbolic');
 });
 
 test('opposite branches and existing cache helpers are contextualized without declaring reuse or dropping warnings', t => {

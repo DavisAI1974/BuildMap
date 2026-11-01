@@ -66,11 +66,12 @@ export function buildWorkflow(guides) {
         facts: (fn.facts || []).map(f => ({ ...f, source: source(file, f) })),
         loopPaths: fn.loopPaths, comprehensions: fn.comprehensions.map(c => ({ ...c, source: source(file, c) })),
         reuseCues: [...fn.reuseCues, ...fn.decorators].map(c => ({ ...c, source: source(file, c) })),
-        documentation: fn.documentation || null, steps: (fn.steps || []).map(s => ({ ...s, source: source(file, s) })),
+        documentation: fn.documentation || null, parameterNames: fn.parameterNames || fn.parameters, steps: (fn.steps || []).map(s => ({ ...s, source: source(file, s) })),
         purpose: 'Written function/module syntax; business purpose and whether this path runs need review.',
         why: 'A declaration is not proof it is called. Review entry-point wiring and runtime counters before optimizing.' };
       calculations.push(calc);
       for (const io of calc.io) {
+        if (io.pathKind === 'symbolic') continue; // Same parameter spelling across scopes is not a shared product identity.
         const key = io.pathExpression;
         if (!products.has(key)) products.set(key, { id: `literal:${key}`, pathExpression: key, basis: 'possible-literal-path-match', compatibility: 'unknown', producers: [], consumers: [] });
         const product = products.get(key), site = { calculationId: id, source: io.source, call: io.call, loopDepth: io.loopDepth };

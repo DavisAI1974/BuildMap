@@ -10,9 +10,9 @@ export function explainWorkflow(workflow, nodes, review) {
     const callee = byId.get(r.to), call = byId.get(r.from)?.calls.find(c => c.source.line === r.source.line && c.source.column === r.source.column);
     const positional = call?.positionalArguments || r.arguments, keywords = call?.keywordArguments || [];
     const unsupported = positional.some(p => p.startsWith('*') || p.startsWith('...')) || keywords.some(k => !k.name);
-    r.inputBindings = unsupported ? [] : callee.inputs.filter(p => !p.startsWith('*')).map((parameter, i) => ({ parameter,
+    r.inputBindings = unsupported ? [] : (callee.parameterNames || callee.inputs).map((parameter, i) => ({ parameter,
       expression: keywords.find(k => k.name === parameter)?.expression ?? positional[i] ?? null,
-      basis: 'written-call-argument; actual values and defaults unobserved' }));
+      basis: 'written-call-argument; actual values and defaults unobserved' })).filter(b=>b.parameter && !b.parameter.startsWith('*'));
     r.bindingStatus = unsupported ? 'unresolved-spread-arguments' : 'source-argument-candidates'; r.resultTargets = call?.resultTargets || [];
   }
   for (const p of workflow.dataProducts) for (const s of [...p.producers, ...p.consumers]) {
@@ -34,7 +34,12 @@ export function explainWorkflow(workflow, nodes, review) {
       steps: c.steps || [], outputs: c.outputs, savedOutputs: writes,
       callers: callers.map(r => ({ id: r.from, source: r.source, argumentBindings: r.inputBindings })),
       consumers: (products.get(c.id) || []).filter(p => p.producers.some(s => s.calculationId === c.id)).flatMap(p => p.consumers.map(s => ({ id: s.calculationId, product: p.pathExpression, source: s.source }))),
-      calls: callees.map(r => r.id), unknowns: ['Branches and calls may never execute.', 'Mutable values, dynamic paths, hidden inputs and runtime ordering are not established by source syntax.'] };
+      calls: callees.map(r => r.id), throughCalls:callees.flatMap(r=>{
+        const target=byId.get(r.to), bindings=new Map((r.inputBindings || []).filter(b=>b.expression!==null).map(b=>[b.parameter,b.expression]));
+        return target.io.filter(io=>io.operation.includes('read')).map(io=>({calculationId:target.id,calculation:target.name,source:io.source,callSource:r.source,
+          expression:io.operand?renderOperand(io.operand,bindings):io.pathExpression,
+          basis:'one-call source argument substitution; not resolved runtime paths or observed I/O'}));
+      }), unknowns: ['Branches and calls may never execute.', 'Mutable values, dynamic paths, hidden inputs and runtime ordering are not established by source syntax.'] };
     c.resources = (c.facts || []).filter(f => ['worker-pool','execution-control','bounded-read-cue','collection-release'].includes(f.kind));
     const repeated = new Map();
     for (const call of c.calls) {
@@ -99,6 +104,14 @@ export function explainWorkflow(workflow, nodes, review) {
     declaredStageOrder: review.stages.map(s => ({ id: s.id, name: s.name || s.id, dependsOn: s.dependsOn, calculationId: s.calculationId, inputs: s.inputs, outputs: s.outputs })),
     summary: `${workflow.calculations.length} calculations, ${workflow.relationships.length} supported call candidates and ${workflow.dataProducts.length} possible file products. Select an entry to follow source connections; source order is not execution order.`, completeRuntimeTrace: false };
   return workflow;
+}
+
+function renderOperand(node, bindings, depth=0) {
+  if(depth>10) return '[expression depth limit]';
+  if(node.kind==='name')return bindings.get(node.name) ?? node.name;
+  if(node.kind==='literal')return JSON.stringify(node.value);
+  if(node.kind==='call')return `${node.target}(${node.arguments.map(n=>renderOperand(n,bindings,depth+1)).join(', ')})`;
+  return node.text || '[unresolved expression]';
 }
 
 export function traceCalculation(workflow, entryId, { limit = 200 } = {}) {

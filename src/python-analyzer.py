@@ -2,6 +2,7 @@
 import ast
 from collections import Counter
 import json
+import math
 import sys
 
 
@@ -27,6 +28,16 @@ def name(node):
 
 def literal(node):
     return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
+
+
+def path_operand(node):
+    if isinstance(node, ast.Name):
+        return {"kind": "name", "name": node.id}
+    if isinstance(node, ast.Constant) and isinstance(node.value, (str, int, float, bool, type(None))) and not (isinstance(node.value, float) and not math.isfinite(node.value)):
+        return {"kind": "literal", "value": node.value}
+    if isinstance(node, ast.Call):
+        return {"kind": "call", "target": name(node.func), "arguments": [path_operand(a) for a in node.args]}
+    return {"kind": "unknown", "text": expr(node)}
 
 
 def range_count(node):
@@ -347,12 +358,14 @@ def analyze(source):
             elif resolved == 'numpy.save' and root in imports:
                 product = literal(node.args[0]) if node.args else None
                 operation = 'write'
-            if product is not None and operation:
-                self.io.append({"pathExpression": product, "operation": operation, "call": target,
+            if operation:
+                path_node = node.args[0] if node.args else next((k.value for k in node.keywords if k.arg in ('filepath_or_buffer', 'path', 'path_or_buf', 'file')), None)
+                self.io.append({"pathExpression": product if product is not None else expr(path_node), "pathKind": 'literal' if product is not None else 'symbolic', "operand": path_operand(path_node), "operation": operation, "call": target,
                                 "basis": "literal-or-unique-constant-path-syntax", "loopDepth": len(self.stack),
                                 "guards": list(self.guards), "resultTargets": self.result_targets.get(id(node), []), **location(node)})
-                self.fact(node, 'persistence', operation='load' if operation == 'read' else 'save' if operation == 'write' else 'load-save',
-                          pathExpression=product, literalPath=product, basis='literal file-I/O call syntax; saved-product semantics unknown')
+                if product is not None:
+                    self.fact(node, 'persistence', operation='load' if operation == 'read' else 'save' if operation == 'write' else 'load-save',
+                              pathExpression=product, literalPath=product, basis='literal file-I/O call syntax; saved-product semantics unknown')
             self.generic_visit(node)
 
     records = []

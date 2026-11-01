@@ -10,6 +10,9 @@ export function javascriptWorkflow(ast, bindings, source, fn, definitions) {
     if (bindings.get(s.local.name) === 1) imports.set(s.local.name, { module: n.source.value, symbol: s.type === 'ImportSpecifier' ? s.imported.name : null, ...at(n) });
   }
   const value = n => literal(n) ?? (n?.type === 'Identifier' ? constants.get(n.name) ?? null : null);
+  const operand = n => !n ? { kind:'unknown',text:'unknown' } : n.type==='Identifier' ? {kind:'name',name:n.name}
+    : n.type==='Literal' ? {kind:'literal',value:n.value} : n.type==='CallExpression' ? {kind:'call',target:ref(n.callee),arguments:n.arguments.map(operand)}
+    : {kind:'unknown',text:raw(n)};
   const result = { io: [], transformations: [], loopPaths: [], comprehensions: [], facts: [], reuseCues: [], steps: [] };
   const calls = new Map();
   function walk(n, axes = [], guards = [], resultTargets = []) {
@@ -18,7 +21,7 @@ export function javascriptWorkflow(ast, bindings, source, fn, definitions) {
       if (n.id.type === 'Identifier' && bindings.get(n.id.name) === 1 && literal(n.init) !== null) constants.set(n.id.name, literal(n.init));
       const summary = raw(n), targets = [raw(n.id)];
       result.transformations.push({ summary, kind: n.type, ...at(n) });
-      result.steps.push({ kind: 'assign', targets, expression: raw(n.init), guards, ...at(n) });
+      result.steps.push({ kind: n.init ? 'assign' : 'declare', targets, expression: raw(n.init), guards, ...at(n) });
       walk(n.init, axes, guards, targets); return;
     }
     if (n.type === 'ReturnStatement') result.steps.push({ kind: 'return', expression: raw(n.argument), guards, ...at(n) });
@@ -47,10 +50,11 @@ export function javascriptWorkflow(ast, bindings, source, fn, definitions) {
       const member = parts.at(-1), fs = imported && ['fs','node:fs','fs/promises','node:fs/promises'].includes(imported.module);
       const operation = (imported?.symbol || member).match(/^(readFile|readFileSync|createReadStream)$/) ? 'read'
         : (imported?.symbol || member).match(/^(writeFile|writeFileSync|appendFile|appendFileSync|createWriteStream)$/) ? 'write' : null;
-      if (fs && operation && value(n.arguments[0]) !== null) {
-        const io = { pathExpression: value(n.arguments[0]), operation, call: target, basis: 'node-fs-literal-or-constant-syntax', loopDepth: axes.length, guards, resultTargets, ...at(n) };
+      if (fs && operation && n.arguments[0]) {
+        const literalPath=value(n.arguments[0]);
+        const io = { pathExpression: literalPath ?? raw(n.arguments[0]), pathKind:literalPath===null?'symbolic':'literal',operand:operand(n.arguments[0]),operation, call: target, basis: 'node-fs-path-syntax; actual path unobserved', loopDepth: axes.length, guards, resultTargets, ...at(n) };
         result.io.push(io);
-        result.facts.push({ kind: 'persistence', operation: operation === 'read' ? 'load' : 'save', literalPath: io.pathExpression, pathExpression: io.pathExpression, expression: raw(n), loopDepth: axes.length, guards, ...at(n) });
+        result.facts.push({ kind: 'persistence', operation: operation === 'read' ? 'load' : 'save', literalPath, pathExpression: io.pathExpression, expression: raw(n), loopDepth: axes.length, guards, ...at(n) });
       }
       if (/cache|memo|lazy|checkpoint|reuse|indexed/i.test(target)) result.reuseCues.push({ expression: raw(n), basis: 'name-only; behavior unverified', ...at(n) });
       if (target === 'Array.from' || fs && /readFile/.test(imported.symbol || member)) result.facts.push({ kind: 'whole-materialization', expression: raw(n), loopDepth: axes.length, guards, ...at(n) });

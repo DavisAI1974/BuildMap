@@ -70,7 +70,7 @@ test('fan-out separates symbolic dimensions and literal potential iterations fro
   assert.equal(w.dataProducts.find(p => p.pathExpression === 'saved-checkpoint.json').compatibility, 'unknown');
 });
 
-test('comments, strings, dynamic reads, shadowed imports and nested scopes do not invent read findings', t => {
+test('comments and shadowed imports do not invent reads; nested bodies have their own source-only findings', t => {
   const root = fixture(t, `import pandas as pd
 # pd.read_csv('fake.csv')
 text = "pd.read_csv('fake.csv')"
@@ -85,7 +85,12 @@ def outer():
         open('nested.csv')
 `);
   const w = scanProject(root).workflow;
-  assert.deepEqual(w.dataProducts, []); assert.deepEqual(w.findings, []);
+  assert.deepEqual(w.dataProducts.map(p=>p.pathExpression), ['nested.csv']);
+  const inner=w.calculations.find(c=>c.name==='outer.inner');
+  assert.ok(w.findings.every(f=>f.calculationIds.every(id=>id===inner.id)));
+  assert.equal(w.findings[0].confidence,'Needs runtime evidence');
+  assert.equal(w.calculations.find(c=>c.name==='outer').io.length,0);
+  assert.equal(w.calculations.find(c=>c.name==='outer.inner').io[0].pathExpression,'nested.csv');
   assert.ok(w.calculations.some(c => c.name === 'read'));
   assert.equal(w.calculations.some(c => ['inner', 'Reader.read'].includes(c.name)), false);
   assert.match(w.limitations.join(' '), /Dynamic|dynamic/);
@@ -242,10 +247,13 @@ test('direct class methods expose workflow syntax while nested bodies, inheritan
         yield from self.saved
 `);
   const w = scanProject(root).workflow;
-  assert.deepEqual(w.calculations.map(c => c.name), ['Pipeline.run', 'Pipeline.jobs', 'Pipeline.wait', 'Pipeline.stream']);
-  assert.ok(w.calculations.every(c => c.scopeKind === 'method'));
+  assert.deepEqual(w.calculations.map(c => c.name), ['Pipeline.run', 'Pipeline.jobs', 'Pipeline.wait', 'Pipeline.stream', 'Pipeline.run.hidden']);
+  assert.ok(w.calculations.slice(0,4).every(c => c.scopeKind === 'method'));
+  assert.equal(w.calculations[4].scopeKind,'nested-function');
   assert.deepEqual(w.calculations[0].inputs, ['self', 'stages', 'days']);
-  assert.equal(w.dataProducts.length, 0);
+  assert.equal(w.dataProducts.length, 1);
+  assert.equal(w.dataProducts[0].consumers[0].calculationId,w.calculations[4].id);
+  assert.equal(w.calculations[0].io.length,0);
   assert.ok(w.findings.some(f => f.title.startsWith('Pipeline.run:')));
   assert.equal(w.findings.find(f => f.title.startsWith('Pipeline.jobs:')).workload.potentialIterations, '6');
   assert.match(w.limitations.join(' '), /inheritance\/dispatch/);

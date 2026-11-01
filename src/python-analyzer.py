@@ -2,6 +2,8 @@
 import ast
 from collections import Counter
 import json
+import math
+import re
 import sys
 
 
@@ -27,6 +29,26 @@ def name(node):
 
 def literal(node):
     return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None
+
+
+def path_operand(node):
+    if isinstance(node, ast.Name):
+        return {"kind": "name", "name": node.id}
+    if isinstance(node, ast.Constant) and isinstance(node.value, (str, int, float, bool, type(None))) and not (isinstance(node.value, float) and not math.isfinite(node.value)):
+        return {"kind": "literal", "value": node.value}
+    if isinstance(node, ast.Call):
+        return {"kind": "call", "target": name(node.func), "arguments": [path_operand(a) for a in node.args]}
+    return {"kind": "unknown", "text": expr(node)}
+
+
+def sql_references(query):
+    # Literal source only. Remove comments/values before recognizing a small
+    # identifier grammar; never resolve dynamic SQL, aliases, CTEs or a database.
+    cleaned = re.sub(r"'(?:''|[^'])*'|--[^\n]*|/\*[\s\S]*?\*/", ' ', query)
+    identifier = r'(?:[A-Za-z_][A-Za-z0-9_$]*|"(?:""|[^"])+")(?:\.(?:[A-Za-z_][A-Za-z0-9_$]*|"(?:""|[^"])+"))*'
+    return [{"operation": 'write' if match.group(1).upper().startswith(('INSERT', 'UPDATE', 'CREATE')) else 'read',
+             "tableExpression": match.group(2), "basis": 'SQL literal syntax; connection/schema identity unresolved'}
+            for match in re.finditer(r'\b(FROM|JOIN|INSERT\s+INTO|UPDATE|CREATE\s+TABLE)\s+(' + identifier + ')', cleaned, re.I)]
 
 
 def range_count(node):
@@ -61,6 +83,18 @@ def analyze(source):
         elif isinstance(node, ast.ClassDef):
             definitions.extend((node.name + '.' + method.name, method, 'method') for method in node.body
                                if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)))
+    # Catalog nested function bodies separately. Their calls are never folded
+    # into the enclosing calculation or treated as observed execution.
+    def nested(body, prefix):
+        for statement in body:
+            if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                qualified = prefix + '.' + statement.name
+                definitions.append((qualified, statement, 'nested-function'))
+                nested(statement.body, qualified)
+            elif not isinstance(statement, ast.ClassDef):
+                nested(list(ast.iter_child_nodes(statement)), prefix)
+    for qualified, node, _ in list(definitions):
+        nested(node.body, qualified)
     bindings = Counter()
     mutated_roots = set()
     star_import = False
@@ -122,6 +156,35 @@ def analyze(source):
             self.facts = []
             self.guards = []
             self.collections = {}
+            self.steps = []
+            self.constants = {}
+            self.result_targets = {}
+            self.field_accesses, self.sql = [], []
+
+        def explain(self, node):
+            if node is None:
+                return 'No explicit value is supplied.'
+            if isinstance(node, ast.Name):
+                return 'Uses the value named ' + node.id + '.'
+            if isinstance(node, ast.BinOp):
+                operators = {ast.Add: '+', ast.Sub: '-', ast.Mult: '*', ast.Div: '/', ast.FloorDiv: '//', ast.Mod: '%', ast.Pow: '**', ast.MatMult: '@'}
+                return 'Combines ' + expr(node.left) + ' and ' + expr(node.right) + ' with the ' + operators.get(type(node.op), type(node.op).__name__) + ' operator. Actual types and values are not inferred.'
+            if isinstance(node, ast.Call):
+                target = name(node.func)
+                resolved = canonical(target)
+                if resolved in ('pandas.read_csv', 'pandas.read_parquet', 'pandas.read_pickle'):
+                    return 'Reads a table from ' + (expr(node.args[0]) if node.args else 'the supplied path') + ' using ' + target + ', if this call is reached.'
+                if target in ('sum', 'len', 'min', 'max', 'sorted') and target not in bound and target not in imports:
+                    descriptions = {'sum': 'Sums the supplied values', 'len': 'Counts the supplied items', 'min': 'Selects the smallest supplied value', 'max': 'Selects the largest supplied value', 'sorted': 'Builds a sorted result'}
+                    return descriptions[target] + ': ' + (expr(node.args[0]) if node.args else 'no positional input') + '.'
+                return 'Calls ' + (target or 'a computed callable') + ' with ' + ', '.join(expr(a) for a in node.args) + '. Read its linked source or runtime observation to follow the result.'
+            if isinstance(node, ast.Subscript):
+                return 'Selects ' + expr(node.slice) + ' from ' + expr(node.value) + '. Whether this is a row, column, key or position depends on the runtime value.'
+            if isinstance(node, ast.Dict):
+                return 'Builds a mapping with written keys: ' + ', '.join(expr(k) for k in node.keys if k is not None) + '.'
+            if isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                return 'Builds ' + ('a deferred generator' if isinstance(node, ast.GeneratorExp) else 'a collection') + ' over ' + ' then '.join(expr(g.iter) for g in node.generators) + '; filters and callers determine what is evaluated.'
+            return 'Uses the written expression ' + expr(node) + '; actual behavior and values require observation.'
 
         def fact(self, node, kind, **details):
             self.facts.append({"kind": kind, "expression": expr(node), "loopDepth": len(self.stack),
@@ -130,8 +193,14 @@ def analyze(source):
         def path_value(self, node):
             if literal(node) is not None:
                 return literal(node)
+            if isinstance(node, ast.Name):
+                return self.constants.get(node.id)
             if isinstance(node, ast.Call) and canonical(name(node.func)) == 'pathlib.Path' and node.args:
-                return literal(node.args[0])
+                return self.path_value(node.args[0])
+            if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+                left, right = self.path_value(node.left), self.path_value(node.right)
+                if left is not None and right is not None:
+                    return left.rstrip('/') + '/' + right
             return None
 
         def visit_FunctionDef(self, node):
@@ -174,6 +243,7 @@ def analyze(source):
             axis = {"target": expr(node.target), "iterable": expr(node.iter), "literalRangeCount": range_count(node.iter) if 'range' not in bound and 'range' not in imports else None, **location(node)}
             self.visit(node.iter)  # Iterator expression runs before this loop.
             self.stack.append(axis)
+            self.steps.append({"kind": "loop", "expression": expr(node.iter), "explanation": 'For each ' + expr(node.target) + ' from ' + expr(node.iter) + ', follows the loop body if reached.', "guards": list(self.guards), **location(node)})
             if len(self.stack) >= 2:
                 self.loop_paths.append(list(self.stack))
             for statement in node.body:
@@ -223,6 +293,7 @@ def analyze(source):
 
         def visit_Return(self, node):
             self.returns.append({"summary": expr(node.value), "kind": type(node.value).__name__, **location(node)})
+            self.steps.append({"kind": "return", "expression": expr(node.value), "explanation": self.explain(node.value), "guards": list(self.guards), **location(node)})
             self.generic_visit(node)
 
         def visit_Yield(self, node):
@@ -234,6 +305,11 @@ def analyze(source):
             self.transformations.append({"summary": expr(node), "kind": type(node).__name__, **location(node)})
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             value = node.value
+            self.steps.append({"kind": "assign", "targets": [expr(t) for t in targets], "expression": expr(value), "explanation": self.explain(value),
+                               "references": sorted({n.id for n in ast.walk(value) if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}) if value else [],
+                               "guards": list(self.guards), **location(node)})
+            if isinstance(value, ast.Call):
+                self.result_targets[id(value)] = [expr(t) for t in targets]
             for target in targets:
                 if not isinstance(target, ast.Name):
                     continue
@@ -251,12 +327,19 @@ def analyze(source):
         visit_AnnAssign = visit_Assign
         visit_AugAssign = visit_Assign
 
+        def visit_Subscript(self, node):
+            self.field_accesses.append({"container": expr(node.value), "selector": expr(node.slice), "access": 'write' if isinstance(node.ctx, ast.Store) else 'read', **location(node)})
+            self.generic_visit(node)
+
         def visit_Call(self, node):
             target = name(node.func) or "computed callable"
             resolved = canonical(target)
             call = {"target": target, "kind": "call", "argumentCount": len(node.args) + len(node.keywords),
                                "arguments": [expr(a) for a in node.args] + [(k.arg or '**') + '=' + expr(k.value) for k in node.keywords],
                                "resolution": "unresolved-source-reference", **location(node)}
+            call.update({"positionalArguments": [expr(a) for a in node.args],
+                         "keywordArguments": [{"name": k.arg, "expression": expr(k.value)} for k in node.keywords],
+                         "resultTargets": self.result_targets.get(id(node), []), "guards": list(self.guards), "loopDepth": len(self.stack)})
             parts = target.split('.')
             if len(parts) == 1 and target in linkable:
                 call['bindingReference'] = {"kind": 'local-function', "targetName": target}
@@ -268,6 +351,11 @@ def analyze(source):
                 elif binding['symbol'] is None and member[:len(binding['prefix'])] == binding['prefix'] and len(member) == len(binding['prefix']) + 1:
                     call['bindingReference'] = {"kind": 'imported-function', "targetName": member[-1], **binding}
             self.calls.append(call)
+            if isinstance(node.func, ast.Attribute) and node.func.attr in ('execute', 'executemany', 'sql', 'read_sql', 'read_sql_query') and node.args and literal(node.args[0]) is not None:
+                query = literal(node.args[0])
+                if re.match(r'^\s*(SELECT|INSERT|UPDATE|CREATE\s+TABLE|WITH)\b', query, re.I):
+                    self.sql.append({"call": target, "queryExpression": expr(node.args[0]), "tables": sql_references(query),
+                                     "basis": 'literal query passed to a SQL-like method; execution and connection identity unverified', **location(node)})
             keywords = {k.arg: k.value for k in node.keywords if k.arg is not None}
             member = node.func.attr if isinstance(node.func, ast.Attribute) else None
             receiver_node = node.func.value if isinstance(node.func, ast.Attribute) else None
@@ -315,10 +403,10 @@ def analyze(source):
             product = operation = None
             root = target.split('.')[0]
             if resolved in ('pandas.read_csv', 'pandas.read_parquet', 'pandas.read_pickle', 'numpy.load') and root in imports:
-                product = literal(node.args[0]) if node.args else next((literal(k.value) for k in node.keywords if k.arg in ('filepath_or_buffer', 'path', 'file')), None)
+                product = self.path_value(node.args[0]) if node.args else next((self.path_value(k.value) for k in node.keywords if k.arg in ('filepath_or_buffer', 'path', 'file')), None)
                 operation = 'read'
             elif target == 'open' and 'open' not in bound and 'open' not in imports:
-                product = literal(node.args[0]) if node.args else next((literal(k.value) for k in node.keywords if k.arg == 'file'), None)
+                product = self.path_value(node.args[0]) if node.args else next((self.path_value(k.value) for k in node.keywords if k.arg == 'file'), None)
                 mode_node = node.args[1] if len(node.args) > 1 else next((k.value for k in node.keywords if k.arg == 'mode'), ast.Constant(value='r'))
                 mode = literal(mode_node)
                 if mode is not None:
@@ -329,11 +417,14 @@ def analyze(source):
             elif resolved == 'numpy.save' and root in imports:
                 product = literal(node.args[0]) if node.args else None
                 operation = 'write'
-            if product is not None and operation:
-                self.io.append({"pathExpression": product, "operation": operation, "call": target,
-                                "basis": "literal-path-call-syntax", "loopDepth": len(self.stack), **location(node)})
-                self.fact(node, 'persistence', operation='load' if operation == 'read' else 'save' if operation == 'write' else 'load-save',
-                          pathExpression=product, literalPath=product, basis='literal file-I/O call syntax; saved-product semantics unknown')
+            if operation:
+                path_node = node.args[0] if node.args else next((k.value for k in node.keywords if k.arg in ('filepath_or_buffer', 'path', 'path_or_buf', 'file')), None)
+                self.io.append({"pathExpression": product if product is not None else expr(path_node), "pathKind": 'literal' if product is not None else 'symbolic', "operand": path_operand(path_node), "operation": operation, "call": target,
+                                "basis": "literal-or-unique-constant-path-syntax", "loopDepth": len(self.stack),
+                                "guards": list(self.guards), "resultTargets": self.result_targets.get(id(node), []), **location(node)})
+                if product is not None:
+                    self.fact(node, 'persistence', operation='load' if operation == 'read' else 'save' if operation == 'write' else 'load-save',
+                              pathExpression=product, literalPath=product, basis='literal file-I/O call syntax; saved-product semantics unknown')
             self.generic_visit(node)
 
     records = []
@@ -343,6 +434,17 @@ def analyze(source):
         scopes.insert(0, ('<module>', module_body, None, 'module'))
     for function_name, body, fn, scope_kind in scopes:
         reader = Reader()
+        # Resolve only single-assignment literal/path constants. No evaluation,
+        # branch execution, parameter substitution or mutable alias inference.
+        local_stores = Counter(n.id for statement in body for n in ast.walk(statement)
+                               if isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)))
+        for statement in body:
+            if isinstance(statement, (ast.Assign, ast.AnnAssign)) and statement.value is not None:
+                targets = statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                value = reader.path_value(statement.value)
+                for target in targets:
+                    if isinstance(target, ast.Name) and local_stores[target.id] == 1 and value is not None:
+                        reader.constants[target.id] = value
         for statement in body:
             reader.visit(statement)
         args = fn.args if fn else None
@@ -351,6 +453,9 @@ def analyze(source):
         records.append({"name": function_name, "language": "Python", "scopeKind": scope_kind, "sourceLinkable": function_name in linkable,
                         "exported": False, "async": isinstance(fn, ast.AsyncFunctionDef), "generator": reader.yields > 0,
                         "parameters": parameters, "calls": reader.calls, "returns": reader.returns,
+                        "documentation": ast.get_docstring(fn) if fn else ast.get_docstring(tree),
+                        "steps": reader.steps,
+                        "fieldAccesses": reader.field_accesses, "sql": reader.sql,
                         "conditions": reader.conditions, "loops": reader.loops, "throws": reader.throws,
                         "line": fn.lineno if fn else 1, "column": fn.col_offset + 1 if fn else 1, "endLine": fn.end_lineno if fn else len(source.splitlines()),
                         "summary": f"{function_name} declares {len(parameters)} parameters, {len(reader.calls)} call sites and {reader.loops} loop constructs. Paths and branches may never run.",

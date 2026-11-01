@@ -1,4 +1,4 @@
-import { guideFunctionChoices, prepareGuideTask, compareGuideTask, detailedGuideBrief } from './guide-tasks.js';
+import { guideFunctionChoices, prepareGuideTask, compareGuideTask, detailedGuideBrief, guideProjectKey, serializeGuideSession, restoreGuideSession } from './guide-tasks.js';
 
 const stateColors = {
   planned: 'var(--planned)', coded: 'var(--coded)', connected: 'var(--connected)',
@@ -22,6 +22,11 @@ let guidePieceId = null;
 const guideOpenFunctions = new Set();
 let guideTaskSession = null;
 let taskVisible = false;
+let continuityChecked = false;
+let workflowReading = false;
+let workflowSelected = null;
+let workflowFilter = '';
+let workflowPage = 0;
 let selectedGapId = null;
 let currentView = 'map';
 let walkthroughReturnId = null;
@@ -53,6 +58,7 @@ $('clearOutcome').addEventListener('click', () => {
 });
 $('mapViewButton').addEventListener('click', () => showView('map'));
 $('walkthroughViewButton').addEventListener('click', () => showView('walkthrough'));
+$('workflowViewButton').addEventListener('click', () => { showView('map'); workflowReading = true; renderWorkflowReader(); });
 $('guideTaskButton').addEventListener('click', () => {
   if (!guideTaskSession) return;
   taskVisible = true; mapShowsOutcome = false; showView('map'); renderGuideTask();
@@ -90,8 +96,16 @@ async function refreshOnce() {
     const focusedOutcome = active?.classList.contains('outcome-choice') ? active.dataset.outcomeId : null;
     const focusedGuide = active?.dataset?.guideControl || active?.closest?.('[data-guide-control]')?.dataset.guideControl;
     const focusedTask = active?.dataset?.taskControl, caret = [active?.selectionStart, active?.selectionEnd];
+    const focusedWorkflowSearch = active?.id === 'workflowSearch';
     currentFingerprint = next.fingerprint;
     model = next;
+    if (!continuityChecked) {
+      continuityChecked = true;
+      try {
+        const saved = typeof localStorage !== 'undefined' && localStorage.getItem(`buildmap-task:${guideProjectKey(model)}`);
+        if (saved) { guideTaskSession = restoreGuideSession(saved, model); $('guideTaskButton').hidden = false; }
+      } catch { /* Storage denial or an invalid saved task cannot break the free map. */ }
+    }
     const visibleGaps = currentView === 'map' ? pieceGaps() : model.gaps.filter(isOutcomeGap);
     if (selectedGapId && !visibleGaps.some((g, i) => (g.id || `gap:${i}`) === selectedGapId)) selectedGapId = null;
     renderHeader();
@@ -112,6 +126,8 @@ async function refreshOnce() {
     if (currentView === 'walkthrough' && !outcomeRemoved) renderWalkthroughDetail();
     if (currentView === 'map' && mapShowsOutcome) renderOutcomeDetail(selectedOutcomeId);
     if (taskVisible && currentView === 'map') renderGuideTask();
+    if (workflowReading) renderWorkflowReader();
+    if (focusedWorkflowSearch && workflowReading) { $('workflowSearch').focus({preventScroll:true}); if(typeof caret[0]==='number') $('workflowSearch').setSelectionRange?.(...caret); }
     if (currentView === 'map' && focusedId && (focusOnCard || focusInResults)) {
       const candidates = focusInResults ? [...$('searchResults').children] : [...document.querySelectorAll('.node')];
       const replacement = candidates.find(el => el.dataset.id === focusedId && el.tabIndex !== -1);
@@ -394,7 +410,7 @@ function renderCodeGuide(id) {
   $('detail').innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · CODE PREVIEW</div><h2>${escapeHtml(node.name)}</h2>
     <p>See what the source declares: inputs, return expressions, and calls written inside its supported functions. Python inspection includes direct class methods, comprehension expansion, possible file products and pre-run risks. This is a code reading aid, not a runtime trace or proof that the piece works.</p>
     <p>${escapeHtml(node.purpose)} This is the piece’s recorded purpose; the source descriptions below do not verify it.</p>
-    <p>This is the first Guide capability available for MVP review. Billing and the wider coaching/review loop are not built.</p>
+    <p>Follow captured calculations and possible products, inspect risks, or prepare one reviewed task for your coding agent.</p>
     <p>${snapshot ? 'Captured code reading · this snapshot does not follow later edits.' : 'Current source reading · follows local refresh.'} ${$('refreshStatus').classList.contains('stale') ? 'Refresh failed; this is the last captured source.' : ''}</p>`;
   const back = document.createElement('button'); back.type = 'button'; back.className = 'guide-back'; back.textContent = 'Back to piece';
   back.dataset.guideControl = 'back';
@@ -473,17 +489,12 @@ function appendWorkflowReview(node) {
   const fingerprint = model.fingerprint;
   const calculationById = new Map(workflow.calculations.map(c => [c.id, c]));
   const panel = document.createElement('section'); panel.className = 'detail-section workflow-review';
-  panel.innerHTML = `<h3>Before you run · Python risk review</h3>
+  panel.innerHTML = `<h3>Before you run · source risk review</h3>
     <p>${all ? 'Project-wide' : 'This piece’s'} static review: ${files.filter(f => f.status === 'parsed').length}/${files.length} Python files parsed; ${findings.length} review finding(s). No findings is not clearance to run. Static syntax does not measure actual jobs, pair comparisons, reads, remaining work or savings. Supplied observations are shown separately.</p>
     ${files.map(f => `<p>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</p>`).join('')}
     ${workflow.scope?.unavailableFiles?.length ? `<p>Requested files unavailable for Python analysis: ${workflow.scope.unavailableFiles.map(escapeHtml).join(', ')}.</p>` : ''}
     <p>Source locations below open their captured calculation. Read-only analysis does not launch or modify this project.</p>`;
-  const sourceButtons = (section, sources) => {
-    for (const source of sources) {
-      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-source';
-      button.textContent = `Inspect ${source.path}:${source.line}:${source.column}`;
-      button.title = `Captured SHA-256: ${source.sourceHash}`;
-      button.addEventListener('click', () => {
+  const openSource = source => {
         if (model.fingerprint !== fingerprint) return;
         const owner = model.nodes.find(n => n.kind !== 'mission' && n.files.includes(source.path));
         if (!owner) return;
@@ -493,7 +504,13 @@ function appendWorkflowReview(node) {
         const key = fn && JSON.stringify([owner.id, source.path, source.sourceHash, fn.line, fn.column]);
         const target = taskControls().find(el => el.dataset.guideControl === key);
         if (target) { target.open = true; guideOpenFunctions.add(key); target.scrollIntoView({ block: 'nearest' }); target.focus({ preventScroll: true }); }
-      }); section.appendChild(button);
+  };
+  const sourceButtons = (section, sources) => {
+    for (const source of sources) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-source';
+      button.textContent = `Inspect ${source.path}:${source.line}:${source.column}`;
+      button.title = `Captured SHA-256: ${source.sourceHash}`;
+      button.addEventListener('click', () => openSource(source)); section.appendChild(button);
     }
   };
   if (all && workflow.coverage) {
@@ -502,10 +519,14 @@ function appendWorkflowReview(node) {
       <p>${escapeHtml(coverage.inventoryMode)} inventory · ${coverage.inventoryFiles} discovered/declared files. Review scope: ${escapeHtml(workflow.scope?.mode || 'captured scope unspecified')}; ${escapeHtml(workflow.scope?.batching || 'batching unspecified')}. ${escapeHtml(coverage.boundary)}</p>
       <p>Python status counts: ${Object.entries(coverage.statuses).map(([s,n]) => `${escapeHtml(s)}: ${n}`).join('; ') || 'no Python files discovered'}.</p>
       <h4>Python files still unreviewed</h4><ul>${coverage.unreviewedPython.map(f => `<li>${escapeHtml(f.path)} · ${escapeHtml(f.status)} · ${escapeHtml(f.reason)}</li>`).join('') || '<li>None in this bounded inventory. This does not establish complete workflow coverage.</li>'}</ul>
+      <p>JavaScript calculation adapter: ${coverage.parsedJavaScriptFiles || 0}/${coverage.javascriptFiles || 0} files parsed. Unsupported JavaScript syntax remains explicit in its piece inspector.</p>
       <h4>Inventory outside this risk adapter</h4><ul>${coverage.outsideAdapter.map(f => `<li>${escapeHtml(f.path)} · ${escapeHtml(f.reason)}</li>`).join('') || '<li>None in this inventory.</li>'}</ul>`;
     panel.appendChild(section);
   }
   appendWorkflowEvidence(panel, all ? workflow.review : null, (workflow.checkpoints || []).filter(c => all || ids.has(c.calculationId)), sourceButtons, calculationById);
+  appendCollectedRuns(panel, workflow.collected, id=>{
+    const calculation=calculationById.get(id); if(calculation)openSource(calculation.source);
+  }, all ? null : ids);
   const relationships = (workflow.relationships || []).filter(r => all || ids.has(r.from) || ids.has(r.to));
   if (relationships.length || workflow.callCoverage) {
     const connections = document.createElement('details'); connections.className = 'workflow-connections';
@@ -532,6 +553,7 @@ function appendWorkflowReview(node) {
     section.innerHTML = `<summary>${escapeHtml(finding.confidence)} · ${escapeHtml(finding.title)}</summary>
       <p>${escapeHtml(finding.severity)} · ${escapeHtml(finding.confidenceRationale)}</p>
       <h4>Why review this?</h4><p>${escapeHtml(finding.impact)}</p>
+      ${(finding.observationContext || []).length?`<p>Current signed observations: ${finding.observationContext.map(o=>`${escapeHtml(o.runId)} · ${escapeHtml(o.observedEntries)} profile entries`).join('; ')}. These do not prove a defect, successful I/O or safe reuse.</p>`:''}
       ${finding.workload ? `<p>Literal-range potential inner iterations: ${escapeHtml(finding.workload.potentialIterations ?? 'unknown')}. This assumes all written iterations reach the inner body; actual jobs and pair comparisons remain unknown.</p>` : ''}
       <h4>Safe next step</h4><p>${escapeHtml(finding.suggestedAction)}</p>
       <h4>Correctness tradeoff</h4><p>${escapeHtml(finding.correctnessTradeoff)}</p>
@@ -575,6 +597,12 @@ function appendWorkflowReview(node) {
 }
 
 function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons, calculationById) {
+  for (const w of review?.workloads || []) {
+    const section = document.createElement('details'); section.className = 'workflow-workload';
+    section.innerHTML = `<summary>Workload model: ${escapeHtml(w.id)} · ${escapeHtml(w.status)}</summary><p>${escapeHtml(w.reason || w.note)}</p>
+      <p>${w.potentialIterations ? Object.entries(w.potentialIterations).map(([k,v]) => `${escapeHtml(k)}: ${escapeHtml(v)}`).join('; ') : 'Estimates unavailable'}. Actual jobs and pair comparisons remain unknown.</p>`;
+    const calc = calculationById.get(w.calculationId); if (calc) sourceButtons(section,[calc.source]); panel.appendChild(section);
+  }
   if (checkpoints.length) {
     const section = document.createElement('details'); section.className = 'workflow-checkpoints';
     section.innerHTML = `<summary>Saved products and restart · ${checkpoints.length} source site(s)</summary><p>Compatibility, ownership and restart completeness remain unverified. Nearby checks may belong to other paths.</p>`;
@@ -640,6 +668,47 @@ function appendWorkflowEvidence(panel, review, checkpoints, sourceButtons, calcu
   const limits = document.createElement('p'); limits.textContent = review.limitations.join(' '); section.appendChild(limits); panel.appendChild(section);
 }
 
+function appendCollectedRuns(panel, collected, navigate, selectedIds=null) {
+  if(!collected?.runs?.length && !collected?.diagnostics?.length)return;
+  const section=document.createElement('section');section.className='collected-runs';
+  section.innerHTML='<h3>Observed execution · signed local collector</h3><p>Signatures identify a configured collector. They do not certify results, hostile-code isolation or continuing liveness. Call links below are observed project-filtered ancestry, not a complete cross-process timeline.</p>';
+  for(const message of collected.diagnostics || []){const item=document.createElement('p');item.textContent=message;section.appendChild(item);}
+  for(const run of collected.runs || []){
+    const item=document.createElement('details');item.className='collected-run';
+    item.innerHTML=`<summary>${escapeHtml(run.runId || run.file)} · ${escapeHtml(run.status)}</summary><p>${escapeHtml(run.reason || run.limitation || '')}</p>`;
+    if(!run.verifiedSignature){section.appendChild(item);continue;}
+    const payload=run.payload;
+    const metadata=document.createElement('p');metadata.textContent=`Collector ${run.collectorId}; entry ${run.entry}; exit ${payload.exitCode}; complete within scope ${payload.completeWithinScope}; current input bindings ${run.inputFreshness}. ${run.eligibleForComparison?'Current complete receipt can support finite-case comparisons.':'Stale/partial/failed observation: reuse comparisons are disabled.'}`;item.appendChild(metadata);
+    const metrics=document.createElement('p');metrics.textContent=`Elapsed ${payload.metrics.elapsedSeconds ?? 'unknown'} seconds; process CPU ${payload.metrics.cpuSeconds ?? 'unknown'} seconds; normalized CPU ${payload.metrics.cpuUtilizationPercent ?? 'unknown'}%; peak process RSS ${payload.metrics.peakMemoryBytes ?? 'unknown'} bytes; allowed CPUs ${payload.metrics.cpuCount ?? 'unknown'}. Observer overhead is included.`;item.appendChild(metrics);
+    const byId=new Map(run.calculations.map(c=>[c.id,c]));
+    for(const c of run.calculations.filter(c=>!selectedIds||selectedIds.has(c.calculationId)).slice(0,100)){
+      const row=document.createElement('details');row.className='collected-calculation';
+      row.innerHTML=`<summary>${escapeHtml(c.name)} · ${escapeHtml(c.calls)} observed profile entries</summary><p>${escapeHtml(c.path)}:${c.line} · ${escapeHtml(c.sourceMatch)} · inclusive ${escapeHtml(c.elapsedNanoseconds)} ns. ${c.resumable?'Generator/coroutine entries include resumes.':'Return events can include unwinding; unavailable results are not treated as equal.'}</p>`;
+      if(c.calculationId && run.status!=='stale'){
+        const button=document.createElement('button');button.type='button';button.textContent=`Inspect observed ${c.name}`;button.addEventListener('click',()=>navigate(c.calculationId));row.appendChild(button);
+      }
+      const routes=payload.relationships.filter(r=>r.from===c.id||r.to===c.id);
+      for(const r of routes.slice(0,50)){
+        const route=document.createElement('p');route.textContent=`Observed route: ${byId.get(r.from)?.name || r.from} → ${byId.get(r.to)?.name || r.to}: ${r.calls} entries.`;row.appendChild(route);
+      }
+      const ops=payload.operations.filter(o=>o.calculationId===c.id);
+      for(const op of ops.slice(0,50)){const text=document.createElement('p');text.textContent=`${op.path}: ${op.openAttempts} open attempts (${op.mode || 'mode unavailable'}). Successful reads/writes and bytes are not established by audit events.`;row.appendChild(text);}
+      for(const group of (run.reuseGroups || []).filter(g=>g.observedId===c.id)){
+        const text=document.createElement('p');text.textContent=`Repeated directional input identity ${group.inputDigest}: ${group.calls} entries; same observed output ${group.stableObservedOutputs}. ${group.review}`;row.appendChild(text);
+      }
+      item.appendChild(row);
+    }
+    const coverage=document.createElement('details');coverage.innerHTML=`<summary>Collector scope, omissions and identities</summary><pre>${escapeHtml(JSON.stringify({coverage:payload.coverage,sourceChanges:payload.sourceChanges,environment:payload.environment},null,2))}</pre><ul>${(payload.limitations || []).map(s=>`<li>${escapeHtml(s)}</li>`).join('')}</ul>`;item.appendChild(coverage);
+    section.appendChild(item);
+  }
+  for(const comparison of collected.comparisons || []){
+    const item=document.createElement('details');item.className='collected-comparison';
+    item.innerHTML=`<summary>Signed comparison · ${escapeHtml(comparison.status)}</summary><p>${escapeHtml(comparison.reason || comparison.scope)}</p>${comparison.metricDifferences?`<pre>${escapeHtml(JSON.stringify({finiteValues:comparison.finiteValueComparison,differences:comparison.metricDifferences},null,2))}</pre>`:''}`;
+    section.appendChild(item);
+  }
+  panel.appendChild(section);
+}
+
 function taskControls() {
   const controls = [], stack = [...$('detail').children];
   while (stack.length) { const el = stack.pop(); controls.push(el); stack.push(...el.children); }
@@ -657,13 +726,32 @@ function renderGuideTask() {
   const revision = session.renderRevision = (session.renderRevision || 0) + 1;
   const panel = $('detail'), node = model.nodes.find(n => n.id === session.nodeId);
   panel.innerHTML = `<div class="eyebrow">BUILDMAP GUIDE · REVIEWED TASK</div><h2>${escapeHtml(session.task?.target.name || node?.name || 'Original piece')}</h2>
-    <p>Prepare one task, agree on its boundaries, then review later changes against that snapshot. The task stays in this tab; copy its brief before handing it to your agent. Starting another task replaces this tab’s task.</p>`;
+    <p>Prepare one task, agree on its boundaries, then review later changes against that snapshot. Save on this device or export JSON to retain it across sessions. Starting another task replaces the active task; its saved copy changes only when you save again.</p>`;
   const notice = document.createElement('p'); notice.className = 'guide-task-notice'; notice.setAttribute('role', 'status'); notice.textContent = session.notice; panel.appendChild(notice);
   const button = (label, key, action, disabled = false) => {
     const el = document.createElement('button'); el.type = 'button'; el.textContent = label; el.dataset.taskControl = key; el.disabled = disabled;
     el.addEventListener('click', () => { if (guideTaskSession === session && session.renderRevision === revision && taskVisible && currentView === 'map' && !el.disabled) return action(); }); panel.appendChild(el); return el;
   };
   button('Back to piece', 'task-back', () => { taskVisible = false; if (node) selectPiece(node.id); else panel.innerHTML = '<h2>Piece removed</h2><p>The original task remains available from Guide task.</p>'; });
+  button('Save task on this device', 'task-save', () => {
+    try { localStorage.setItem(`buildmap-task:${guideProjectKey(model)}`, serializeGuideSession(session, model)); session.notice = 'Saved on this device for this project. Save again after editing; the original agreed baseline is retained.'; }
+    catch (e) { session.notice = `Could not save: ${e.message}`; } renderGuideTask();
+  });
+  button('Remove saved copy', 'task-remove-saved', () => {
+    try { localStorage.removeItem(`buildmap-task:${guideProjectKey(model)}`); session.notice = 'Saved copy removed. The active task and original baseline remain available in this tab; you can save them again.'; }
+    catch(e) { session.notice = `Could not remove saved copy: ${e.message}`; } renderGuideTask();
+  });
+  button('Export task JSON', 'task-export', () => {
+    const blob = new Blob([serializeGuideSession(session, model)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = 'BuildMap_Task.json'; link.click(); URL.revokeObjectURL(url);
+  });
+  const importLabel = document.createElement('label'); importLabel.textContent = 'Import a task for this project';
+  const importFile = document.createElement('input'); importFile.type = 'file'; importFile.accept = '.json,application/json'; importFile.dataset.taskControl = 'task-import';
+  importFile.addEventListener('change', async () => {
+    try { const file = importFile.files?.[0]; if (!file) return; if (file.size > 4_000_000) throw Error('Task file exceeds 4 MB.');
+      const restored = restoreGuideSession(await file.text(), model, { imported: true }); guideTaskSession = restored;
+    } catch (e) { session.notice = `Import refused: ${e.message}`; } renderGuideTask();
+  }); importLabel.appendChild(importFile); panel.appendChild(importLabel);
   if (session.phase === 'edit') {
     const field = (key, label, tag = 'textarea') => {
       const wrapper = document.createElement('label'); wrapper.className = 'guide-task-field'; const heading = document.createElement('span'); heading.textContent = label; wrapper.appendChild(heading);
@@ -696,13 +784,13 @@ function renderGuideTask() {
     const scope = document.createElement('p'); scope.textContent = `Selected piece files: ${node?.files.join(', ') || 'piece missing or no files declared'}. Missing exact paths can be planned; arbitrary new paths need an explicit piece declaration first.`; panel.appendChild(scope);
     button('Review this task', 'task-prepare', () => {
       if ($('refreshStatus').classList.contains('stale')) { session.notice = 'Refresh the map successfully before preparing a current task.'; renderGuideTask(); return; }
-      try { session.task = prepareGuideTask(model, session.nodeId, session.fields); session.phase = 'review'; session.notice = ''; }
+      try { session.task = prepareGuideTask(model, session.nodeId, session.fields); session.phase = 'review'; session.imported = false; session.notice = ''; }
       catch (error) { session.notice = error.message; }
       renderGuideTask();
     });
     appendFinishedProduct(); return;
   }
-  const task = session.task, current = model.fingerprint === task.snapshot.fingerprint && !$('refreshStatus').classList.contains('stale');
+  const task = session.task, current = !session.imported && model.fingerprint === task.snapshot.fingerprint && !$('refreshStatus').classList.contains('stale');
   const summary = document.createElement('section'); summary.className = 'detail-section guide-task-summary';
   summary.innerHTML = `<h3>${session.phase === 'review' ? 'Review before agreeing' : 'Agreed task · original baseline retained'}</h3>
     <p>${escapeHtml(task.goal)}</p><h4>Acceptance criteria · check these yourself</h4><ol>${task.criteria.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ol>
@@ -841,6 +929,8 @@ function renderWalkthroughDetail() {
   }
 }
 function showView(view) {
+  workflowReading = false; $('workspace').classList.remove('workflow-reading');
+  $('workflowViewButton').setAttribute('aria-pressed', 'false');
   selectedGapsByView[currentView] = selectedGapId;
   currentView = view;
   selectedGapId = selectedGapsByView[view];
@@ -862,6 +952,104 @@ function showView(view) {
     else if (selectedId) renderDetail(selectedId);
     else $('detail').innerHTML = '<div class="eyebrow">PIECE INSPECTOR</div><h2>Click a piece</h2><p>See what it does, how it connects, and how it moves the system toward its goal.</p>';
   }
+}
+
+function renderWorkflowReader() {
+  if (!model?.workflow || !workflowReading) return;
+  const w = model.workflow, fingerprint = model.fingerprint;
+  $('workspace').classList.add('workflow-reading');
+  $('mapViewButton').setAttribute('aria-pressed', 'false'); $('workflowViewButton').setAttribute('aria-pressed', 'true');
+  $('viewDescription').textContent = 'Understand calculations, follow their inputs and review risks.';
+  const panel = $('detail');
+  panel.innerHTML = `<div class="eyebrow">BUILDMAP GUIDE</div><h2>Follow the work through your project</h2>
+    <p>${escapeHtml(w.reading?.summary || 'Select a captured calculation to inspect its source.')}</p>
+    <p>These are source explanations and supplied observations. Calls and filenames alone do not prove execution, compatible reuse or successful behavior.</p>`;
+  const label = document.createElement('label'); label.textContent = 'Find a calculation by name, file, input or output';
+  const search = document.createElement('input'); search.type = 'search'; search.value = workflowFilter; search.id = 'workflowSearch';
+  search.addEventListener('input', () => { workflowFilter = search.value; workflowPage = 0; renderList(); }); label.appendChild(search); panel.appendChild(label);
+  const list = document.createElement('section'); list.className = 'workflow-reader-results'; list.setAttribute('aria-label', 'Calculation results'); panel.appendChild(list);
+  if (w.review?.events?.length) {
+    const events = document.createElement('details'); events.className = 'workflow-event-trace';
+    events.innerHTML = `<summary>Reported workflow events · ${w.review.events.length}</summary><p>Recorded order within each run/clock. Separate clocks are not merged into a causal timeline. Partial logs and stale bindings remain explicit.</p><ol>${w.review.events.map(e=>`<li>${escapeHtml(e.runIdentity)} / ${escapeHtml(e.clockIdentity)} #${e.sequence} · ${escapeHtml(e.stageId)} · ${escapeHtml(e.event)} ${escapeHtml(e.result || e.productId || '')} · ${escapeHtml(e.freshness.status)}</li>`).join('')}</ol>`;
+    panel.appendChild(events);
+  }
+  if (w.resourcePlan) {
+    const resources=document.createElement('details'); resources.className='workflow-resource-plan';
+    resources.innerHTML=`<summary>Workers, waits and reported resources</summary><p>${escapeHtml(w.resourcePlan.bottleneckVerdict)}.</p><ul>${w.resourcePlan.pools.map(p=>`<li>${escapeHtml(p.source.path)}:${p.source.line} · requested workers ${escapeHtml(p.workersExpression)} · actual workers unknown. ${escapeHtml(p.note)}</li>`).join('') || '<li>No supported pool constructor captured; workers may be configured elsewhere.</li>'}</ul><p>${w.resourcePlan.waits.length} wait/join/result source sites. These may implement necessary dependencies or bounded scheduling.</p>`;
+    panel.appendChild(resources);
+  }
+  const reading = document.createElement('section'); reading.className = 'workflow-reader-calculation'; reading.setAttribute('aria-live', 'polite'); panel.appendChild(reading);
+  const choose = id => { if (model.fingerprint !== fingerprint) return; workflowSelected = id; renderList(); renderCalculation(); reading.tabIndex = -1; reading.focus({preventScroll:true}); reading.scrollIntoView({block:'nearest'}); };
+  function renderList() {
+    const term = workflowFilter.trim().toLowerCase();
+    const matches = w.calculations.filter(c => !term || `${c.name} ${c.source.path} ${c.inputs.join(' ')} ${c.io.map(io => io.pathExpression).join(' ')}`.toLowerCase().includes(term));
+    const pages = Math.max(1, Math.ceil(matches.length / 25)); workflowPage = Math.min(workflowPage, pages - 1);
+    list.innerHTML = `<p role="status">${matches.length} matching calculations · page ${workflowPage + 1} of ${pages}. Showing up to 25 at a time.</p>`;
+    for (const c of matches.slice(workflowPage * 25, (workflowPage + 1) * 25)) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-choice';
+      button.textContent = `${c.name} · ${c.source.path}:${c.source.line}`; button.setAttribute('aria-pressed', String(c.id === workflowSelected));
+      button.addEventListener('click', () => choose(c.id)); list.appendChild(button);
+    }
+    for (const [text, delta] of [['Previous page', -1], ['Next page', 1]]) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = text;
+      button.disabled = workflowPage + delta < 0 || workflowPage + delta >= pages;
+      button.addEventListener('click', () => { workflowPage += delta; renderList(); }); list.appendChild(button);
+    }
+  }
+  const byId = new Map(w.calculations.map(c => [c.id, c]));
+  function sourceButton(c, text = 'Inspect source and piece') {
+    const button = document.createElement('button'); button.type = 'button'; button.textContent = text;
+    button.addEventListener('click', () => {
+      if (model.fingerprint !== fingerprint) return;
+      const owner = model.nodes.find(n => n.kind !== 'mission' && n.files.includes(c.source.path));
+      if (!owner) return;
+      showView('map'); selectPiece(owner.id, true); guidePieceId = owner.id; renderCodeGuide(owner.id);
+      const key = JSON.stringify([owner.id, c.source.path, c.source.sourceHash, c.source.line, c.source.column]);
+      const target = taskControls().find(el => el.dataset.guideControl === key);
+      if (target) { target.open = true; guideOpenFunctions.add(key); target.scrollIntoView({ block: 'nearest' }); target.focus({ preventScroll: true }); }
+    }); reading.appendChild(button);
+  }
+  function renderCalculation() {
+    const c = byId.get(workflowSelected);
+    if (!c) { reading.innerHTML = '<h3>Select a calculation</h3><p>Read what it takes in, builds, saves and passes to other pieces.</p>'; return; }
+    const x = c.explanation, calls = w.relationships.filter(r => r.from === c.id), incoming = w.relationships.filter(r => r.to === c.id);
+    reading.innerHTML = `<h3>${escapeHtml(c.name)}</h3><p>${escapeHtml(c.purpose)}</p><p>${escapeHtml(c.why)}</p>
+      <h4>What comes in?</h4><p>Parameters: ${escapeHtml(c.inputs.join(', ') || 'none declared; hidden inputs may exist')}.</p>
+      <ul>${c.io.filter(io => io.operation.includes('read')).map(io => `<li>Reads ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} at line ${io.source.line}.</li>`).join('') || (x?.throughCalls?.length?'<li>No direct file read captured here; inspect the helper inputs below.</li>':'<li>No supported file reads found. Dynamic paths and other storage may exist.</li>')}</ul>
+      ${(x?.throughCalls || []).length?`<h4>Inputs read through called helpers</h4><ul>${x.throughCalls.map(io=>`<li>${escapeHtml(io.calculation)} reads <code>${escapeHtml(io.expression)}</code> · ${escapeHtml(io.source.path)}:${io.source.line}. Written argument substitution; actual path and read unobserved.</li>`).join('')}</ul>`:''}
+      <h4>What does it build?</h4><ol>${(x?.steps || []).slice(0, 100).map(s => `<li>${s.kind === 'declare' ? `Declares ${escapeHtml(s.targets.join(', '))} without an initial value` : s.kind === 'loop' ? 'Repeats over' : s.kind === 'assign' ? `Sets ${escapeHtml(s.targets.join(', '))} from` : 'Returns'} ${s.kind==='declare'?'':`<code>${escapeHtml(s.expression)}</code>`} · line ${s.source.line}${s.guards.length ? ` · under ${escapeHtml(s.guards.map(g => `${g.branch}: ${g.test}`).join('; '))}` : ''}.${s.explanation?`<p>${escapeHtml(s.explanation)}</p>`:''}</li>`).join('') || '<li>Read the source: no supported assignment or return steps were captured.</li>'}</ol>
+      ${(c.fieldAccesses || []).length?`<h4>Fields, keys and positions referenced</h4><ul>${c.fieldAccesses.slice(0,50).map(f=>`<li>${escapeHtml(f.access)} ${escapeHtml(f.container)}[${escapeHtml(f.selector)}] · line ${f.source.line}. Runtime schema not inferred.</li>`).join('')}</ul>`:''}
+      ${(c.sql || []).length?`<h4>Possible SQL products</h4><ul>${c.sql.map(q=>`<li>${escapeHtml(q.call)} · ${escapeHtml(q.tables.map(t=>t.operation+' '+t.tableExpression).join('; '))}. ${escapeHtml(q.basis)}</li>`).join('')}</ul>`:''}
+      <p>${(x?.steps || []).length > 100 ? 'Showing the first 100 steps; JSON/source contains the rest.' : 'Written statement order is a reading order. Branches, loops, asynchronous work and callers determine execution.'}</p>
+      <h4>What comes out?</h4><p>${escapeHtml(c.outputs.map(o => o.summary).join('; ') || 'No explicit return expression found; side effects may exist')}.</p>
+      <ul>${c.io.filter(io => io.operation.includes('write')).map(io => `<li>Saves ${escapeHtml(io.pathExpression)} via ${escapeHtml(io.call)} · line ${io.source.line}.</li>`).join('')}</ul>
+      <h4>Who uses it?</h4><p>${escapeHtml(incoming.map(r => byId.get(r.from)?.name).join(', ') || 'No supported caller found; this does not establish unused code')}.</p>`;
+    for (const r of calls.slice(0, 100)) {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'workflow-follow'; button.textContent = `Follow call to ${byId.get(r.to)?.name}`;
+      button.addEventListener('click', () => choose(r.to)); reading.appendChild(button);
+      const bindings = document.createElement('p'); bindings.textContent = `Written inputs: ${(r.inputBindings || []).map(b => `${b.parameter} ← ${b.expression ?? 'default/unknown'}`).join('; ') || 'unresolved'}${r.resultTargets?.length ? `. Result assigned to ${r.resultTargets.join(', ')}` : ''}. Actual values unobserved.`; reading.appendChild(bindings);
+    }
+    for (const r of incoming.slice(0, 100)) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = `Read caller ${byId.get(r.from)?.name}`;
+      button.addEventListener('click',()=>choose(r.from)); reading.appendChild(button);
+    }
+    for (const consumer of (x?.consumers || []).slice(0, 100)) {
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = `Follow ${consumer.product} to ${byId.get(consumer.id)?.name}`;
+      button.addEventListener('click', () => choose(consumer.id)); reading.appendChild(button);
+    }
+    const risks = w.findings.filter(f => f.calculationIds.includes(c.id)).sort((a,b) => ({high:0,normal:1,'context-first':2}[a.reviewPriority] ?? 1) - ({high:0,normal:1,'context-first':2}[b.reviewPriority] ?? 1));
+    const riskPanel = document.createElement('section'); riskPanel.innerHTML = '<h4>Before you run</h4>';
+    for (const f of risks.slice(0, 30)) {
+      const item = document.createElement('details'); item.className = 'workflow-reader-risk';
+      item.innerHTML = `<summary>${escapeHtml(f.reviewPriority || 'normal')} · ${escapeHtml(f.title)}</summary><p>${escapeHtml(f.impact)}</p><p>${escapeHtml(f.reviewContext?.explanation || '')}</p><p>${escapeHtml(f.suggestedAction)}</p><p>Correctness: ${escapeHtml(f.correctnessTradeoff)}</p><ul>${f.requiredVerification.map(v => `<li>${escapeHtml(v)}</li>`).join('')}</ul>${(f.observationContext || []).length?`<p>Current signed profile entries: ${f.observationContext.map(o=>`${escapeHtml(o.runId)}: ${escapeHtml(o.observedEntries)}`).join('; ')}. Entry counts are not job counts or proof of safe reuse.</p>`:''}`;
+      riskPanel.appendChild(item);
+    }
+    if (!risks.length) riskPanel.innerHTML += '<p>No supported risk finding for this calculation. This is not clearance to run.</p>';
+    reading.appendChild(riskPanel); sourceButton(c);
+    appendCollectedRuns(reading,w.collected,choose,new Set([c.id]));
+  }
+  appendCollectedRuns(panel,w.collected,choose);
+  renderList(); renderCalculation();
 }
 
 function outcomeLabel(state) {

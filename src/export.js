@@ -5,7 +5,7 @@ const publicDir = new URL('../public/', import.meta.url);
 // Retain one client for HTTP, DOM checks and self-contained exports.
 export function clientSource() {
   const tasks = fs.readFileSync(new URL('guide-tasks.js', publicDir), 'utf8').replace(/^export /gm, '');
-  const app = fs.readFileSync(new URL('app.js', publicDir), 'utf8').replace(/^import \{ guideFunctionChoices, prepareGuideTask, compareGuideTask, detailedGuideBrief \} from '\.\/guide-tasks\.js';\n/, '');
+  const app = fs.readFileSync(new URL('app.js', publicDir), 'utf8').replace(/^import \{[^\n]+\} from '\.\/guide-tasks\.js';\n/, '');
   return `${tasks}\n${app}`;
 }
 

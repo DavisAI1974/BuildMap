@@ -1,3 +1,4 @@
+import { javascriptWorkflow } from './javascript-workflow.js';
 // Deterministic explanations of parsed syntax. No target code is executed;
 // names, argument counts and return expressions do not establish runtime types.
 const isFunction = n => ['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression'].includes(n?.type);
@@ -43,7 +44,7 @@ function parameter(n) {
   return `${n.type} parameter pattern`;
 }
 
-export function explainFunctions(ast, bindingCounts) {
+export function explainFunctions(ast, bindingCounts, source = '') {
   const definitions = [];
   const exportedNames = new Set();
   for (const top of ast.body) {
@@ -83,9 +84,17 @@ export function explainFunctions(ast, bindingCounts) {
         else if (value?.type) stack.push(value);
       }
     }
+    const workflow = javascriptWorkflow(ast, bindingCounts, source, fn, byName, expression);
+    const comment=source.slice(Math.max(0,fn.start-4000),fn.start).match(/\/\*\*((?:(?!\*\/)[\s\S])*)\*\/\s*(?:export\s+(?:default\s+)?)?(?:(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*)?$/);
+    const documentation=comment?comment[1].split('\n').map(line=>line.replace(/^\s*\*\s?/, '').trimEnd()).join('\n').trim():null;
+    for (const c of calls) Object.assign(c, workflow.calls.get(`${c.line}:${c.column}`) || {});
     const order = (a,b) => a.line - b.line || a.column - b.column;
     return { name, exported: exported || exportedNames.has(name), async: Boolean(fn.async), generator: Boolean(fn.generator),
+      language: 'JavaScript', scopeKind: 'function', sourceLinkable: byName.has(name), documentation,
+      io: workflow.io, transformations: workflow.transformations, loopPaths: workflow.loopPaths, comprehensions: [],
+      facts: workflow.facts, reuseCues: workflow.reuseCues, steps: workflow.steps, decorators: [],
       parameters: fn.params.map(parameter), calls: calls.sort(order), returns: returns.sort(order), conditions, loops, throws,
+      parameterNames: fn.params.map(p => p.type === 'Identifier' ? p.name : p.type === 'AssignmentPattern' && p.left.type === 'Identifier' ? p.left.name : null),
       ...loc(fn), endLine: fn.loc.end.line,
       summary: `${name} declares ${fn.params.length} parameter${fn.params.length === 1 ? '' : 's'} and contains ${calls.length} call/construction site${calls.length === 1 ? '' : 's'} and ${returns.length} return site${returns.length === 1 ? '' : 's'}.` };
   });

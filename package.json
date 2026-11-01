@@ -7,6 +7,7 @@
     "buildmap": "src/cli.js"
   },
   "scripts": {
+    "dev": "node src/dev.js",
     "start": "node src/cli.js .",
     "test": "node --test"
   },

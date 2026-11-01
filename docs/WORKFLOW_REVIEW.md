@@ -1,3 +1,5 @@
+> Current additions are documented in [the October 31 completion guide](COMPLETION_GUIDE_20261031.md): JavaScript workflow reading, imported stage events/measurements, conditional forecasts, reviewed stateful boundaries and explicit saved tasks. Earlier limits below describe the original Python slice unless superseded there.
+
 # Calculation, reuse and pre-run review
 
 Open the mission card's **Pre-run risk review · Guide preview** for a project-wide review, or a Python piece's **Inspect actual code · Guide preview** for its calculations. The same report is in `workflow` in JSON, `/api/map` and standalone HTML exports. BuildMap reads source and small optional review records; it never runs the mapped workflow or changes its products.

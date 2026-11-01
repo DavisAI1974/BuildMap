@@ -7,6 +7,7 @@ import path from 'node:path';
 import { scanProject } from '../src/scan.js';
 import { spawnSync } from 'node:child_process';
 import { clientSource } from '../src/export.js';
+import { generateCollectorKey, observePython } from '../src/collected-runs.js';
 
 // Executes the real client against a small DOM double. This covers rendering
 // logic and interactions, not CSS layout or browser integration.
@@ -57,6 +58,45 @@ async function client(initial, offline = false, navigator = undefined) {
   return { get, context, counts: () => ({ requests, polls }), setModel: m => { current = m; }, fail: value => { failed = value; },
     refresh: () => api.refresh() };
 }
+
+test('calculation reader searches and pages a large project, follows real source candidates and returns to the complete free map', async t => {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-reader-')); t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  fs.writeFileSync(path.join(root,'work.js'), 'export function entry(x) { const result=prepare(x); return result; }\nexport function prepare(x) { return x+1; }\n'+Array.from({length:60},(_,i)=>`export function extra${i}(x) { return x; }`).join('\n'));
+  const map=scanProject(root), ui=await client(map,true);
+  ui.get('workflowViewButton').listeners.click();
+  const detail=ui.get('detail'), results=detail.children.find(c=>c.className==='workflow-reader-results');
+  assert.equal(results.children.filter(c=>c.className==='workflow-choice').length,25);
+  const search=detail.children.find(c=>c.tag==='label').children[0]; search.value='entry'; search.listeners.input();
+  assert.equal(results.children.filter(c=>c.className==='workflow-choice').length,1);
+  results.children.find(c=>c.className==='workflow-choice').listeners.click();
+  const reading=detail.children.find(c=>c.className==='workflow-reader-calculation');
+  assert.match(reading.innerHTML,/What comes in.*What does it build.*What comes out/s);
+  reading.children.find(c=>c.className==='workflow-follow').listeners.click();
+  assert.match(reading.innerHTML,/prepare/);
+  ui.get('mapViewButton').listeners.click();
+  assert.equal(ui.get('workspace').classes.has('workflow-reading'),false);
+  assert.equal(ui.get('nodeLayer').children.filter(c=>c.className.includes('node')).length,map.nodes.length);
+  assert.equal(ui.counts().requests,0);
+});
+
+test('signed runtime routes navigate nested source offline and tampered receipts cannot elevate free evidence states',async t=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'buildmap-observed-ui-'));t.after(()=>fs.rmSync(temp,{recursive:true,force:true}));
+ const root=path.join(temp,'project');fs.mkdirSync(root);fs.mkdirSync(path.join(root,'.buildmap'));
+ fs.writeFileSync(path.join(root,'app.py'),'def outer():\n    def inner(a,b):\n        return a-b\n    return inner(3,1)\nassert outer()==2\n');
+ const privateKeyFile=path.join(temp,'key.pem');generateCollectorKey(privateKeyFile,path.join(root,'.buildmap/collectors.json'),'ui');
+ const initial=scanProject(root),sourceHashes=Object.assign({},...initial.nodes.filter(n=>n.kind!=='mission').map(n=>n.sourceHashes));
+ await observePython({root,entry:'app.py',sourceHashes,privateKeyFile,collectorId:'ui',output:path.join(root,'run.json')});
+ fs.writeFileSync(path.join(root,'.buildmap/analysis.json'),JSON.stringify({version:1,collectedRuns:['run.json']}));
+ const map=scanProject(root),ui=await client(map,true);ui.get('workflowViewButton').listeners.click();
+ const section=ui.get('detail').children.find(c=>c.className==='collected-runs'),run=section.children.find(c=>c.className==='collected-run');
+ assert.match(run.innerHTML,/verified-collector-current-source/);
+ const observed=run.children.find(c=>c.className==='collected-calculation'&&c.innerHTML.includes('outer.inner'));
+ observed.children.find(c=>c.tag==='button').listeners.click();
+ const reading=ui.get('detail').children.find(c=>c.className==='workflow-reader-calculation');assert.match(reading.innerHTML,/outer.inner/);
+ assert.equal(ui.counts().requests,0);assert.equal(map.project.counts.verified,0);assert.equal(map.project.counts.live,0);
+ const receipt=JSON.parse(fs.readFileSync(path.join(root,'run.json')));receipt.payload.exitCode=123;fs.writeFileSync(path.join(root,'run.json'),JSON.stringify(receipt));
+ assert.equal(scanProject(root).workflow.collected.runs[0].status,'refused');
+});
 
 test('empty walkthrough guidance explains local authoring, snapshot refresh and keeps the free map intact', async () => {
   for (const offline of [false, true]) {

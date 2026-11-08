@@ -68,6 +68,14 @@ At visualization test commit `65e67d9267cb63cabd29eea299b307d6bff7ea1f`, GitHub 
 
 No scientific production job ran; no AWS boxes were started; no data was changed, no PR merged or service connected.
 
+## November 8 continuation and preservation directive
+
+Current verified working commit for this handoff: `d23b6bd8715982257369f4d9f2ef45e4702b8472` (recheck before further edits). Three incremental engineering commits introduced `index.py`, `contracts.py`, `boundary_validation.py`, `durable_queue.py`, `result_cache.py`, `disk_index.py`, `grouping.py`, `outliers.py` and `benchmark.py`; three new test modules and the accurate `docs/ADAPTIVE_LOCALITY_STANDALONE_ACCEPTANCE_20261108.md` ledger. CI for this HEAD passed on all three Python versions.
+
+CRITICAL USER CHANGE: do not discard outlying data points. Investigate them, and optionally set them aside only from a *shadow grouping decision*, not from original evidence, work, or calculations. Retain exact observations and all metadata, causal clocks, order/member IDs, direction and provenance. Never average, smooth, flatten or use a center as a substitute for individual events. The SQLite outlier registry retains original events and an investigation audit trail, with recoverable state.
+
+User also asked about a novel 'five-step coupling technique' from `DavisAI1974/Basic_equations`. Its source should be examined **after** current standalone work; it is NOT automatically relevant or proved, and no coupling adapter is authorized. The source repo was located; its notes discuss coupling, KBK / AI Poincare / SINDy / PySR layering and important negative/corrected results, but the specific five-step procedure is not yet identified.
+
 ## Open work: finish independently BEFORE discussing integration
 
 1. Full metric calibration contract (source/data/version identities, units, missing features/abstention, no lookahead, dimensionality/validity checks), correct handling for near-zero distances, precision and stability.

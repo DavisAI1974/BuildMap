@@ -1,5 +1,7 @@
 # NEXT CHAT HANDOFF — Adaptive Locality mathematical engine and optional offline reviewer
 
+> **Current continuation handoff:** [ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md](ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md). It supersedes older coupling-status text below. Code HEAD validated at `ec0e8561d1a4a57e782b8c54e02add1bd28c84d4`; isolated GitHub Actions `42457310741` passed **61 tests on Python 3.11, 3.12 and 3.13**. No merge/deployment/production integration authorized.
+
 Date: Sunday, November 8, 2026 (US Eastern)
 Repository: `DavisAI1974/BuildMap` (this is the accessible GitHub storage repository, not a runtime dependency)
 **Working branch**: `feat/adaptive-locality-engine-20261108`
@@ -98,3 +100,7 @@ User also asked about a novel 'five-step coupling technique' from `DavisAI1974/B
 5. When actually finished, report a complete measured acceptance matrix and remaining limits. Never claim infinite Cauchy convergence from finite data.
 
 **No new AWS work, no change to Frankie or Search, and no production merge.**
+
+## Updated follow-up
+
+The five-step source has **now been found and inspected**; standalone coupling, Level 2, durable research holds and algebraic geometry diagnostics have been implemented and CI-tested. The authoritative, detailed continuation is [ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md](ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md). Earlier statement that the five-step procedure was unidentified is superseded. Finish the geometry diagnostics in the next chat, preserve research holds and all originals, and do not connect or merge.

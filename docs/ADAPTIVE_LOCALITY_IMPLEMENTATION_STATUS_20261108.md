@@ -1,5 +1,7 @@
 # Adaptive locality implementation status — isolated branch
 
+> **Current continuation handoff:** [ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md](ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md). It supersedes older coupling-status text below. Code HEAD validated at `ec0e8561d1a4a57e782b8c54e02add1bd28c84d4`; isolated GitHub Actions `42457310741` passed **61 tests on Python 3.11, 3.12 and 3.13**. No merge/deployment/production integration authorized.
+
 Branch: `feat/adaptive-locality-engine-20261108`.
 Intent: build in isolation; **do not connect to Frankie, AWS, BuildMap runtime, or production**. No merge or deployment authorized.
 
@@ -56,3 +58,14 @@ No change to Frankie, Search, AWS, production calculations, 30-day ingestion or 
 
 ## Cross-repository research pending
 The user recalled a novel five-step coupling technique in `DavisAI1974/Basic_equations`. This is a research lead, not yet confirmed as a particular five-step contract. Review and independent comparison are required before borrowing a coupling method; do not import scientific findings or assume they prove Adaptive Locality equivalence.
+
+## November 8 — five-step coupling, Level 2 and algebraic geometry extension
+
+- Verified source: `DavisAI1974/Basic_equations/level2_four_sciences.py`, `static_dipole_test.py` and `three_discoveries.py`. The original six-node chain and `B_net` averaging are hardcoded artifacts **not** used to derive network edges here.
+- `information.py`: frozen-bin H/MI, labeled Fisher-like *proxy*, complete source identity and missing/out-of-range review. Actual parameter Fisher information is unsupported.
+- `coupling.py`: directional five-step operator-dynamics experiment; independent full vs self-only vs **past-only lagged** donor null; rank/denominator abstentions retained, not filtered away.
+- `level2_coupling.py`: data-derived directional pair-balance candidates; every window including missing/rank-deficient results kept for research, no pair mean. `research_holds.py`: persistent SQLite immutable archive with hash-linked cases and reload tests.
+- `geometry_probe.py`: isolated algebraic operator-space curve `Ha^2=a+b*HaHb+c*(HaHb)^2`, plus `-(Ha-Hb)^2=-Ha^2-Hb^2+2HaHb` identity. The algebraic identity is not evidence of coupling. Detect novel train-support outliers even when curve residual is zero; preserve every point and label research-only.
+- All current modules are **experimental**, do not eliminate scientific jobs or modify raw market evidence, and have no Frankie, AWS, live BuildMap or external service integration.
+- At code commit `ec0e8561d1a4a57e782b8c54e02add1bd28c84d4`, CI `42457310741` passed 61 synthetic/offline tests on Python 3.11, 3.12, 3.13. This is NOT independent scientific acceptance.
+- **Still unverified:** scientific causality, real scientific job equivalence, signed source data, 99 planes, full raw-archive handoff for InfoFrames, topology discovery under confounders, real Fisher information, physical geometry/normal vectors, continuum Neumann PDE, and real-data scaling. Continue diagnostic work in the new chat, not integration.

@@ -41,6 +41,9 @@ class ResearchHoldRegistry:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=FULL")
         self.db.execute("PRAGMA busy_timeout=30000")
+        # SQLite ignores PRAGMA foreign_keys changes while a transaction is
+        # active. Enforce references *before* creating any archive/case.
+        self.db.execute("PRAGMA foreign_keys=ON")
         with self._tx():
             self.db.execute("CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY,v TEXT NOT NULL)")
             self.db.execute("""CREATE TABLE IF NOT EXISTS archives(
@@ -66,7 +69,6 @@ class ResearchHoldRegistry:
                 raise LocalityError("research-hold source/contract mismatch")
             for k,v in expected.items():
                 self.db.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",(k,v))
-            self.db.execute("PRAGMA foreign_keys=ON")
 
     @contextmanager
     def _tx(self):
@@ -181,16 +183,40 @@ class ResearchHoldRegistry:
                 "scientific_jobs_eliminated":0}
 
     def verify(self) -> bool:
+        """Verify archives, linked history, current states and referential links.
+
+        Detects accidental or partial corruption, NOT independently signed,
+        adversarial tamper resistance: database writers can rewrite hashes.
+        """
+        if self.db.execute("PRAGMA foreign_keys").fetchone()[0]!=1:
+            raise LocalityError("research archive foreign-key enforcement disabled")
+        if self.db.execute("PRAGMA foreign_key_check").fetchall():
+            raise LocalityError("orphaned research evidence linkage")
         for archive, in self.db.execute("SELECT archive_name FROM archives"):
             self.read_archive(archive)
+        cases={case:(archive,reason,state)
+               for case,archive,reason,state in self.db.execute(
+                   "SELECT case_id,archive_name,reason,state FROM cases")}
         last="GENESIS"
+        historical={}
         for case,state,reviewer,reason,previous,digest in self.db.execute(
                 "SELECT case_id,state,reviewer,reason,previous_hash,entry_hash FROM changes ORDER BY seq"):
             check=_digest({"case":case,"state":state,"reason":reason,
                            "reviewer":reviewer,"previous":last})
             if previous!=last or digest!=check:
                 raise LocalityError("tampered research hold ledger")
+            if case not in cases:
+                raise LocalityError("review references missing research case")
+            if case not in historical:
+                if state!="RESEARCH_HOLD" or reason!=cases[case][1]:
+                    raise LocalityError("case creation history or reason conflict")
+            elif state=="RESEARCH_HOLD":
+                raise LocalityError("unexpected recreation of research case")
+            historical[case]=state
             last=digest
+        if (set(historical)!=set(cases) or
+            any(historical[case]!=cases[case][2] for case in cases)):
+            raise LocalityError("case state diverges from immutable review history")
         return True
 
     def counts(self):

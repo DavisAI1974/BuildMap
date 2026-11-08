@@ -375,3 +375,81 @@ def preserve_rejected_geometric_inputs(raw_frames: Sequence[object],
     return {"archive_name":archive_name,"archive_digest":digest,
             "retained_full_raw_frames":len(raw),"research_case_ids":(case_id,),
             "original_measurements_dropped":0,"scientific_jobs_eliminated":0}
+
+
+def preserve_geometric_predictive_controls(report: dict,
+                                           information_frames: Sequence[object],
+                                           raw_frames: Sequence[object],
+                                           bins: object,
+                                           registry: ResearchHoldRegistry, *,
+                                           archive_name: str) -> dict:
+    """Bind every negative, rank, positive or conflicting split to raw evidence.
+
+    Archive one per-frame record (with original IDs/values/directions) and a
+    report manifest. Every split gets a research case even when promising:
+    this is an auditable observation, never a claim of causal equivalence.
+    """
+    from .information import RawFrame, InfoFrame, FixedBins, derive_information
+    frames=tuple(information_frames)
+    raw=tuple(raw_frames)
+    splits=tuple(report.get("splits",()))
+    if (report.get("kind")!="OFFLINE_GEOMETRY_PREDICTIVE_CONTROLS" or
+        report.get("source_identity")!=registry.source_identity or
+        report.get("calibration_identity")!=registry.contract_identity or
+        not isinstance(bins,FixedBins) or
+        bins.identity()!=registry.contract_identity or
+        bins.source_identity!=registry.source_identity or
+        report.get("scientific_jobs_eliminated")!=0 or
+        report.get("frames_dropped")!=0 or
+        report.get("raw_observations_averaged_or_smoothed") is not False or
+        not frames or not splits or
+        len(frames)!=len(raw) or
+        len(frames)!=report.get("original_frame_count")):
+        raise LocalityError("incompatible predictive controls or incomplete raw evidence")
+    evidence=_digest({"frames":[f.identity() for f in frames
+                                if isinstance(f,InfoFrame)],
+                      "target":report.get("target"),"donor":report.get("donor")})
+    if (evidence!=report.get("evidence_identity") or
+        tuple(f.raw_identity for f in frames)!=tuple(report.get("preserved_frame_identities",()))):
+        raise LocalityError("predictive control evidence identity mismatch")
+    records=[]
+    for i,(f,r) in enumerate(zip(frames,raw)):
+        if not isinstance(f,InfoFrame) or not isinstance(r,RawFrame):
+            raise LocalityError("full raw and derived information frames required")
+        if (r.source_identity!=registry.source_identity or f.clock!=r.clock or
+            f.raw_identity!=r.identity() or
+            tuple(s.evidence_id for s in r.samples)!=f.raw_evidence_ids or
+            derive_information(r,bins)!=f):
+            raise LocalityError("predictive controls do not match upstream raw values")
+        records.append({"kind":"RAW_AND_INFORMATION_FRAME","index":i,
+                        "raw_frame":r,"information_frame":f})
+    for split in splits:
+        if (split.original_training_frame_identities!=
+            tuple(f.raw_identity for f in frames
+                  if split.train_cutoff_clock>f.clock and
+                  f.clock>=frames[report["past_lag"]].clock)
+            or split.original_testing_frame_identities!=
+            tuple(f.raw_identity for f in frames
+                  if f.clock>=split.train_cutoff_clock)):
+            # Explicitly reject clipped/reordered or fabricated split lineage.
+            raise LocalityError("predictive split provenance mismatch")
+    records.append({"kind":"PREDICTIVE_CONTROL_REPORT","report":report})
+    digest=registry.archive(archive_name,tuple(records))
+    cases=[]
+    for i,split in enumerate(splits):
+        reason="GEOMETRY_PREDICTIVE_SPLIT:"+split.status
+        case_id=_digest({"evidence":evidence,"archive":digest,"index":i,
+                         "clock":split.train_cutoff_clock,"status":split.status})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"index":i,"clock":split.train_cutoff_clock,
+                               "rank_or_confound_reason":split.reason,
+                               "archive_digest":digest,"source":evidence,
+                               "geometry_gain":split.geometry_gain,
+                               "past_donor_gain":split.past_donor_gain})
+        cases.append(case_id)
+    return {"archive_name":archive_name,"archive_digest":digest,
+            "retained_full_raw_frames":len(raw),
+            "retained_information_frames":len(frames),
+            "retained_predictive_splits":len(splits),
+            "research_case_ids":tuple(cases),"cases":len(cases),
+            "scientific_jobs_eliminated":0,"original_measurements_dropped":0}

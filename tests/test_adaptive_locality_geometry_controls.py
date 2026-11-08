@@ -63,6 +63,30 @@ class GeometricPredictionControlsTests(unittest.TestCase):
         self.assertTrue(all(s.geometry_gain>s.past_donor_gain+0.05 for s in report["splits"]))
         self.assertFalse(report["physical_boundary_condition_supported"])
 
+    def test_nested_quadratic_term_adds_future_information_in_known_toy(self):
+        # Separately test an explicitly quadratic generative term, not a
+        # static Ha²=(HaHb)² algebraic identity. No physical/causal claim.
+        rng=random.Random(19)
+        frames=[]
+        ha=0.85
+        for t in range(200):
+            hb=0.65+0.95*rng.random()+0.07*math.sin(0.19*t)
+            fia=0.55+0.18*math.sin(0.13*t)
+            fib=0.45+0.11*math.cos(0.27*t)
+            mi=0.2+0.03*math.sin(0.29*t)
+            frames.append(frame(t,ha,hb,fia,fib,mi,
+                                source="known-quadratic-synthetic"))
+            ab=ha*hb
+            ha+=0.015*(0.11-0.36*ha+0.08*fia+0.17*ab+0.08*ab*ab)
+        report=geometric_predictive_controls(tuple(frames),"a","b")
+        supported=[s for s in report["splits"]
+                   if s.quadratic_additional_support is True]
+        self.assertGreater(len(supported),0)
+        self.assertTrue(all(s.quadratic_vs_linear_gain>0.5 for s in supported))
+        self.assertTrue(all(s.linear_interaction_holdout_sse>
+                            s.geometry_holdout_sse for s in supported))
+        self.assertEqual(report["scientific_jobs_eliminated"],0)
+
     def test_independent_seeds_do_not_become_universal_coupling(self):
         for seed in (2,7,13,23):
             with self.subTest(seed=seed):

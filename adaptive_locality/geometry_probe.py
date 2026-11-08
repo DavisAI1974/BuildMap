@@ -140,14 +140,14 @@ def geometric_dipole_probe(frames: Sequence[InfoFrame], target: str,
                 outside_y=(p.ha_squared < y_lo-3*y_span or
                            p.ha_squared > y_hi+3*y_span)
                 outlier=abs(residual)>tolerance or outside_x or outside_y
-                reason=("STATIC_CURVE_LARGE_RESIDUAL_RESEARCH" if abs(residual)>tolerance
-                        else "OUTSIDE_TRAINING_SUPPORT_RESEARCH" if outside_x or outside_y
-                        else "NOT_AN_EQUIVALENCE_OR_CALCULATION_DROP")
+                point_reason=("STATIC_CURVE_LARGE_RESIDUAL_RESEARCH" if abs(residual)>tolerance
+                              else "OUTSIDE_TRAINING_SUPPORT_RESEARCH" if outside_x or outside_y
+                              else "NOT_AN_EQUIVALENCE_OR_CALCULATION_DROP")
                 updated.append(GeometryPoint(p.clock,p.raw_identity,
                     p.original_evidence_ids,p.ha,p.hb,p.ha_squared,
                     p.hb_squared,p.ha_hb,p.squared_entropy_difference,
                     residual,"RESEARCH_REVIEW_OUTLIER" if outlier else "RETAINED",
-                    reason))
+                    point_reason))
             points=updated
         except (LocalityError,ArithmeticError,OverflowError) as error:
             status="RESEARCH_HOLD"

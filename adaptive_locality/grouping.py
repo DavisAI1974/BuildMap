@@ -100,7 +100,7 @@ class ShadowGrouper:
         new_member=self._members[new]
         if old_member["family"]!=new_member["family"] or old_member["direction"]!=new_member["direction"]:
             raise LocalityError("cross-family or direction alias prohibited")
-        if old in self._view_aliases or new in self._view_aliases or new in self._view_aliases.values():
+        if old in self._view_aliases or old in self._view_aliases.values() or new in self._view_aliases or new in self._view_aliases.values():
             raise LocalityError("aliases cannot be chained or silently replaced")
         self._view_aliases[old]=new
         self._log("ALIAS_VIEW",{"old":old,"new":new,"reason":reason})

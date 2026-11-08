@@ -133,6 +133,15 @@ def geometric_dipole_probe(frames: Sequence[InfoFrame], target: str,
     evidence=_digest({"frames":[f.identity() for f in frames],
                       "target":target,"donor":donor})
     basis_audit=_basis_condition_audit(rows[:split]) if not issue_ids else None
+    algebraic_degeneracy_flags=[]
+    if not issue_ids:
+        train_donor=[p.hb for p in points[:split]]
+        donor_span=max(train_donor)-min(train_donor)
+        donor_scale=max(1.,*(abs(v) for v in train_donor))
+        if donor_span<=1e-12*donor_scale:
+            algebraic_degeneracy_flags.append("CONSTANT_TRAIN_DONOR_HB")
+        if all(p.ha==p.hb for p in points):
+            algebraic_degeneracy_flags.append("EXACT_EQUAL_ENTROPY_HA_HB")
     fitted=None
     linear_sse=None
     quad_sse=None
@@ -196,6 +205,12 @@ def geometric_dipole_probe(frames: Sequence[InfoFrame], target: str,
                 frozen_support_x_excess=max(x_lo-r[1],0.,r[1]-x_hi),
                 frozen_support_y_excess=max(y_lo-p.ha_squared,0.,p.ha_squared-y_hi)))
             points=updated
+            # With Hb constant and nonzero, Ha²=(HaHb)²/Hb² by
+            # algebra alone; a perfect holdout fit is NOT a discovery.
+            if ("CONSTANT_TRAIN_DONOR_HB" in algebraic_degeneracy_flags
+                and status!="RESEARCH_HOLD"):
+                status="RESEARCH_HOLD"
+                reason="CONSTANT_DONOR_QUADRATIC_IS_ALGEBRAIC_REPARAMETERIZATION"
             if (basis_audit and basis_audit["standardized_condition"] is not None
                 and basis_audit["standardized_condition"]>1e6):
                 status="RESEARCH_HOLD"
@@ -228,6 +243,8 @@ def geometric_dipole_probe(frames: Sequence[InfoFrame], target: str,
         "quadratic_holdout_sse":quad_sse,"quadratic_gain":gain,
         "quadratic_coefficients":fitted,
         "design_basis_audit":basis_audit,
+        "algebraic_degeneracy_flags":tuple(algebraic_degeneracy_flags),
+        "static_curve_is_not_a_forecast_of_future_entropy":True,
         "max_equal_entropy_identity_float_residual":max_identity_roundoff,
         "large_residual_point_count":sum(p.residual_exceeds_tolerance is True for p in points),
         "frozen_support_novelty_point_count":sum(p.outside_frozen_support is True for p in points),
@@ -242,6 +259,7 @@ def geometric_dipole_probe(frames: Sequence[InfoFrame], target: str,
         "averaged_or_flattened_original_data":False,
         "limitations":(
             "The equal-entropy null direction is a universal algebraic identity and may arise in pure noise.",
+            "A constant donor makes a quadratic curve exact by reparameterization; this is not a predictive interaction.",
             "The static curve can be estimator-, regime- and fit-dependent, even with high heldout R2.",
             "Each outlier/underidentified fit must be retained for scientific investigation.",
             "This does not establish continuum geometry, a Neumann PDE, or causality.",

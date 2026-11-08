@@ -17,7 +17,8 @@ from .information import InfoFrame, validate_series
 from .coupling import _qr_fit, _predict_sse
 
 SELF=("const","Ha","Ha2","FIa")
-GEOMETRY=SELF+("HaHb","HaHb2")
+INTERACTION=SELF+("HaHb",)
+GEOMETRY=INTERACTION+("HaHb2")
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,9 @@ class GeometryPredictiveSplit:
     testing_intervals: int
     self_holdout_sse: float | None
     geometry_holdout_sse: float | None
+    linear_interaction_holdout_sse: float | None
+    quadratic_vs_linear_gain: float | None
+    quadratic_additional_support: bool | None
     past_donor_holdout_sse: float | None
     geometry_gain: float | None
     past_donor_gain: float | None
@@ -102,6 +106,8 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
         def hold(reason):
             return GeometryPredictiveSplit(status="RESEARCH_HOLD",reason=reason,
                 self_holdout_sse=None,geometry_holdout_sse=None,
+                linear_interaction_holdout_sse=None,
+                quadratic_vs_linear_gain=None,quadratic_additional_support=None,
                 past_donor_holdout_sse=None,geometry_gain=None,past_donor_gain=None,
                 early_holdout_gain=None,late_holdout_gain=None,
                 coefficient_condition_indicator=None,full_coefficients=(),**kwargs)
@@ -115,6 +121,8 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
             lag_train=[_directional_terms(frames,i,target,donor,lag) for i in train_idx]
             ytrain=[_rate(frames,i,target) for i in train_idx]
             self_fit=_qr_fit(self_train,ytrain,SELF)
+            interaction_fit=_qr_fit([row[:len(INTERACTION)] for row in full_train],
+                                    ytrain,INTERACTION)
             full_fit=_qr_fit(full_train,ytrain,GEOMETRY)
             lag_fit=_qr_fit(lag_train,ytrain,GEOMETRY)
             self_test=[_directional_terms(frames,i,target,donor)[:len(SELF)]
@@ -123,15 +131,22 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
             lag_test=[_directional_terms(frames,i,target,donor,lag) for i in test_idx]
             ytest=[_rate(frames,i,target) for i in test_idx]
             base=_predict_sse(self_fit,self_test,ytest)
+            interaction=_predict_sse(interaction_fit,
+                                     [row[:len(INTERACTION)] for row in full_test],
+                                     ytest)
             full=_predict_sse(full_fit,full_test,ytest)
             past=_predict_sse(lag_fit,lag_test,ytest)
-            if not all(math.isfinite(v) for v in (base,full,past)):
+            if not all(math.isfinite(v) for v in (base,interaction,full,past)):
                 raise LocalityError("nonfinite heldout predictive residual")
             if base<=1e-14:
                 results.append(hold("SELF_MODEL_ALREADY_EXPLAINS_HOLDOUT"))
                 continue
             gain=(base-full)/base
             past_gain=(base-past)/base
+            # A simple Ha*Hb term is the appropriate nested comparator.
+            # A static quadratic identity does not itself improve prediction.
+            quadratic_gain=((interaction-full)/interaction
+                            if interaction>1e-14 else None)
             halfway=len(test_idx)//2
             if halfway<8 or len(test_idx)-halfway<8:
                 results.append(hold("INSUFFICIENT_REGIME_RESOLUTION"))
@@ -144,6 +159,17 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
             late=segment(halfway,len(test_idx))
             stable=(early is not None and late is not None and
                     early>0 and late>0)
+            def incremental_segment(start,stop):
+                i_error=_predict_sse(interaction_fit,
+                    [row[:len(INTERACTION)] for row in full_test[start:stop]],
+                    ytest[start:stop])
+                f_error=_predict_sse(full_fit,full_test[start:stop],ytest[start:stop])
+                return (i_error-f_error)/i_error if i_error>1e-14 else None
+            early_extra=incremental_segment(0,halfway)
+            late_extra=incremental_segment(halfway,len(test_idx))
+            extra=(quadratic_gain is not None and quadratic_gain>=min_gain
+                   and early_extra is not None and early_extra>0
+                   and late_extra is not None and late_extra>0)
             promising=(gain>=min_gain and gain>=past_gain+null_margin and stable)
             results.append(GeometryPredictiveSplit(
                 status="CANDIDATE_PREDICTIVE_ASSOCIATION_REVIEW_ONLY" if promising
@@ -151,6 +177,9 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
                 reason=("Matched historical-null and frozen holdout comparisons; "
                         "overlapping splits not independent evidence of causality"),
                 self_holdout_sse=base,geometry_holdout_sse=full,
+                linear_interaction_holdout_sse=interaction,
+                quadratic_vs_linear_gain=quadratic_gain,
+                quadratic_additional_support=extra,
                 past_donor_holdout_sse=past,geometry_gain=gain,
                 past_donor_gain=past_gain,early_holdout_gain=early,
                 late_holdout_gain=late,
@@ -181,6 +210,7 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
             "physical_boundary_condition_supported":False,
             "limitations":(
                 "Same-clock geometry operators are tested against *future* target changes.",
+                "Quadratic operators are compared against a nested linear interaction term, not just self-only dynamics.",
                 "Independent source/seed replication is not established by overlapping time splits.",
                 "Past-only donor lag is a negative control, not proof against common drivers.",
                 "Rank-deficient or unexplained splits require durable raw-evidence research holds.",

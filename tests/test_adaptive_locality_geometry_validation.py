@@ -130,5 +130,48 @@ class GeometricResearchPreservationTests(unittest.TestCase):
                 self.assertTrue(store.verify())
 
 
+    def test_exact_equal_entropy_with_zero_mutual_information_is_not_coupling(self):
+        # Two different raw ensembles with independent aligned member-bin
+        # assignments (joint bin counts exactly factor). Both channels have
+        # identical H, yet MI=0; the algebraic dipole null remains automatic.
+        bins=FixedBins("independent-members","frozen-discrete",
+                       (("a",(0.,1.,2.,3.,4.)),
+                        ("b",(0.,1.,2.,3.,4.))))
+        raw=[]
+        for t in range(48):
+            count=(20,30,40,50)[t%4]
+            joint=((count*count//100,count*(100-count)//100),
+                   (count*(100-count)//100,(100-count)**2//100))
+            pairs=[(a,b) for a in range(2) for b in range(2)
+                   for _ in range(joint[a][b])]
+            self.assertEqual(len(pairs),100)
+            samples=tuple(RawMember(f"ind-{t}-{node}-{i}",str(i),node,
+                                    0.5 if (a if node=="a" else b)==0 else 1.5,
+                                    "exact-independent-marginal-synthetic",
+                                    direction="AB" if node=="a" else "BA",
+                                    order_id=f"order-{t}-{i}")
+                          for i,(a,b) in enumerate(pairs)
+                          for node in ("a","b"))
+            raw.append(RawFrame(t,"independent-members",samples))
+        info=tuple(derive_information(r,bins) for r in raw)
+        self.assertTrue(all(f.status=="READY" for f in info))
+        self.assertTrue(all(dict(f.entropy)["a"]==dict(f.entropy)["b"] for f in info))
+        self.assertTrue(all(abs(f.mi[0][2])<1e-12 for f in info))
+        result=geometric_dipole_probe(info,"a","b")
+        self.assertEqual(result["status"],"RESEARCH_HOLD")
+        self.assertIn("EXACT_EQUAL_ENTROPY_HA_HB",result["algebraic_degeneracy_flags"])
+        self.assertTrue(result["identity_is_algebra_not_coupling"])
+        self.assertEqual(len(result["points"]),len(raw))
+        with tempfile.TemporaryDirectory() as folder:
+            with ResearchHoldRegistry(Path(folder)/"equal.sqlite",
+                                      source_identity="independent-members",
+                                      contract_identity=bins.identity()) as store:
+                receipt=preserve_geometric_holds(
+                    result,info,tuple(raw),bins,store,archive_name="equal-entropy-all-raw")
+                self.assertEqual(receipt["retained_full_raw_frames"],48)
+                self.assertEqual(receipt["scientific_jobs_eliminated"],0)
+                self.assertTrue(store.verify())
+
+
 if __name__=="__main__":
     unittest.main()

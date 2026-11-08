@@ -18,16 +18,29 @@ Intent: build in isolation; **do not connect to Frankie, AWS, BuildMap runtime, 
 - Opt-in standalone HTML scientific viewer and replay probes (`visualization.py`, `review_cli.py`) based on Slayer architectural patterns, no Slayer source code and no native BuildMap integration.
 - Four standard-library test files and isolated GitHub Actions workflow for Python 3.11–3.13.
 
+## Standalone extensions (November 8, 2026)
+- `contracts.py`: explicit source/schema/version/unit calibration, historical-only reference and missingness refusal.
+- `index.py`: deterministic grid with exact metric recheck and high-dimension fallback. `disk_index.py`: source-bound persistent streaming grid candidate lookup with exact verification and reversible retire/restore.
+- `durable_queue.py`: local SQLite transactional shadow scheduler with capacity/backpressure, expiring and fenced lease tokens, retry and idempotent completion. No external execution or distributed effect safety.
+- `result_cache.py`: immutable fully keyed offline research artifacts with torn/stale rejection; no automatic reuse to suppress science.
+- `boundary_validation.py`: graph-domain stability bound, energy and conservation tests, not continuum Neumann applicability.
+- `grouping.py`: chronological same-family, same-direction reversible display-only grouping and alias ledger. Does not average, flatten or remove observations.
+- `outliers.py`: transactional full-original event and lineage retention, investigation statuses, hash-linked audit history. Outliers may be set aside **only from grouping**, never removed from scientific evidence or work. They are research subjects, not noise by default.
+- `benchmark.py`: bounded reproducible synthetic-only exact-differential and CPU comparison harness, not real market evidence.
+- New independent index/queue/recovery/numeric/outlier/benchmark tests in `tests/test_adaptive_locality_independent.py`, `tests/test_adaptive_locality_numeric_disk.py` and `tests/test_adaptive_locality_review_policy.py`.
+- CI success at `d23b6bd8715982257369f4d9f2ef45e4702b8472`, Python 3.11, 3.12 and 3.13, following corrected display-alias-chain test. No production validation.
+- Expanded truthful gate report: `docs/ADAPTIVE_LOCALITY_STANDALONE_ACCEPTANCE_20261108.md`.
+
 ## Not complete; keep isolated
 - Production feature extraction from Frankie's actual 99-plane schema, immutable order/event lineage and frozen normalization.
 - High-scale ANN, incremental center evolution and real center split/merge with scientific preservation.
 - Full mathematical convergence guarantees: impossible to infer from finite samples without assumptions.
 - Real geometric boundary normals, validated flux PDE model, discretization consistency and robust time-step stability.
 - Real calculation exactness proof, side-effect checks, cache/FFT equivalence and permitted approximation policies.
-- Persistent transactional scheduler, multi-host recovery, durable work queue, cloud deployment.
+- Local transactional SQLite shadow queue now exists; distributed side-effect fencing, multi-host recovery and cloud deployment do not.
 - Optional native BuildMap import remains unimplemented. Existing offline viewer is a BuildMap-adjacent prototype, not wired to the app. Signed source-bound collector and production evidence review also remain pending.
 - Real-day benchmark, performance/accuracy results, cost gates, randomized multi-day validation and rollout.
-- Thorough fuzz/property/stress tests, CI verification for latest commit, packaging and release acceptance.
+- Broader independent bounded differential and fault/reopen tests exist; exhaustive adversarial load, actual-market benchmark, signed evidence, external review and release acceptance remain unsupported.
 
 ## Next independent engineering steps
 1. Expand deterministic property tests (metric/packing, chunk/replay, NaN/missing, long drift and adversarial identities).
@@ -40,3 +53,6 @@ Intent: build in isolation; **do not connect to Frankie, AWS, BuildMap runtime, 
 8. Verify all CI/test receipts and audit unsupported areas before any request for integration.
 
 No change to Frankie, Search, AWS, production calculations, 30-day ingestion or BuildMap runtime. This document is a truthful status ledger, not a completion receipt.
+
+## Cross-repository research pending
+The user recalled a novel five-step coupling technique in `DavisAI1974/Basic_equations`. This is a research lead, not yet confirmed as a particular five-step contract. Review and independent comparison are required before borrowing a coupling method; do not import scientific findings or assume they prove Adaptive Locality equivalence.

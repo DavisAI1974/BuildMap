@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Mapping, Sequence
+from types import MappingProxyType
 import hashlib
 import json
 import math
@@ -27,8 +28,14 @@ class Observation:
             raise LocalityError("event, family and provenance required")
         if not isinstance(self.event_clock, int) or isinstance(self.event_clock, bool):
             raise LocalityError("integer causal clock required")
-        if any(not isinstance(v, (float,int)) or isinstance(v,bool) or not math.isfinite(v) for v in self.features.values()):
+        if not isinstance(self.features, Mapping):
+            raise LocalityError("feature mapping required")
+        if any(not isinstance(k, str) or not k for k in self.features):
+            raise LocalityError("feature names must be nonempty strings")
+        if any(not isinstance(v, (float,int)) or isinstance(v,bool) or not math.isfinite(v)
+               for v in self.features.values()):
             raise LocalityError("features must be finite numbers")
+        object.__setattr__(self, "features", MappingProxyType(dict(self.features)))
     def identity(self):
         return _digest({"id":self.event_id,"family":self.family,"features":dict(self.features),
                         "clock":self.event_clock,"provenance":self.provenance,
@@ -45,19 +52,35 @@ class MetricContract:
             raise LocalityError("version and unique metric features required")
         if len(self.features)!=len(self.scales) or len(self.features)!=len(self.weights):
             raise LocalityError("feature/scales/weights lengths differ")
+        if any(not isinstance(k, str) or not k for k in self.features):
+            raise LocalityError("invalid metric feature name")
+        if any(not isinstance(v, (int,float)) or isinstance(v, bool) for v in (*self.scales,*self.weights)):
+            raise LocalityError("numeric scales/weights required")
+        object.__setattr__(self,"features",tuple(self.features))
+        object.__setattr__(self,"scales",tuple(self.scales))
+        object.__setattr__(self,"weights",tuple(self.weights))
         if any(not math.isfinite(x) or x<=0 for x in self.scales):
             raise LocalityError("scales must be positive and finite")
-        if any(not math.isfinite(x) or x<0 for x in self.weights) or sum(self.weights)<=0:
+        if any(not math.isfinite(x) or x<0 for x in self.weights) or sum(self.weights)<=0 or not math.isfinite(sum(self.weights)):
             raise LocalityError("nonnegative weights with positive sum required")
         if any(k.lower().endswith(("id","_id","name","descriptor")) for k in self.features):
             raise LocalityError("identifiers and descriptors cannot drive metric")
     def vector(self, obs: Observation) -> tuple[float,...]:
         if any(k not in obs.features for k in self.features):
             raise LocalityError("missing metric feature; abstain, do not impute")
-        return tuple(float(obs.features[k])/s for k,s in zip(self.features,self.scales))
+        result = tuple(float(obs.features[k])/s for k,s in zip(self.features,self.scales))
+        if any(not math.isfinite(x) for x in result):
+            raise LocalityError("normalized feature overflow")
+        return result
     def distance(self,a:Observation,b:Observation)->float:
         x,y=self.vector(a),self.vector(b)
-        return math.sqrt(sum(w*(u-v)**2 for w,u,v in zip(self.weights,x,y)))
+        terms = tuple(math.sqrt(w)*(u-v) for w,u,v in zip(self.weights,x,y) if w>0)
+        if any(not math.isfinite(t) for t in terms):
+            raise LocalityError("metric coordinate overflow")
+        distance=math.hypot(*terms)
+        if not math.isfinite(distance):
+            raise LocalityError("metric distance overflow")
+        return distance
     def identity(self)->str:
         return _digest({"features":self.features,"scales":self.scales,"weights":self.weights,"version":self.version})
 
@@ -91,8 +114,8 @@ class LocalityConfig:
     def __post_init__(self):
         if self.radius<=0 or not math.isfinite(self.radius) or self.bandwidth<=0 or not math.isfinite(self.bandwidth):
             raise LocalityError("radius/bandwidth must be finite positive")
-        if self.max_neighbors<1:
-            raise LocalityError("max_neighbors must be positive")
+        if type(self.max_neighbors) is not int or self.max_neighbors<1:
+            raise LocalityError("max_neighbors must be a positive integer")
 
 @dataclass(frozen=True)
 class Decision:

@@ -119,9 +119,15 @@ def localized_weights(observation:Observation,centers:list[Observation],
     candidates=sorted((c for c in centers if allow_cross_family or c.family==observation.family),
                       key=lambda c:c.event_id)
     if not candidates: return {"status":"ABSTAIN_FAMILY","weights":{}}
-    logw=[-0.5*(metric.distance(observation,c)/bandwidth)**2 for c in candidates] if math.isfinite(bandwidth) and bandwidth>0 else None
-    if logw is None: raise LocalityError("invalid bandwidth")
+    if not math.isfinite(bandwidth) or bandwidth<=0:
+        raise LocalityError("invalid bandwidth")
+    logw=[]
+    for c in candidates:
+        ratio=metric.distance(observation,c)/bandwidth
+        logw.append(-math.inf if not math.isfinite(ratio) or ratio>1e154 else -0.5*ratio*ratio)
     peak=max(logw)
+    if peak == -math.inf:
+        return {"status":"ABSTAIN_NUMERIC","weights":{}}
     weights=[math.exp(x-peak) for x in logw]
     denominator=sum(weights)
     if not math.isfinite(denominator) or denominator<=0:

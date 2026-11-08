@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from .core import _digest
+from .research_gates import UNVERIFIED_GATES
 
 _COMPONENTS = (
     ("raw-observables", "Source-bound observables",
@@ -32,14 +33,6 @@ _COMPONENTS = (
      ("adaptive_locality/research_holds.py",),
      ("raw-observables","static-geometry","predictive-controls","level2-links"),
      "Immutable source-bound RawFrame+InfoFrame archives and reversible review cases."),
-    ("unverified-independent-replication", "Independent real-source replication",
-     ("adaptive_locality/independent_source_replication.py",),
-     ("predictive-controls","raw-research-holds"),
-     "PLANNED ONLY: independent source, seed and calibration validation not implemented."),
-    ("unverified-physical-boundary", "Continuum boundary validation",
-     ("adaptive_locality/continuum_geometry_validation.py",),
-     ("static-geometry",),
-     "PLANNED ONLY: physical geometry, normals and Neumann PDE validity unproven."),
 )
 
 
@@ -51,6 +44,17 @@ def inspection_manifest() -> dict:
                  "purpose":purpose,"contributes":"Make outstanding scientific acceptance gaps explicit.",
                  "visual":{"kind":"proof","label":"Research review"}}
                 for component_id,name,files,dependencies,purpose in _COMPONENTS]
+    for gate in UNVERIFIED_GATES:
+        components.append({
+            "id":"unverified-"+gate.gate_id,
+            "name":"Unverified: "+gate.gate_id.replace("-"," "),
+            "group":"Retained for further scientific inspection",
+            "files":["adaptive_locality/unverified_review/"+gate.gate_id+".py"],
+            "dependsOn":["raw-research-holds"],
+            "purpose":gate.reason+" Required evidence: "+gate.required_evidence,
+            "contributes":"Unresolved science gate remains visible and incomplete.",
+            "visual":{"kind":"proof","label":"Research hold"},
+        })
     return {
         "name":"Adaptive Locality — isolated review trial",
         "mode":"brownfield",
@@ -70,9 +74,8 @@ def inspection_comparison_contract() -> dict:
             "schema":1,"mode":"STATIC_SOURCE_INSPECTION_ONLY",
             "manifest_identity":_digest(manifest),
             "component_count":len(manifest["components"]),
-            "known_scientific_gates":(
-                "unverified-independent-replication",
-                "unverified-physical-boundary"),
+            "known_scientific_gates":tuple("unverified-"+g.gate_id
+                                            for g in UNVERIFIED_GATES),
             "keep_only_if":(
                 "native BuildMap scanner finds actual source connections",
                 "missing independent-science gates remain visibly incomplete",

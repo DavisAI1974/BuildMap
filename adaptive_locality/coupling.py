@@ -125,7 +125,10 @@ def _qr_fit(rows: list[tuple[float,...]], target: list[float],
 def _operator_row(frames: tuple[InfoFrame,...], at: int, a: str,
                   b: str, donor_offset: int=0) -> tuple[float,...]:
     now=frames[at]
-    donor_frame=frames[(at+donor_offset)%len(frames)]
+    donor_index=at+donor_offset
+    if donor_offset>0 or donor_index<0 or donor_index>at:
+        raise LocalityError("future donor observation or unavailable history")
+    donor_frame=frames[donor_index]
     ent_a=dict(now.entropy)
     ent_b=dict(donor_frame.entropy)
     fi_a=dict(now.fisher_proxy)
@@ -137,10 +140,12 @@ def _operator_row(frames: tuple[InfoFrame,...], at: int, a: str,
 
 
 def _series_rows(frames: tuple[InfoFrame,...], a: str, b: str,
-                 donor_offset: int=0):
+                 donor_offset: int=0, *, start_index:int=0):
+    if donor_offset>0:
+        raise LocalityError("future donor observation not permitted")
     X=[]
     y=[]
-    for i in range(len(frames)-1):
+    for i in range(max(start_index,-donor_offset),len(frames)-1):
         dt=frames[i+1].clock-frames[i].clock
         Ha=dict(frames[i].entropy)[a]
         Ha_next=dict(frames[i+1].entropy)[a]
@@ -167,26 +172,30 @@ def _ratio(fit: Fit):
 def _test_direction(frames: tuple[InfoFrame,...],target: str,donor: str,
                     min_gain:float, null_margin:float) -> CouplingResult:
     N=len(frames)-1
+    lag=max(3,len(frames)//5)
     split=int(N*0.65)
-    # One derivative embargo around split; baseline and donor use identical rows.
-    training=list(range(split-1))
+    # A past-lag null never cycles into future data. All three
+    # comparisons use exactly the same eligible chronological intervals.
+    training=list(range(lag,split-1))
     testing=list(range(split,N))
     evidence=tuple(f.raw_identity for f in frames)
     neutral=lambda status:CouplingResult(target,donor,status,None,None,None,None,None,
                                          None,None,None,len(training),len(testing),evidence)
     if len(training)<2*len(FULL) or len(testing)<max(8,len(FULL)):
         return neutral("ABSTAIN_INSUFFICIENT_CHRONOLOGICAL_SUPPORT")
-    original,y=_series_rows(frames,target,donor)
-    shifted,_=_series_rows(frames,target,donor,len(frames)//2)
+    original,y=_series_rows(frames,target,donor,start_index=lag)
+    shifted,_=_series_rows(frames,target,donor,-lag,start_index=lag)
+    train_rows=[i-lag for i in training]
+    test_rows=[i-lag for i in testing]
     try:
-        base=_qr_fit([original[i][:len(BASE)] for i in training],
-                     [y[i] for i in training],BASE)
-        full=_qr_fit([original[i] for i in training],[y[i] for i in training],FULL)
-        null=_qr_fit([shifted[i] for i in training],[y[i] for i in training],FULL)
-        actual=[y[i] for i in testing]
-        base_error=_predict_sse(base,[original[i][:len(BASE)] for i in testing],actual)
-        full_error=_predict_sse(full,[original[i] for i in testing],actual)
-        null_error=_predict_sse(null,[shifted[i] for i in testing],actual)
+        base=_qr_fit([original[i][:len(BASE)] for i in train_rows],
+                     [y[i] for i in train_rows],BASE)
+        full=_qr_fit([original[i] for i in train_rows],[y[i] for i in train_rows],FULL)
+        null=_qr_fit([shifted[i] for i in train_rows],[y[i] for i in train_rows],FULL)
+        actual=[y[i] for i in test_rows]
+        base_error=_predict_sse(base,[original[i][:len(BASE)] for i in test_rows],actual)
+        full_error=_predict_sse(full,[original[i] for i in test_rows],actual)
+        null_error=_predict_sse(null,[shifted[i] for i in test_rows],actual)
         if not all(math.isfinite(x) for x in (base_error,full_error,null_error)):
             raise LocalityError("nonfinite predictive error")
         if base_error<=1e-14:
@@ -199,7 +208,7 @@ def _test_direction(frames: tuple[InfoFrame,...],target: str,donor: str,
         candidate=improvement>=min_gain and improvement>=null_gain+null_margin
         status="CANDIDATE_ASSOCIATION_REVIEW_ONLY" if candidate else "NO_SUPPORTED_ASSOCIATION"
         if ratio is None:
-            status="ABSTAIN_UNIDENTIFIABLE_DIPOLE_RATIO" if candidate else status
+            status="ABSTAIN_UNIDENTIFIABLE_DIPOLE_RATIO"
         return CouplingResult(target,donor,status,base_error,full_error,null_error,
                               improvement,null_gain,opposing,ratio,full,
                               len(training),len(testing),evidence)
@@ -270,6 +279,15 @@ def cross_domain_motif(reports: dict[str,dict]) -> dict:
     if set(reports)!=required:
         return {"status":"INCOMPLETE_DOMAIN_SET","observed":tuple(sorted(reports)),
                 "required":tuple(sorted(required)),"promotable":False}
+    # Reused data with four names is not four independently replicated domains.
+    sources=[r.get("source_identity") for r in reports.values()]
+    identity_sets=[set(r.get("raw_source_frame_identities",())) for r in reports.values()]
+    if (any(not x for x in sources) or len(set(sources))!=4 or
+        any(not x for x in identity_sets) or
+        any(identity_sets[i] & identity_sets[j]
+            for i in range(4) for j in range(i+1,4))):
+        return {"status":"NONINDEPENDENT_DOMAIN_EVIDENCE","promotable":False,
+                "caveat":"Domain labels cannot establish independent source evidence."}
     detail={}
     for science,report in reports.items():
         if report.get("scientific_jobs_eliminated")!=0:

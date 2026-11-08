@@ -19,7 +19,10 @@ class OperatorGeometryTests(unittest.TestCase):
     def test_quadratic_curve_detected_without_flattenting(self):
         data=series()
         result=geometric_dipole_probe(data,"a","b",tolerance=1e-8)
-        self.assertEqual(result["status"],"EXPLORATORY_ALGEBRAIC_PATTERN_ONLY")
+        # Hb=1 throughout; Ha²=(Ha*Hb)² is an algebraic tautology.
+        self.assertEqual(result["status"],"RESEARCH_HOLD")
+        self.assertIn("CONSTANT_TRAIN_DONOR_HB",result["algebraic_degeneracy_flags"])
+        self.assertIn("ALGEBRAIC_REPARAMETERIZATION",result["reason"])
         self.assertEqual(result["original_frame_count"],len(data))
         self.assertEqual(result["preserved_frame_identities"],
                          tuple(f.raw_identity for f in data))

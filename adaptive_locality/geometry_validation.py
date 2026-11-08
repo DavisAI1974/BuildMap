@@ -171,10 +171,21 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
                    and early_extra is not None and early_extra>0
                    and late_extra is not None and late_extra>0)
             promising=(gain>=min_gain and gain>=past_gain+null_margin and stable)
+            # The normalized-QR diagonal ratio is only a warning proxy, not
+            # the exact 2-norm design condition number. A numerically suspect
+            # fit remains fully saved for research, including its coefficients.
+            worst_condition_indicator=max(self_fit.rank_diagonal_ratio,
+                                          interaction_fit.rank_diagonal_ratio,
+                                          full_fit.rank_diagonal_ratio,
+                                          lag_fit.rank_diagonal_ratio)
+            near_singular=worst_condition_indicator>1e6
             results.append(GeometryPredictiveSplit(
-                status="CANDIDATE_PREDICTIVE_ASSOCIATION_REVIEW_ONLY" if promising
-                       else "NO_ROBUST_ADDITIONAL_PREDICTIVE_GEOMETRY",
-                reason=("Matched historical-null and frozen holdout comparisons; "
+                status=("RESEARCH_HOLD" if near_singular else
+                        "CANDIDATE_PREDICTIVE_ASSOCIATION_REVIEW_ONLY" if promising
+                        else "NO_ROBUST_ADDITIONAL_PREDICTIVE_GEOMETRY"),
+                reason=("NEAR_SINGULAR_DESIGN_RETAIN_ALL_PREDICTIONS_FOR_RESEARCH"
+                        if near_singular else
+                        "Matched historical-null and frozen holdout comparisons; "
                         "overlapping splits not independent evidence of causality"),
                 self_holdout_sse=base,geometry_holdout_sse=full,
                 linear_interaction_holdout_sse=interaction,
@@ -183,7 +194,7 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
                 past_donor_holdout_sse=past,geometry_gain=gain,
                 past_donor_gain=past_gain,early_holdout_gain=early,
                 late_holdout_gain=late,
-                coefficient_condition_indicator=full_fit.rank_diagonal_ratio,
+                coefficient_condition_indicator=worst_condition_indicator,
                 full_coefficients=full_fit.coefficients,**kwargs))
         except (LocalityError,ArithmeticError,OverflowError) as exc:
             results.append(hold("RANK_NUMERICAL_OR_CONTROL_RESEARCH:"+str(exc)))
@@ -213,6 +224,7 @@ def geometric_predictive_controls(frames: Sequence[InfoFrame],target:str,donor:s
                 "Quadratic operators are compared against a nested linear interaction term, not just self-only dynamics.",
                 "Independent source/seed replication is not established by overlapping time splits.",
                 "Past-only donor lag is a negative control, not proof against common drivers.",
-                "Rank-deficient or unexplained splits require durable raw-evidence research holds.",
+                "The maximum normalized-QR diagonal ratio is a conditioning warning proxy, not an exact spectral condition number.",
+                "Near-singular, rank-deficient or unexplained splits require durable raw-evidence research holds.",
                 "No equivalence, calculation suppression, physical geometry or causality claim.",
             )}

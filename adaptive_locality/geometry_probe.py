@@ -119,20 +119,35 @@ def geometric_dipole_probe(frames: Sequence[InfoFrame], target: str,
                 reason="OPERATOR_SPACE_CURVE_NOT_PHYSICAL_CAUSAL_GEOMETRY"
             fitted=quadratic.coefficients
             coeff=[v for _,v in fitted]
-            # Retain every point. Outlying values are highlighted with
-            # fixed absolute tolerance, not excluded from either split.
+            # Algebraically perfect points may still be outliers. Measure
+            # BOTH equation residual and extrapolation far beyond frozen
+            # training support. No point is removed from fitting or reporting.
+            train_x=[r[1] for r in rows[:split]]
+            train_y=[p.ha_squared for p in points[:split]]
+            x_lo,x_hi=min(train_x),max(train_x)
+            y_lo,y_hi=min(train_y),max(train_y)
+            x_span=x_hi-x_lo
+            y_span=y_hi-y_lo
             updated=[]
             for p,r in zip(points,rows):
                 residual=p.ha_squared-math.fsum(a*b for a,b in zip(coeff,r))
                 if not math.isfinite(residual):
                     raise LocalityError("nonfinite per-point geometric residual")
-                outlier=abs(residual)>tolerance
+                # 3-range extension is a conservative synthetic diagnostic,
+                # not an estimator of scientific statistical significance.
+                # At constant/zero support span, review any actual departure.
+                outside_x=(r[1] < x_lo-3*x_span or r[1] > x_hi+3*x_span)
+                outside_y=(p.ha_squared < y_lo-3*y_span or
+                           p.ha_squared > y_hi+3*y_span)
+                outlier=abs(residual)>tolerance or outside_x or outside_y
+                reason=("STATIC_CURVE_LARGE_RESIDUAL_RESEARCH" if abs(residual)>tolerance
+                        else "OUTSIDE_TRAINING_SUPPORT_RESEARCH" if outside_x or outside_y
+                        else "NOT_AN_EQUIVALENCE_OR_CALCULATION_DROP")
                 updated.append(GeometryPoint(p.clock,p.raw_identity,
                     p.original_evidence_ids,p.ha,p.hb,p.ha_squared,
                     p.hb_squared,p.ha_hb,p.squared_entropy_difference,
                     residual,"RESEARCH_REVIEW_OUTLIER" if outlier else "RETAINED",
-                    "STATIC_CURVE_LARGE_RESIDUAL_RESEARCH" if outlier
-                    else "NOT_AN_EQUIVALENCE_OR_CALCULATION_DROP"))
+                    reason))
             points=updated
         except (LocalityError,ArithmeticError,OverflowError) as error:
             status="RESEARCH_HOLD"

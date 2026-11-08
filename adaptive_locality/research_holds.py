@@ -513,28 +513,33 @@ def preserve_full_raw_five_step_holds(report:dict,
         raise LocalityError("five-step report is not bound to the exact information series")
     complete=_verify_complete_raw_information(raw_frames,frames,bins,registry)
     original_ids=tuple(f.raw_identity for f in frames)
-    for result in report["results"]:
-        if (result.target==result.donor or
-            result.scientific_jobs_eliminated!=0 or
-            tuple(result.source_frames)!=original_ids):
-            raise LocalityError("directional five-step result has incomplete source lineage")
-    records=complete+({"kind":"COMPLETE_FIVE_STEP_REPORT","report":report},)
+    lineage_issues=[]
+    for index,result in enumerate(report["results"]):
+        if result.scientific_jobs_eliminated!=0:
+            raise LocalityError("directional five-step job suppression prohibited")
+        if result.target==result.donor or tuple(result.source_frames)!=original_ids:
+            lineage_issues.append(index)
+    records=complete+({"kind":"COMPLETE_FIVE_STEP_REPORT","report":report,
+                       "unverified_result_lineage_indices":tuple(lineage_issues)},)
     digest=registry.archive(archive_name,records)
     cases=[]
     for index,result in enumerate(report["results"]):
-        reason="FIVE_STEP_UNVERIFIED_RESULT:"+result.status
+        reason=("FIVE_STEP_SOURCE_LINEAGE_CONFLICT:" if index in lineage_issues
+                else "FIVE_STEP_UNVERIFIED_RESULT:")+result.status
         case_id=_digest({"analysis":report["evidence_identity"],
                          "archive":digest,"index":index,
                          "target":result.target,"donor":result.donor})
         registry.hold(case_id,archive_name,reason=reason,
                       details={"result_index":index,"status":result.status,
                                "direction":(result.target,result.donor),
+                               "lineage_conflict":index in lineage_issues,
                                "archive_digest":digest,
                                "disposition":"RETAIN_FOR_FURTHER_INSPECTION"})
         cases.append(case_id)
     return {"archive_name":archive_name,"archive_digest":digest,
             "retained_full_raw_frames":len(complete),
             "retained_five_step_results":len(report["results"]),
+            "unverified_lineage_conflict_count":len(lineage_issues),
             "research_case_ids":tuple(cases),"cases":len(cases),
             "original_observations_dropped":0,"scientific_jobs_eliminated":0}
 
@@ -570,13 +575,18 @@ def preserve_full_raw_level2_holds(report:dict,
     complete=_verify_complete_raw_information(raw_frames,frames,bins,registry)
     frame_ids=tuple(f.raw_identity for f in frames)
     starts={identity:index for index,identity in enumerate(frame_ids)}
-    for window in original:
+    lineage_issues=[]
+    for index,window in enumerate(original):
         ids=tuple(window.source_frames)
-        if (window.scientific_jobs_eliminated!=0 or not ids or
-            ids[0] not in starts or
+        if window.scientific_jobs_eliminated!=0:
+            raise LocalityError("Level 2 scientific job suppression prohibited")
+        if (not ids or ids[0] not in starts or
             tuple(frame_ids[starts[ids[0]]:starts[ids[0]]+len(ids)])!=ids):
-            raise LocalityError("Level 2 original window is not a chronological raw-frame segment")
-    records=(complete+({"kind":"COMPLETE_LEVEL2_REPORT","report":report},))
+            # A mismatched source window is itself an important research
+            # observation. Archive the full conflicting result, do NOT drop.
+            lineage_issues.append(index)
+    records=(complete+({"kind":"COMPLETE_LEVEL2_REPORT","report":report,
+                        "unverified_window_lineage_indices":tuple(lineage_issues)},))
     digest=registry.archive(archive_name,records)
     cases=[]
     for index,issue in enumerate(report["unresolved_research_items"]):
@@ -586,6 +596,14 @@ def preserve_full_raw_level2_holds(report:dict,
         registry.hold(case_id,archive_name,reason=reason,
                       details={"issue_index":index,"issue":issue,
                                "archive_digest":digest,
+                               "disposition":"RETAIN_FOR_FURTHER_INSPECTION"})
+        cases.append(case_id)
+    for index in lineage_issues:
+        reason="LEVEL2_ORIGINAL_WINDOW_SOURCE_LINEAGE_CONFLICT"
+        case_id=_digest({"report":report["evidence_identity"],"archive":digest,
+                         "window_index":index,"reason":reason})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"window_index":index,"archive_digest":digest,
                                "disposition":"RETAIN_FOR_FURTHER_INSPECTION"})
         cases.append(case_id)
     for index,link in enumerate(report["links"]):
@@ -604,5 +622,6 @@ def preserve_full_raw_level2_holds(report:dict,
             "retained_original_windows":len(original),
             "retained_level2_links":len(report["links"]),
             "retained_unresolved_items":len(report["unresolved_research_items"]),
+            "unverified_window_lineage_count":len(lineage_issues),
             "research_case_ids":tuple(cases),"cases":len(cases),
             "original_observations_dropped":0,"scientific_jobs_eliminated":0}

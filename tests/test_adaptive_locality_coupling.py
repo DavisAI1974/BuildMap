@@ -136,6 +136,20 @@ class CouplingResearchTests(unittest.TestCase):
         self.assertFalse(any("B_net" in label for w in windows
                              for label,_ in w.coefficients))
 
+    def test_past_only_null_never_reads_future_or_wraps(self):
+        from adaptive_locality.coupling import _operator_row, _series_rows
+        data=synthetic_series(n=90)
+        with self.assertRaises(LocalityError):
+            _operator_row(data,2,"a","b",1)
+        with self.assertRaises(LocalityError):
+            _operator_row(data,2,"a","b",-3)
+        past=_operator_row(data,20,"a","b",-5)
+        self.assertAlmostEqual(past[4],dict(data[15].entropy)["b"])
+        rows,targets=_series_rows(data,"a","b",-5)
+        self.assertEqual(len(rows),len(data)-1-5)
+        self.assertEqual(len(targets),len(rows))
+        self.assertAlmostEqual(rows[0][4],dict(data[0].entropy)["b"])
+
     def test_cross_domain_requires_all_four_and_does_not_promote(self):
         result=discover_coupling(synthetic_series())
         missing=cross_domain_motif({"physics":result})
@@ -143,8 +157,9 @@ class CouplingResearchTests(unittest.TestCase):
         reports={name:result for name in ("physics","biology","chemistry","geology")}
         complete=cross_domain_motif(reports)
         self.assertFalse(complete["promotable"])
-        self.assertIn(complete["status"],
-                      {"EXPLORATORY_MOTIF_IN_FOUR_DOMAINS","NO_FOUR_DOMAIN_MOTIF"})
+        # Four labels pointing to the SAME scientific source are not
+        # four independent replications; retain reports without promotion.
+        self.assertEqual(complete["status"],"NONINDEPENDENT_DOMAIN_EVIDENCE")
 
 
 if __name__=="__main__":

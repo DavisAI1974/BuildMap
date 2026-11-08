@@ -18,7 +18,7 @@ from .coupling import _qr_fit, _predict_sse
 
 SELF=("const","Ha","Ha2","FIa")
 INTERACTION=SELF+("HaHb",)
-GEOMETRY=INTERACTION+("HaHb2")
+GEOMETRY=INTERACTION+("HaHb2",)
 
 
 @dataclass(frozen=True)

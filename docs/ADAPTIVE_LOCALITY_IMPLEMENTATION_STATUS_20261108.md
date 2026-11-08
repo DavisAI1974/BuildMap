@@ -15,7 +15,8 @@ Intent: build in isolation; **do not connect to Frankie, AWS, BuildMap runtime, 
 - In-memory backpressured shadow ready-group queue, identity-aware idempotency and snapshot recovery.
 - Comparable-scope workload counter structure and always-manual promotion verdict.
 - Offline shadow-only JSON CLI and unsigned BuildMap-oriented export; explicit zero eliminated jobs.
-- Three standard-library test files and isolated GitHub Actions workflow.
+- Opt-in standalone HTML scientific viewer and replay probes (`visualization.py`, `review_cli.py`) based on Slayer architectural patterns, no Slayer source code and no native BuildMap integration.
+- Four standard-library test files and isolated GitHub Actions workflow for Python 3.11–3.13.
 
 ## Not complete; keep isolated
 - Production feature extraction from Frankie's actual 99-plane schema, immutable order/event lineage and frozen normalization.
@@ -24,7 +25,7 @@ Intent: build in isolation; **do not connect to Frankie, AWS, BuildMap runtime, 
 - Real geometric boundary normals, validated flux PDE model, discretization consistency and robust time-step stability.
 - Real calculation exactness proof, side-effect checks, cache/FFT equivalence and permitted approximation policies.
 - Persistent transactional scheduler, multi-host recovery, durable work queue, cloud deployment.
-- Signed source-bound BuildMap collector and production evidence review.
+- Optional native BuildMap import remains unimplemented. Existing offline viewer is a BuildMap-adjacent prototype, not wired to the app. Signed source-bound collector and production evidence review also remain pending.
 - Real-day benchmark, performance/accuracy results, cost gates, randomized multi-day validation and rollout.
 - Thorough fuzz/property/stress tests, CI verification for latest commit, packaging and release acceptance.
 

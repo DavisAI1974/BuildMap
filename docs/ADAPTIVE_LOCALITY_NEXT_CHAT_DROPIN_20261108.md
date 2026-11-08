@@ -1,5 +1,9 @@
 # ADAPTIVE LOCALITY — NEXT CHAT DROP-IN AND COMMIT HANDOFF
 
+> **2026-11-08 CONTINUATION AMENDMENT — READ FIRST:** The original navigation record below is historical. The current standalone mathematical continuation is documented in [ADAPTIVE_LOCALITY_INDEPENDENT_DIAGNOSTICS_20261108.md](ADAPTIVE_LOCALITY_INDEPENDENT_DIAGNOSTICS_20261108.md) and the [standalone acceptance ledger](ADAPTIVE_LOCALITY_STANDALONE_ACCEPTANCE_20261108.md). Code verification at `398e62f0a8b594757fd2e743e3381a98c24a4fa8`: 87 Python tests passed across 3.11–3.13 (run `42459918493`), and optional scratch BuildMap scan passed (run `42459917897`). Later documentation-only HEADs and CI may supersede these receipts. **The eight unverified science gates, every conflicting result and all originals remain retained for further inspection, never discarded.** Draft PR #4 stays open and unmerged. No Frankie/AWS/Search, production BuildMap connection, deployment, or calculation suppression. The optional BuildMap experiment improved inspection navigation only (7 observed static links; 8 planned/unverified gates), not mathematical proof.
+
+
+
 Prepared November 8, 2026. This document is a new-chat navigation and verification record. Read the detailed handoff first:
 `docs/ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md`.
 

@@ -225,3 +225,41 @@ def preserve_level2_holds(report: dict, registry: ResearchHoldRegistry,
     return {"archive_name":archive_name,"archive_digest":digest,
             "retained_windows":len(original),"research_case_ids":tuple(cases),
             "cases":len(cases),"scientific_jobs_eliminated":0}
+
+
+def preserve_five_step_holds(report: dict, original_information_frames: Sequence[object],
+                             registry: ResearchHoldRegistry, *,
+                             archive_name: str) -> dict:
+    """Archive the COMPLETE derived-information input including held fits.
+
+    The upstream immutable RawFrames must additionally be archived by the
+    caller if locally available; an InfoFrame only contains raw identities,
+    not the original raw measurement values.
+    """
+    if (report.get("source_identity")!=registry.source_identity or
+        report.get("calibration_identity")!=registry.contract_identity or
+        report.get("scientific_jobs_eliminated")!=0):
+        raise LocalityError("incompatible research report")
+    frames=tuple(original_information_frames)
+    if (len(frames)!=report.get("frames") or
+        tuple(getattr(f,"raw_identity",None) for f in frames)!=
+                tuple(report.get("raw_source_frame_identities",()))):
+        raise LocalityError("not the exact original information series")
+    digest=registry.archive(archive_name,frames)
+    case_ids=[]
+    for result in report.get("results",()):
+        if not result.status.startswith("ABSTAIN"):
+            continue
+        case_id=_digest({"report":_digest(report.get("raw_source_frame_identities")),
+                         "target":result.target,"donor":result.donor,
+                         "status":result.status,"archive":digest})
+        registry.hold(case_id,archive_name,reason=result.status,
+                      details={"target":result.target,"donor":result.donor,
+                               "source_frames":result.source_frames,
+                               "calibration":registry.contract_identity,
+                               "archive_digest":digest})
+        case_ids.append(case_id)
+    return {"retained_frames":len(frames),"archive_digest":digest,
+            "research_case_ids":tuple(case_ids),
+            "rank_and_abstention_cases":len(case_ids),
+            "scientific_jobs_eliminated":0}

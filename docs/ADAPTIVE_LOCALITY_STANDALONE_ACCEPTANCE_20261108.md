@@ -1,9 +1,17 @@
 # Adaptive Locality — standalone engineering and scientific acceptance ledger
 
-> **Current continuation handoff:** [ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md](ADAPTIVE_LOCALITY_COUPLING_GEOMETRY_HANDOFF_20261108.md). It supersedes older coupling-status text below. Code HEAD validated at `ec0e8561d1a4a57e782b8c54e02add1bd28c84d4`; isolated GitHub Actions `42457310741` passed **61 tests on Python 3.11, 3.12 and 3.13**. No merge/deployment/production integration authorized.
+> **Current source-of-truth acceptance amendment:** [ADAPTIVE_LOCALITY_INDEPENDENT_DIAGNOSTICS_20261108.md](ADAPTIVE_LOCALITY_INDEPENDENT_DIAGNOSTICS_20261108.md). This supersedes historical test counts and the older coupling handoff for the new work. At code checkpoint `398e62f0a8b594757fd2e743e3381a98c24a4fa8`, isolated GitHub Actions [42459918493](https://github.com/DavisAI1974/BuildMap/actions/runs/42459918493) passed **87 tests across Python 3.11/3.12/3.13**. The optional BuildMap scratch scanner [42459917897](https://github.com/DavisAI1974/BuildMap/actions/runs/42459917897) passed **1 test** (7 observed static source connections, 8 retained/unverified gates, zero altered source files or suppressed calculations). Documentation updates have advanced HEAD; recheck newer CI. **No merge/deployment/live integration authorized.**
 
 Updated: November 8, 2026. Branch `feat/adaptive-locality-engine-20261108`.
 **All components remain research-only and isolated. No Frankie, AWS, Search or BuildMap runtime wiring.**
+
+## November 8 continuation — acceptance distinctions
+
+- **Archive-first standalone review now available.** Save full original RawFrames and derived InfoFrames **before** running static or predictive geometry; every blocked, short, out-of-range, conflicting, rank-deficient, near-singular, unverified or unsupported case becomes a research hold. The source-bound registry checks case/history consistency and enforces SQLite foreign keys; it is **not independently signed**, and pre-RawFrame invalid bytes still need separate importer archival.
+- **Scientific models remain exploratory.** Equal-entropy null `-(Ha-Hb)^2` is a universal identity. Constant-donor static quadratic is an algebraic reparameterization, not predictive geometry. Explicit nested linear-interaction vs quadratic predictive gains are checked on future target derivatives; seeded synthetic controls do not constitute independent real-world science.
+- **All eight unresolved acceptance gates are retained.** An `UNVERIFIED`, `CONFLICTING` or `UNDER_REVIEW` case is not removed, substituted, averaged, smoothed or automatically marked as accepted. Research review never authorizes scientific calculation elimination.
+- **BuildMap experiment decision:** keep only an optional read-only, disposable-checkout inspection aid because the native scanner exposed additional source links and missing-gate navigation. No live BuildMap changes or mathematical improvement is claimed. Source-interaction/acceptance behavior remains unverified in production.
+- **Release gates:** scientific equivalence, physical normals/PDE, independent data/causal replication, real Fisher information and actual external research inputs remain **NOT VERIFIED**; PR #4 remains draft.
 
 ## Non-negotiable preservation rules
 

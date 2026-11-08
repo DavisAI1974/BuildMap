@@ -263,3 +263,115 @@ def preserve_five_step_holds(report: dict, original_information_frames: Sequence
             "research_case_ids":tuple(case_ids),
             "rank_and_abstention_cases":len(case_ids),
             "scientific_jobs_eliminated":0}
+
+
+def preserve_geometric_holds(report: dict, information_frames: Sequence[object],
+                             raw_frames: Sequence[object], bins: object,
+                             registry: ResearchHoldRegistry, *,
+                             archive_name: str) -> dict:
+    """Preserve full upstream measurements, derived observables and geometry.
+
+    Reject mismatched or missing raw data. Unlike archival of InfoFrames
+    alone, this binds the exact ordered source RawFrames and frozen bins to
+    independently re-derived information observables. No network, science
+    suppression, or production connections are involved.
+    """
+    from .information import RawFrame, InfoFrame, FixedBins, derive_information
+    if not isinstance(bins, FixedBins) or bins.identity()!=registry.contract_identity:
+        raise LocalityError("missing or incompatible frozen calibration for raw evidence")
+    frames=tuple(information_frames)
+    raw=tuple(raw_frames)
+    points=tuple(report.get("points",()))
+    if (report.get("kind")!="OFFLINE_GEOMETRIC_DIPOLE_DIAGNOSTIC" or
+        report.get("source_identity")!=registry.source_identity or
+        report.get("calibration_identity")!=registry.contract_identity or
+        bins.source_identity!=registry.source_identity or
+        report.get("scientific_jobs_eliminated")!=0 or
+        report.get("frames_dropped")!=0 or
+        report.get("averaged_or_flattened_original_data") is not False or
+        len(frames)!=len(raw) or len(frames)!=len(points) or
+        len(frames)!=report.get("original_frame_count") or not frames):
+        raise LocalityError("incomplete or destructive geometric source/report")
+    evidence=_digest({"frames":[f.identity() for f in frames
+                                if isinstance(f,InfoFrame)],
+                      "target":report.get("target"),"donor":report.get("donor")})
+    if evidence!=report.get("evidence_identity"):
+        raise LocalityError("geometric report does not bind exact information values")
+    if tuple(f.raw_identity for f in frames)!=tuple(report.get("preserved_frame_identities",())):
+        raise LocalityError("information frame lineage mismatch")
+    complete=[]
+    for i,(f,r,p) in enumerate(zip(frames,raw,points)):
+        if not isinstance(f,InfoFrame) or not isinstance(r,RawFrame):
+            raise LocalityError("full original RawFrame and derived InfoFrame required")
+        if r.source_identity!=registry.source_identity or f.source_identity!=registry.source_identity:
+            raise LocalityError("original source identity mismatch")
+        if f.clock!=r.clock or f.raw_identity!=r.identity():
+            raise LocalityError("upstream RawFrame identity/clock mismatch")
+        if f.raw_evidence_ids!=tuple(s.evidence_id for s in r.samples) or f.raw_count!=len(r.samples):
+            raise LocalityError("original ordered measurement identities mismatch")
+        if derive_information(r,bins)!=f:
+            raise LocalityError("derived information inconsistent with frozen original measurements")
+        if (p.clock!=f.clock or p.raw_identity!=f.raw_identity or
+            p.original_evidence_ids!=f.raw_evidence_ids or
+            p.ha!=dict(f.entropy).get(report["target"]) or
+            p.hb!=dict(f.entropy).get(report["donor"])):
+            raise LocalityError("geometric point does not bind same source measurement")
+        complete.append({"index":i,"raw_frame":r,"information_frame":f,
+                         "geometry_point":p})
+    digest=registry.archive(archive_name,tuple(complete))
+    case_ids=[]
+    if report["status"]=="RESEARCH_HOLD":
+        reason="GEOMETRY_GLOBAL:"+report["reason"]
+        case_id=_digest({"geometry":evidence,"archive":digest,"reason":reason})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"evidence":evidence,"archive_digest":digest,
+                               "raw_frame_count":len(raw),
+                               "design_basis_audit":report.get("design_basis_audit")})
+        case_ids.append(case_id)
+    for i,p in enumerate(points):
+        if p.status not in ("RESEARCH_HOLD","RESEARCH_REVIEW_OUTLIER"):
+            continue
+        reason="GEOMETRY_POINT:"+p.reason
+        case_id=_digest({"geometry":evidence,"archive":digest,"index":i,
+                         "raw_identity":p.raw_identity,"reason":reason})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"index":i,"clock":p.clock,
+                               "raw_identity":p.raw_identity,"status":p.status,
+                               "archive_digest":digest,
+                               "residual":p.quadratic_residual,
+                               "frozen_support_novelty":p.outside_frozen_support})
+        case_ids.append(case_id)
+    return {"archive_name":archive_name,"archive_digest":digest,
+            "retained_full_raw_frames":len(raw),
+            "retained_information_frames":len(frames),
+            "retained_geometry_points":len(points),
+            "research_case_ids":tuple(case_ids),"cases":len(case_ids),
+            "original_measurements_dropped":0,"scientific_jobs_eliminated":0}
+
+
+def preserve_rejected_geometric_inputs(raw_frames: Sequence[object],
+                                       bins: object, registry: ResearchHoldRegistry,
+                                       *, archive_name: str,
+                                       reason: str) -> dict:
+    """Retain inputs that could NOT safely enter the geometric fitting API.
+
+    This creates a research case without pretending an invalid/missing
+    information series was fitted; complete raw records remain inspectable.
+    """
+    from .information import RawFrame, FixedBins
+    raw=tuple(raw_frames)
+    if (not raw or not reason or
+        not isinstance(bins,FixedBins) or
+        bins.identity()!=registry.contract_identity or
+        bins.source_identity!=registry.source_identity or
+        any(not isinstance(r,RawFrame) or
+            r.source_identity!=registry.source_identity for r in raw)):
+        raise LocalityError("rejected geometry research requires exact raw source and frozen calibration")
+    digest=registry.archive(archive_name,raw)
+    case_id=_digest({"archive":digest,"reason":reason,"kind":"REJECTED_GEOMETRY_INPUT"})
+    registry.hold(case_id,archive_name,reason="GEOMETRY_INPUT_REJECTED:"+reason,
+                  details={"archive_digest":digest,"raw_frame_count":len(raw),
+                           "calibration":bins.identity()})
+    return {"archive_name":archive_name,"archive_digest":digest,
+            "retained_full_raw_frames":len(raw),"research_case_ids":(case_id,),
+            "original_measurements_dropped":0,"scientific_jobs_eliminated":0}

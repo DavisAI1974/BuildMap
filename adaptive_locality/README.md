@@ -43,3 +43,21 @@ Example input:
 7. Controlled real-day shadow comparison, accuracy/performance acceptance, rollback and production deployment.
 
 **Do not use grouping similarity to eliminate any scientific calculations.** The shadow adapter reports exactly zero eliminated jobs. Read the architecture plan in docs/ADAPTIVE_LOCALITY_ARCHITECTURE_BUILD_PLAN_20261108.md.
+
+
+## Offline viewer experiment (Slayer-inspired architecture)
+
+This branch includes an opt-in **standalone** viewer, not a BuildMap runtime integration. It follows the architectural separation of computation, raw frame, and display development described by [Slayer](https://github.com/janearc/slayer), without including Slayer source code or its Go/Metal renderer.
+
+```sh
+python -m adaptive_locality.review_cli my-shadow-input.json \
+  --x spread --y pressure \
+  --output locality-review.html --probes locality-replay-probes.json
+```
+
+Use two distinct numeric feature names from the JSON's metric contract. The viewer verifies the complete bounded event/decision set, samples only the *display*, and creates an offline HTML plot with family colors, center links, a source-count ledger, and finite-window diagnostics. Changed styling never recomputes science. The report is unsigned research output, not a scientific acceptance receipt. Output files must not already exist.
+
+Technical review: `docs/SLAYER_RENDERING_REVIEW_20261108.md`.
+New-chat handoff: `docs/ADAPTIVE_LOCALITY_NEXT_CHAT_HANDOFF_20261108.md`.
+
+**Boundary:** no code in this package imports or invokes the BuildMap application, Frankie, AWS, or production Search. It does not suppress scientific calculations.

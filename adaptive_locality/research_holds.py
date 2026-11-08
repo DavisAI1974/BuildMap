@@ -453,3 +453,156 @@ def preserve_geometric_predictive_controls(report: dict,
             "retained_predictive_splits":len(splits),
             "research_case_ids":tuple(cases),"cases":len(cases),
             "scientific_jobs_eliminated":0,"original_measurements_dropped":0}
+
+
+
+def _verify_complete_raw_information(raw_frames: Sequence[object],
+                                     information_frames: Sequence[object],
+                                     bins: object,
+                                     registry: ResearchHoldRegistry) -> tuple:
+    """Verify every exact original RawFrame against each reported InfoFrame."""
+    from .information import RawFrame, InfoFrame, FixedBins, derive_information
+    raw=tuple(raw_frames)
+    info=tuple(information_frames)
+    if (not isinstance(bins,FixedBins) or
+        bins.source_identity!=registry.source_identity or
+        bins.identity()!=registry.contract_identity or
+        not info or len(raw)!=len(info)):
+        raise LocalityError("full original RawFrame and calibration series required")
+    complete=[]
+    for index,(r,f) in enumerate(zip(raw,info)):
+        if not isinstance(r,RawFrame) or not isinstance(f,InfoFrame):
+            raise LocalityError("complete raw and derived frame identity required")
+        if (r.source_identity!=registry.source_identity or
+            f.source_identity!=registry.source_identity or
+            f.calibration_identity!=registry.contract_identity or
+            f.clock!=r.clock or f.raw_identity!=r.identity() or
+            f.raw_count!=len(r.samples) or
+            f.raw_evidence_ids!=tuple(sample.evidence_id for sample in r.samples) or
+            f!=derive_information(r,bins)):
+            raise LocalityError("original raw measurements do not reproduce information frame")
+        complete.append({"index":index,"raw_frame":r,
+                         "information_frame":f})
+    return tuple(complete)
+
+
+def preserve_full_raw_five_step_holds(report:dict,
+                                     information_frames:Sequence[object],
+                                     raw_frames:Sequence[object],
+                                     bins:object,
+                                     registry:ResearchHoldRegistry, *,
+                                     archive_name:str) -> dict:
+    """Archive all upstream RawFrames, ALL directional results, even 'no support'.
+
+    This is the stronger, *full original source* companion to the legacy
+    preserve_five_step_holds, which archived derived InfoFrames only. No fit
+    status (including a candidate) can silently become scientific acceptance.
+    """
+    frames=tuple(information_frames)
+    if (report.get("method")!="AGNOSTIC_FIVE_STEP_PROBE" or
+        report.get("source_identity")!=registry.source_identity or
+        report.get("calibration_identity")!=registry.contract_identity or
+        report.get("scientific_jobs_eliminated")!=0 or
+        len(frames)!=report.get("frames") or
+        report.get("result_count")!=len(report.get("results",())) or
+        tuple(f.raw_identity for f in frames)!=
+            tuple(report.get("raw_source_frame_identities",())) or
+        report.get("evidence_identity")!=_digest({
+            "frames":[f.identity() for f in frames],
+            "method":"AGNOSTIC_FIVE_STEP_PROBE"})):
+        raise LocalityError("five-step report is not bound to the exact information series")
+    complete=_verify_complete_raw_information(raw_frames,frames,bins,registry)
+    original_ids=tuple(f.raw_identity for f in frames)
+    for result in report["results"]:
+        if (result.target==result.donor or
+            result.scientific_jobs_eliminated!=0 or
+            tuple(result.source_frames)!=original_ids):
+            raise LocalityError("directional five-step result has incomplete source lineage")
+    records=complete+({"kind":"COMPLETE_FIVE_STEP_REPORT","report":report},)
+    digest=registry.archive(archive_name,records)
+    cases=[]
+    for index,result in enumerate(report["results"]):
+        reason="FIVE_STEP_UNVERIFIED_RESULT:"+result.status
+        case_id=_digest({"analysis":report["evidence_identity"],
+                         "archive":digest,"index":index,
+                         "target":result.target,"donor":result.donor})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"result_index":index,"status":result.status,
+                               "direction":(result.target,result.donor),
+                               "archive_digest":digest,
+                               "disposition":"RETAIN_FOR_FURTHER_INSPECTION"})
+        cases.append(case_id)
+    return {"archive_name":archive_name,"archive_digest":digest,
+            "retained_full_raw_frames":len(complete),
+            "retained_five_step_results":len(report["results"]),
+            "research_case_ids":tuple(cases),"cases":len(cases),
+            "original_observations_dropped":0,"scientific_jobs_eliminated":0}
+
+
+def preserve_full_raw_level2_holds(report:dict,
+                                  information_frames:Sequence[object],
+                                  raw_frames:Sequence[object],
+                                  bins:object,
+                                  registry:ResearchHoldRegistry, *,
+                                  archive_name:str) -> dict:
+    """Bind Level 2 pair-window/link archive to every original raw measurement.
+
+    Every observed and unverified link, conflicting clock, issue, and the
+    exact full input history is saved, including windows that cannot be fit.
+    """
+    from dataclasses import asdict
+    frames=tuple(information_frames)
+    original=tuple(report.get("retained_original_windows",()))
+    if (report.get("kind")!="OFFLINE_LEVEL2_UNSMOOTHED_BALANCE_LINKS" or
+        report.get("source_identity")!=registry.source_identity or
+        report.get("calibration_identity")!=registry.contract_identity or
+        report.get("scientific_jobs_eliminated")!=0 or
+        report.get("input_windows_dropped")!=0 or
+        report.get("rank_deficiencies_dropped")!=0 or
+        not original or len(original)!=report.get("original_window_count") or
+        len(report.get("links",()))!=report.get("tested_link_count") or
+        len(report.get("unresolved_research_items",()))!=report.get("unresolved_count") or
+        report.get("evidence_identity")!=_digest({
+            "source":registry.source_identity,
+            "calibration":registry.contract_identity,
+            "windows":[asdict(w) for w in original]})):
+        raise LocalityError("Level 2 report does not bind complete original windows")
+    complete=_verify_complete_raw_information(raw_frames,frames,bins,registry)
+    frame_ids=tuple(f.raw_identity for f in frames)
+    starts={identity:index for index,identity in enumerate(frame_ids)}
+    for window in original:
+        ids=tuple(window.source_frames)
+        if (window.scientific_jobs_eliminated!=0 or not ids or
+            ids[0] not in starts or
+            tuple(frame_ids[starts[ids[0]]:starts[ids[0]]+len(ids)])!=ids):
+            raise LocalityError("Level 2 original window is not a chronological raw-frame segment")
+    records=(complete+({"kind":"COMPLETE_LEVEL2_REPORT","report":report},))
+    digest=registry.archive(archive_name,records)
+    cases=[]
+    for index,issue in enumerate(report["unresolved_research_items"]):
+        reason="LEVEL2_UNRESOLVED_INPUT:"+issue["reason"]
+        case_id=_digest({"report":report["evidence_identity"],"archive":digest,
+                         "issue_index":index})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"issue_index":index,"issue":issue,
+                               "archive_digest":digest,
+                               "disposition":"RETAIN_FOR_FURTHER_INSPECTION"})
+        cases.append(case_id)
+    for index,link in enumerate(report["links"]):
+        reason="LEVEL2_UNVERIFIED_LINK:"+link.status
+        case_id=_digest({"report":report["evidence_identity"],"archive":digest,
+                         "link_index":index})
+        registry.hold(case_id,archive_name,reason=reason,
+                      details={"link_index":index,"target":link.target_balance,
+                               "donor":link.donor_balance,
+                               "link_status":link.status,"reason":link.reason,
+                               "archive_digest":digest,
+                               "disposition":"RETAIN_FOR_FURTHER_INSPECTION"})
+        cases.append(case_id)
+    return {"archive_name":archive_name,"archive_digest":digest,
+            "retained_full_raw_frames":len(complete),
+            "retained_original_windows":len(original),
+            "retained_level2_links":len(report["links"]),
+            "retained_unresolved_items":len(report["unresolved_research_items"]),
+            "research_case_ids":tuple(cases),"cases":len(cases),
+            "original_observations_dropped":0,"scientific_jobs_eliminated":0}
